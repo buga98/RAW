@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Remote Audio Workstation</title>
+
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+
+<div class="lang">
+  <select id="lang">
+    <option value="hr">🇭🇷 HR</option>
+    <option value="en">🇬🇧 EN</option>
+  </select>
+</div>
+
+<div class="modal">
+
+  <!-- LOGIN -->
+  <div id="loginBox">
+    <h2 id="title">Dobrodošli</h2>
+    <p class="small" id="desc">Pristupite svom remote studiju</p>
+
+    <input id="email" placeholder="Email">
+    <input id="password" type="password" placeholder="Lozinka">
+
+    <button id="loginBtn">Prijavi se</button>
+
+    <div class="switch" onclick="toggle()">Nemate profil? Registriraj se</div>
+  </div>
+
+  <!-- REGISTER -->
+  <div id="registerBox" class="hidden">
+    <h2>Registracija</h2>
+
+    <input id="rEmail" placeholder="Email">
+    <input id="rPass" type="password" placeholder="Lozinka">
+    <input id="ime" placeholder="Ime">
+    <input id="prezime" placeholder="Prezime">
+    <input id="grad" placeholder="Grad">
+    <input id="adresa" placeholder="Adresa">
+    <input id="dob" type="date">
+    <input id="mob" placeholder="Mobitel">
+
+    <button id="registerBtn">Registriraj</button>
+
+    <div class="switch" onclick="toggle()">Već imaš profil? Prijavi se</div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import { 
+  getAuth, 
+  createUserWithEmailAndPassword, 
+  signInWithEmailAndPassword, 
+  sendEmailVerification, 
+  onAuthStateChanged, 
+  signOut 
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+
+import { 
+  getFirestore, 
+  doc, 
+  setDoc 
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD3LBWoS-uX9BnxDaMzQs_rlh9BMm_RRTM",
+  authDomain: "remoteaudioworkstation.firebaseapp.com",
+  projectId: "remoteaudioworkstation",
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+
+// 🌍 LANG
+const t = {
+  hr: {
+    title:"Dobrodošli",
+    desc:"Pristupite svom remote studiju",
+    login:"Prijavi se"
+  },
+  en: {
+    title:"Welcome",
+    desc:"Access your remote studio",
+    login:"Login"
+  }
+};
+
+document.getElementById("lang").onchange = (e)=>{
+  const l = e.target.value;
+  title.innerText = t[l].title;
+  desc.innerText = t[l].desc;
+  loginBtn.innerText = t[l].login;
+};
+
+// 🔁 TOGGLE
+window.toggle = ()=>{
+  loginBox.classList.toggle("hidden");
+  registerBox.classList.toggle("hidden");
+};
+
+// 🚀 REGISTER
+registerBtn.onclick = async ()=>{
+
+  registerBtn.disabled = true;
+  registerBtn.innerText = "Loading...";
+
+  try{
+    const cred = await createUserWithEmailAndPassword(auth, rEmail.value, rPass.value);
+
+    await setDoc(doc(db,"users",cred.user.uid),{
+      ime: ime.value,
+      prezime: prezime.value,
+      email: rEmail.value,
+      grad: grad.value,
+      adresa: adresa.value,
+      dob: dob.value,
+      mob: mob.value,
+      lang: "hr"
+    });
+
+    await sendEmailVerification(cred.user);
+
+    alert("Provjeri email!");
+    toggle();
+
+  }catch(e){
+    alert(e.message);
+  }finally{
+    registerBtn.disabled = false;
+    registerBtn.innerText = "Registriraj";
+  }
+};
+
+// 🔐 LOGIN
+loginBtn.onclick = async ()=>{
+
+  loginBtn.disabled = true;
+  loginBtn.innerText = "Loading...";
+
+  try{
+    const cred = await signInWithEmailAndPassword(auth,email.value,password.value);
+
+    if(!cred.user.emailVerified){
+      alert("Potvrdi email!");
+      await signOut(auth);
+      return;
+    }
+
+    window.location.replace("dashboard.html");
+
+  }catch(e){
+    alert("Pogrešan login");
+  }finally{
+    loginBtn.disabled = false;
+    loginBtn.innerText = "Prijavi se";
+  }
+};
+
+// ⚡ AUTO LOGIN
+onAuthStateChanged(auth,(user)=>{
+  if(user && user.emailVerified){
+    window.location.replace("dashboard.html");
+  }
+});
+</script>
+
+</body>
+</html>

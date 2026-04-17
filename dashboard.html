@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" href="dashboard.css">
+  <title>Remote Audio Workstation - Dashboard</title>
+
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar glass">
+      <div class="brand">
+        <div class="brand-logo">🎛️</div>
+        <div>
+          <h1>Remote Studio</h1>
+          <p id="brandSub">Audio workstation</p>
+        </div>
+      </div>
+
+      <nav class="menu">
+        <button class="menu-btn active" data-view="newsView">
+          <span class="menu-icon">📰</span>
+          <span id="navNews">Novosti</span>
+        </button>
+
+        <button class="menu-btn" data-view="reserveView">
+          <span class="menu-icon">📅</span>
+          <span id="navReserve">Rezerviraj termin</span>
+        </button>
+
+        <button class="menu-btn" data-view="myBookingsView">
+          <span class="menu-icon">🗂️</span>
+          <span id="navMyBookings">Moji termini</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-footer" id="sidebarFooter">
+        Upravljanje rezervacijama i pristup remote studiju.
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar glass">
+        <div class="topbar-left">
+          <h2 id="pageTitle">Novosti</h2>
+          <p id="pageSubtitle">Pregled vašeg računa i studijskih termina.</p>
+        </div>
+
+        <div class="topbar-right">
+          <div class="lang-wrap">
+            <select id="langSelect" class="lang-select">
+              <option value="hr">Hrvatski</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+          <button id="logoutBtn" class="logout-btn">Odjava</button>
+        </div>
+      </header>
+
+      <section id="newsView" class="content-view active">
+        <div class="panel glass news-grid">
+          <div class="welcome-card">
+            <div>
+              <h3 id="welcomeTitle">Dobrodošao</h3>
+              <p id="welcomeText">Uspješno ste prijavljeni u svoj remote audio workstation račun.</p>
+            </div>
+            <p id="welcomeHint">Ovdje će kasnije biti novosti, obavijesti i status vaših rezervacija.</p>
+          </div>
+
+          <div class="mini-stats">
+            <div class="stat-card">
+              <div class="label" id="statUpcomingLabel">Nadolazeći termini</div>
+              <div class="value" id="statUpcomingValue">0</div>
+            </div>
+            <div class="stat-card">
+              <div class="label" id="statLanguageLabel">Jezik sučelja</div>
+              <div class="value" id="statLanguageValue">HR</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="reserveView" class="content-view">
+        <div class="reserve-layout">
+          <div class="booking-side">
+            <div class="booking-card glass">
+              <h3 id="bookingInfoTitle">Nova rezervacija</h3>
+              <p id="bookingInfoText">
+                Klikni prvo na početni termin, a zatim na završni termin. Rezervacija se sprema po satima.
+              </p>
+
+              <div class="selected-box" id="selectedInfo">
+                <strong id="selectedInfoTitle">Ništa nije odabrano</strong>
+                <p id="selectedInfoText" style="margin:8px 0 0;color:var(--muted);">
+                  Odaberi raspon termina u kalendaru.
+                </p>
+              </div>
+
+              <button id="saveBookingBtn" class="primary-btn" disabled>Spremi rezervaciju</button>
+              <button id="clearSelectionBtn" class="secondary-btn">Poništi odabir</button>
+            </div>
+
+            <div class="booking-card glass">
+              <h3 id="bookingLegendTitle">Legenda</h3>
+              <div class="legend">
+                <div class="legend-item">
+                  <span class="legend-dot" style="background:rgba(79,209,255,0.8)"></span>
+                  <span id="legendSelected">Odabrano</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background:rgba(255,93,115,0.8)"></span>
+                  <span id="legendBooked">Rezervirano</span>
+                </div>
+                <div class="legend-item">
+                  <span class="legend-dot" style="background:rgba(110,231,183,0.8)"></span>
+                  <span id="legendMine">Moje rezervacije</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="calendar-panel glass">
+            <div class="calendar-toolbar">
+              <div>
+                <div class="calendar-title" id="calendarTitle">Tjedni raspored</div>
+                <div class="calendar-sub" id="calendarSub">Odaberite termin za rad na studiju.</div>
+              </div>
+
+              <div class="calendar-nav">
+                <button class="nav-btn" id="prevWeekBtn">‹</button>
+                <button class="nav-btn" id="nextWeekBtn">›</button>
+              </div>
+            </div>
+
+            <div class="calendar-grid-wrap">
+              <div class="calendar-grid" id="calendarGrid"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="myBookingsView" class="content-view">
+        <div class="panel glass">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px;">
+            <div>
+              <h3 id="myBookingsTitle" style="margin:0 0 8px;font-size:24px;">Moji termini</h3>
+              <p id="myBookingsSub" style="margin:0;color:var(--muted);">Pregled svih vaših rezerviranih termina.</p>
+            </div>
+          </div>
+
+          <div id="myBookingsList" class="bookings-list"></div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div id="toast" class="toast"></div>
+
+  <script type="module">
+    let bookingsMap = {};
+    let unsubscribeBookings = null;
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+    import {
+      getAuth,
+      onAuthStateChanged,
+      signOut
+    } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+    import {
+      getFirestore,
+      doc,
+      getDoc,
+      updateDoc,
+      collection,
+      addDoc,
+      getDocs,
+      query,
+      where,
+      deleteDoc,
+      onSnapshot,
+      Timestamp
+    } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyD3LBWoS-uX9BnxDaMzQs_rlh9BMm_RRTM",
+      authDomain: "remoteaudioworkstation.firebaseapp.com",
+      projectId: "remoteaudioworkstation",
+      storageBucket: "remoteaudioworkstation.firebasestorage.app",
+      messagingSenderId: "222949189564",
+      appId: "1:222949189564:web:3ccfa8a48c5a6085eaadb9"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const HOURS_START = 0;
+    const HOURS_END = 24;
+    const DAYS_IN_WEEK = 7;
+
+    let currentUser = null;
+    let currentUserData = null;
+    let currentLang = "hr";
+    let weekStartDate = startOfWeek(new Date());
+    let bookings = [];
+    let selectedStart = null;
+    let selectedEnd = null;
+
+    const calendarGrid = document.getElementById("calendarGrid");
+    const saveBookingBtn = document.getElementById("saveBookingBtn");
+    const clearSelectionBtn = document.getElementById("clearSelectionBtn");
+    const langSelect = document.getElementById("langSelect");
+    const toast = document.getElementById("toast");
+
+    const i18n = {
+      hr: {
+        brandSub: "Audio workstation",
+        navNews: "Novosti",
+        navReserve: "Rezerviraj termin",
+        navMyBookings: "Moji termini",
+        sidebarFooter: "Upravljanje rezervacijama i pristup remote studiju.",
+        logoutBtn: "Odjava",
+
+        pageTitles: {
+          newsView: "Novosti",
+          reserveView: "Rezervacija termina",
+          myBookingsView: "Moji termini"
+        },
+        pageSubtitles: {
+          newsView: "Pregled vašeg računa i studijskih termina.",
+          reserveView: "Odaberi slobodan termin i spremi rezervaciju.",
+          myBookingsView: "Pregled svih vaših rezervacija kroz sustav."
+        },
+
+        welcomeTitlePrefix: "Dobrodošao",
+        welcomeText: "Uspješno ste prijavljeni u svoj remote audio workstation račun.",
+        welcomeHint: "Ovdje će kasnije biti novosti, obavijesti i status vaših rezervacija.",
+        statUpcomingLabel: "Nadolazeći termini",
+        statLanguageLabel: "Jezik sučelja",
+
+        bookingInfoTitle: "Nova rezervacija",
+        bookingInfoText: "Klikni prvo na početni termin, a zatim na završni termin. Rezervacija se sprema po satima.",
+        selectedInfoTitleEmpty: "Ništa nije odabrano",
+        selectedInfoTextEmpty: "Odaberi raspon termina u kalendaru.",
+        selectedInfoTitleReady: "Odabrani termin",
+        saveBookingBtn: "Spremi rezervaciju",
+        clearSelectionBtn: "Poništi odabir",
+
+        bookingLegendTitle: "Legenda",
+        legendSelected: "Odabrano",
+        legendBooked: "Rezervirano",
+        legendMine: "Moje rezervacije",
+
+        calendarTitle: "Tjedni raspored",
+        calendarSub: "Odaberite termin za rad na studiju.",
+        myBookingsTitle: "Moji termini",
+        myBookingsSub: "Pregled svih vaših rezerviranih termina.",
+
+        weekdaysShort: ["Pon", "Uto", "Sri", "Čet", "Pet", "Sub", "Ned"],
+        weekdaysLong: ["Ponedjeljak", "Utorak", "Srijeda", "Četvrtak", "Petak", "Subota", "Nedjelja"],
+        months: ["Siječanj", "Veljača", "Ožujak", "Travanj", "Svibanj", "Lipanj", "Srpanj", "Kolovoz", "Rujan", "Listopad", "Studeni", "Prosinac"],
+
+        slotReserved: "Termin je već rezerviran.",
+        selectStartFirst: "Prvo odaberi početni termin.",
+        invalidSelection: "Završni termin mora biti nakon početnog termina i isti dan.",
+        selectionCleared: "Odabir je poništen.",
+        bookingSaved: "Rezervacija je uspješno spremljena.",
+        bookingConflict: "Dio odabranog termina je već rezerviran.",
+        loading: "Učitavanje...",
+        noBookings: "Trenutno nema rezerviranih termina.",
+        bookingCardTitle: "Rezervacija",
+        bookingCardTime: "Vrijeme",
+        bookingCardDay: "Dan",
+        bookedLabel: "Rezervirano",
+        myBookedLabel: "Moje",
+        langShort: "HR",
+        reservedLabel: "Rezervirano",
+        fromTo: "Od",
+        to: "Do"
+      },
+      en: {
+        brandSub: "Audio workstation",
+        navNews: "News",
+        navReserve: "Book a session",
+        navMyBookings: "My bookings",
+        sidebarFooter: "Manage reservations and access your remote studio.",
+        logoutBtn: "Logout",
+
+        pageTitles: {
+          newsView: "News",
+          reserveView: "Session booking",
+          myBookingsView: "My bookings"
+        },
+        pageSubtitles: {
+          newsView: "Overview of your account and studio sessions.",
+          reserveView: "Choose an available slot and save your booking.",
+          myBookingsView: "Overview of all your reservations in the system."
+        },
+
+        welcomeTitlePrefix: "Welcome",
+        welcomeText: "You have successfully signed in to your remote audio workstation account.",
+        welcomeHint: "Later, this section will show updates, announcements, and your reservation status.",
+        statUpcomingLabel: "Upcoming bookings",
+        statLanguageLabel: "Interface language",
+
+        bookingInfoTitle: "New booking",
+        bookingInfoText: "Click the start slot first, then click the end slot. The reservation is saved by hour.",
+        selectedInfoTitleEmpty: "Nothing selected",
+        selectedInfoTextEmpty: "Select a time range in the calendar.",
+        selectedInfoTitleReady: "Selected booking",
+        saveBookingBtn: "Save booking",
+        clearSelectionBtn: "Clear selection",
+
+        bookingLegendTitle: "Legend",
+        legendSelected: "Selected",
+        legendBooked: "Booked",
+        legendMine: "My bookings",
+
+        calendarTitle: "Weekly schedule",
+        calendarSub: "Choose a time slot for your studio session.",
+        myBookingsTitle: "My bookings",
+        myBookingsSub: "Overview of all your reserved sessions.",
+
+        weekdaysShort: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        weekdaysLong: ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"],
+        months: ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"],
+
+        slotReserved: "This slot is already booked.",
+        selectStartFirst: "Select the start slot first.",
+        invalidSelection: "The end slot must be after the start slot and on the same day.",
+        selectionCleared: "Selection cleared.",
+        bookingSaved: "Booking saved successfully.",
+        bookingConflict: "Part of the selected range is already booked.",
+        loading: "Loading...",
+        noBookings: "There are currently no booked sessions.",
+        bookingCardTitle: "Booking",
+        bookingCardTime: "Time",
+        bookingCardDay: "Day",
+        bookedLabel: "Booked",
+        myBookedLabel: "Mine",
+        langShort: "EN",
+        reservedLabel: "Booked",
+        fromTo: "From",
+        to: "To"
+      }
+    };
+
+    document.querySelectorAll(".menu-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".menu-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+
+        const viewId = btn.dataset.view;
+        document.querySelectorAll(".content-view").forEach(v => v.classList.remove("active"));
+        document.getElementById(viewId).classList.add("active");
+
+        updatePageHeader(viewId);
+      });
+    });
+
+    document.getElementById("logoutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      window.location.href = "index.html";
+    });
+
+    langSelect.addEventListener("change", async (e) => {
+      const newLang = e.target.value;
+      currentLang = newLang;
+      applyTranslations();
+
+      if (currentUser) {
+        try {
+          await updateDoc(doc(db, "users", currentUser.uid), {
+            lang: newLang
+          });
+        } catch (err) {
+          console.error(err);
+        }
+      }
+    });
+
+document.getElementById("prevWeekBtn").addEventListener("click", () => {
+  weekStartDate = addDays(weekStartDate, -7);
+  clearSelection(false);
+  listenBookings();
+});
+
+document.getElementById("nextWeekBtn").addEventListener("click", () => {
+  weekStartDate = addDays(weekStartDate, 7);
+  clearSelection(false);
+  listenBookings();
+});
+
+    clearSelectionBtn.addEventListener("click", () => {
+      clearSelection(true);
+    });
+
+    saveBookingBtn.addEventListener("click", async () => {
+      if (!selectedStart || !selectedEnd || !currentUser) return;
+
+      const range = buildRange(selectedStart, selectedEnd);
+      if (!range.length) return;
+
+      const hasConflict = range.some(slot => isBooked(slot.dayIndex, slot.hour));
+      if (hasConflict) {
+        showToast(i18n[currentLang].bookingConflict);
+        return;
+      }
+
+      saveBookingBtn.disabled = true;
+
+      try {
+await Promise.all(
+  range.map(slot =>
+    addDoc(collection(db, "bookings"), {
+      userId: currentUser.uid,
+      userName: `${currentUserData?.ime || ""} ${currentUserData?.prezime || ""}`.trim(),
+      weekStartKey: formatDateKey(weekStartDate),
+      dayIndex: slot.dayIndex,
+      hour: slot.hour,
+      createdAt: Timestamp.now()
+    })
+  )
+);
+
+        clearSelection(false);
+        //listenBookings();
+        renderCalendar();
+        renderMyBookings();
+        updateStats();
+        showToast(i18n[currentLang].bookingSaved);
+      } catch (err) {
+        console.error(err);
+        showToast("Greška pri spremanju rezervacije.");
+      } finally {
+        saveBookingBtn.disabled = false;
+      }
+    });
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      currentUser = user;
+
+      try {
+listenBookings(); // ODMAH
+
+getDoc(doc(db, "users", user.uid)).then(userSnap => {
+  currentUserData = userSnap.exists() ? userSnap.data() : {};
+  currentLang = currentUserData?.lang || "hr";
+  langSelect.value = currentLang;
+
+  applyTranslations();
+  updateWelcome();
+});
+      //  renderCalendar();
+      //  renderMyBookings();
+       // updateStats();
+      } catch (err) {
+        console.error(err);
+      }
+    });
+function canCancelBooking(dayIndex, hour){
+  const bookingDate = addDays(weekStartDate, dayIndex);
+  bookingDate.setHours(hour,0,0,0);
+
+  const now = new Date();
+  const diff = bookingDate - now;
+
+  return diff > 24 * 60 * 60 * 1000; // 24h
+}
+    function applyTranslations() {
+      const t = i18n[currentLang];
+
+      document.getElementById("brandSub").textContent = t.brandSub;
+      document.getElementById("navNews").textContent = t.navNews;
+      document.getElementById("navReserve").textContent = t.navReserve;
+      document.getElementById("navMyBookings").textContent = t.navMyBookings;
+      document.getElementById("sidebarFooter").textContent = t.sidebarFooter;
+      document.getElementById("logoutBtn").textContent = t.logoutBtn;
+
+      document.getElementById("welcomeText").textContent = t.welcomeText;
+      document.getElementById("welcomeHint").textContent = t.welcomeHint;
+      document.getElementById("statUpcomingLabel").textContent = t.statUpcomingLabel;
+      document.getElementById("statLanguageLabel").textContent = t.statLanguageLabel;
+      document.getElementById("statLanguageValue").textContent = t.langShort;
+
+      document.getElementById("bookingInfoTitle").textContent = t.bookingInfoTitle;
+      document.getElementById("bookingInfoText").textContent = t.bookingInfoText;
+      document.getElementById("saveBookingBtn").textContent = t.saveBookingBtn;
+      document.getElementById("clearSelectionBtn").textContent = t.clearSelectionBtn;
+
+      document.getElementById("bookingLegendTitle").textContent = t.bookingLegendTitle;
+      document.getElementById("legendSelected").textContent = t.legendSelected;
+      document.getElementById("legendBooked").textContent = t.legendBooked;
+      document.getElementById("legendMine").textContent = t.legendMine;
+
+      document.getElementById("calendarTitle").textContent = t.calendarTitle;
+      document.getElementById("calendarSub").textContent = t.calendarSub;
+      document.getElementById("myBookingsTitle").textContent = t.myBookingsTitle;
+      document.getElementById("myBookingsSub").textContent = t.myBookingsSub;
+
+      updateSelectedInfo();
+      updatePageHeader(document.querySelector(".content-view.active")?.id || "newsView");
+      updateWelcome();
+      //renderCalendar();
+     // renderMyBookings();
+     // updateStats();
+    }
+
+    function updateWelcome() {
+      const t = i18n[currentLang];
+      const fullName = `${currentUserData?.ime || ""} ${currentUserData?.prezime || ""}`.trim();
+      document.getElementById("welcomeTitle").textContent = `${t.welcomeTitlePrefix}${fullName ? " " + fullName : ""}`;
+    }
+
+    function updatePageHeader(viewId) {
+      const t = i18n[currentLang];
+      document.getElementById("pageTitle").textContent = t.pageTitles[viewId];
+      document.getElementById("pageSubtitle").textContent = t.pageSubtitles[viewId];
+    }
+
+
+function listenBookings() {
+
+  // PREKINI stari listener
+  if (unsubscribeBookings) unsubscribeBookings();
+
+  // LOADING ON
+  document.body.classList.add("loading");
+
+  const q = query(
+    collection(db, "bookings"),
+    where("weekStartKey", "==", formatDateKey(weekStartDate))
+  );
+
+  unsubscribeBookings = onSnapshot(q, (snap) => {
+
+    bookings = [];
+    bookingsMap = {}; // 🔥 reset mape
+
+    snap.forEach(d => {
+      const data = { id: d.id, ...d.data() };
+
+      bookings.push(data);
+
+      // 🔥 ključ: dayIndex + hour
+      const key = `${data.dayIndex}_${data.hour}`;
+      bookingsMap[key] = data;
+    });
+
+    renderCalendar();
+    renderMyBookings();
+    updateStats();
+
+    // LOADING OFF
+    document.body.classList.remove("loading");
+  });
+}
+
+function renderCalendar() {
+  const t = i18n[currentLang];
+  calendarGrid.innerHTML = "";
+
+  const topLeft = document.createElement("div");
+  topLeft.className = "calendar-head";
+  topLeft.innerHTML = `
+    <div class="month">${t.months[weekStartDate.getMonth()]}</div>
+    <div class="range">${weekStartDate.getDate()} - ${addDays(weekStartDate, 6).getDate()}</div>
+  `;
+  calendarGrid.appendChild(topLeft);
+
+  for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+    const date = addDays(weekStartDate, dayIndex);
+
+    const head = document.createElement("div");
+    head.className = "calendar-head day-head";
+    head.innerHTML = `
+      <span>${t.weekdaysShort[dayIndex]}</span>
+      <strong>${date.getDate()}</strong>
+    `;
+    calendarGrid.appendChild(head);
+  }
+
+  for (let hour = 0; hour < 24; hour++) {
+    const time = document.createElement("div");
+    time.className = "time-label";
+    time.textContent = `${String(hour).padStart(2, "0")}:00`;
+    calendarGrid.appendChild(time);
+
+    for (let dayIndex = 0; dayIndex < 7; dayIndex++) {
+      const slot = document.createElement("div");
+      slot.className = "slot";
+
+      const booking = getBooking(dayIndex, hour);
+      const inSelection = isInSelection(dayIndex, hour);
+
+      if (booking) {
+        slot.classList.add("booked");
+        if (booking.userId === currentUser?.uid) {
+          slot.classList.add("mine");
+        }
+      } else if (inSelection) {
+        slot.classList.add("selected");
+      }
+
+      slot.onclick = () => handleSlotClick(dayIndex, hour);
+      calendarGrid.appendChild(slot);
+    }
+  }
+}
+
+
+function handleSlotClick(dayIndex, hour) {
+  const t = i18n[currentLang];
+
+  if (isBooked(dayIndex, hour)) {
+    showToast(t.slotReserved);
+    return;
+  }
+
+  if (!selectedStart) {
+    selectedStart = { dayIndex, hour };
+    selectedEnd = null;
+  } else if (!selectedEnd) {
+    if (selectedStart.dayIndex !== dayIndex || hour <= selectedStart.hour) {
+      showToast(t.invalidSelection);
+      return;
+    }
+    selectedEnd = { dayIndex, hour };
+  } else {
+    selectedStart = { dayIndex, hour };
+    selectedEnd = null;
+  }
+
+  updateSelectedInfo();
+  renderCalendar();
+}
+
+function updateSelectedInfo() {
+  const t = i18n[currentLang];
+  const titleEl = document.getElementById("selectedInfoTitle");
+  const textEl = document.getElementById("selectedInfoText");
+
+  if (!selectedStart) {
+    titleEl.textContent = t.selectedInfoTitleEmpty;
+    textEl.textContent = t.selectedInfoTextEmpty;
+    saveBookingBtn.disabled = true;
+    return;
+  }
+
+  const date = addDays(weekStartDate, selectedStart.dayIndex);
+
+  if (!selectedEnd) {
+    titleEl.textContent = t.selectedInfoTitleReady;
+    textEl.textContent =
+      `${t.weekdaysLong[selectedStart.dayIndex]}, ${date.getDate()}. ${t.months[date.getMonth()]} — ${t.fromTo} ${formatHour(selectedStart.hour)} ${t.to} ...`;
+    saveBookingBtn.disabled = true;
+    return;
+  }
+
+  titleEl.textContent = t.selectedInfoTitleReady;
+  textEl.textContent =
+    `${t.weekdaysLong[selectedStart.dayIndex]}, ${date.getDate()}. ${t.months[date.getMonth()]} — ${t.fromTo} ${formatHour(selectedStart.hour)} ${t.to} ${formatHour(selectedEnd.hour)}`;
+  saveBookingBtn.disabled = false;
+}
+    function clearSelection(showMessage = false) {
+      selectedStart = null;
+      selectedEnd = null;
+      updateSelectedInfo();
+      renderCalendar();
+      if (showMessage) showToast(i18n[currentLang].selectionCleared);
+    }
+
+function buildRange(start, end) {
+  if (!start || !end) return [];
+  if (start.dayIndex !== end.dayIndex) return [];
+  if (end.hour <= start.hour) return [];
+
+  const range = [];
+
+  for (let hour = start.hour; hour < end.hour; hour++) {
+    range.push({
+      dayIndex: start.dayIndex,
+      hour
+    });
+  }
+
+  return range;
+}
+
+function isInSelection(dayIndex, hour) {
+  if (!selectedStart) return false;
+
+  if (!selectedEnd) {
+    return selectedStart.dayIndex === dayIndex && selectedStart.hour === hour;
+  }
+
+  if (selectedStart.dayIndex !== dayIndex || selectedEnd.dayIndex !== dayIndex) {
+    return false;
+  }
+
+  return hour >= selectedStart.hour && hour < selectedEnd.hour;
+}
+
+function getBooking(dayIndex, hour) {
+  return bookingsMap[`${dayIndex}_${hour}`] || null;
+}
+
+    function isBooked(dayIndex, hour) {
+      return !!getBooking(dayIndex, hour);
+    }
+
+function renderMyBookings() {
+  const wrap = document.getElementById("myBookingsList");
+  const t = i18n[currentLang];
+  wrap.innerHTML = "";
+
+  const myBookings = bookings
+    .filter(b => b.userId === currentUser?.uid)
+    .sort((a, b) => a.dayIndex - b.dayIndex || a.hour - b.hour);
+
+  const grouped = [];
+
+  for (const booking of myBookings) {
+    const last = grouped[grouped.length - 1];
+
+    if (
+      last &&
+      last.dayIndex === booking.dayIndex &&
+      last.endHour === booking.hour
+    ) {
+      last.endHour = booking.hour + 1;
+    } else {
+      grouped.push({
+        dayIndex: booking.dayIndex,
+        startHour: booking.hour,
+        endHour: booking.hour + 1
+      });
+    }
+  }
+
+  if (!grouped.length) {
+    wrap.innerHTML = `<div class="empty-state">${t.noBookings}</div>`;
+    return;
+  }
+
+  grouped.forEach(item => {
+    const date = addDays(weekStartDate, item.dayIndex);
+    const row = document.createElement("div");
+    row.className = "booking-row";
+
+    row.innerHTML = `
+      <div>
+        <strong>${t.weekdaysLong[item.dayIndex]}, ${date.getDate()}.</strong>
+        <span>${formatHour(item.startHour)} - ${formatHour(item.endHour)}</span>
+      </div>
+
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${
+          canJoinSession(item.dayIndex, item.startHour)
+            ? `<button onclick="connectSession(${item.dayIndex},${item.startHour})" style="background:#00c6ff;">🎧 Connect</button>`
+            : ``
+        }
+
+        ${
+          canCancelBooking(item.dayIndex, item.startHour)
+            ? `<button onclick="cancelBooking(${item.dayIndex},${item.startHour},${item.endHour})">❌ Otkaži</button>`
+            : `<span>🔒 Zaključano</span>`
+        }
+      </div>
+    `;
+
+    wrap.appendChild(row);
+  });
+}
+window.cancelBooking = async (dayIndex, startHour, endHour) => {
+  const deletes = [];
+
+  for (let hour = startHour; hour < endHour; hour++) {
+    const q = query(
+      collection(db, "bookings"),
+      where("userId", "==", currentUser.uid),
+      where("weekStartKey", "==", formatDateKey(weekStartDate)),
+      where("dayIndex", "==", dayIndex),
+      where("hour", "==", hour)
+    );
+
+    const snap = await getDocs(q);
+
+    snap.forEach(d => {
+      deletes.push(deleteDoc(doc(db, "bookings", d.id)));
+    });
+  }
+
+  if (!deletes.length) {
+    showToast("Greška: termin nije pronađen");
+    return;
+  }
+
+  await Promise.all(deletes);
+  showToast("Termin obrisan");
+};
+
+    function updateStats() {
+      const myUpcoming = bookings.filter(b => b.userId === currentUser?.uid).length;
+      document.getElementById("statUpcomingValue").textContent = String(myUpcoming);
+      document.getElementById("statLanguageValue").textContent = i18n[currentLang].langShort;
+    }
+
+    function formatHour(hour) {
+      return `${String(hour).padStart(2, "0")}:00`;
+    }
+
+    function startOfWeek(date) {
+      const d = new Date(date);
+      const day = d.getDay();
+      const diff = day === 0 ? -6 : 1 - day;
+      d.setHours(0, 0, 0, 0);
+      d.setDate(d.getDate() + diff);
+      return d;
+    }
+function canJoinSession(dayIndex, hour){
+  const bookingDate = addDays(weekStartDate, dayIndex);
+  bookingDate.setHours(hour,0,0,0);
+
+  const now = new Date();
+
+  const diffStart = bookingDate - now;
+  const diffEnd = now - bookingDate;
+
+  return diffStart <= 15*60*1000 && diffEnd < 60*60*1000;
+}
+window.connectSession = (dayIndex, hour) => {
+
+  const date = addDays(weekStartDate, dayIndex);
+
+  console.log("Spajanje na termin:", date, hour);
+
+  // ZA SAD:
+  window.open("https://parsec.app", "_blank");
+
+  showToast("Pokretanje sessiona...");
+};
+    function addDays(date, days) {
+      const d = new Date(date);
+      d.setDate(d.getDate() + days);
+      return d;
+    }
+
+    function formatDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    let toastTimeout = null;
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2600);
+    }
+  </script>
+</body>
+</html>
