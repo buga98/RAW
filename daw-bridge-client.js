@@ -3,6 +3,8 @@
 (() => {
   "use strict";
   let socket = null;
+  let labActive = false;
+  let labOwned = false;
   let seq = 0;
   let lastSentAt = 0;
   let latestStatus = "OFFLINE";
@@ -25,6 +27,8 @@
   function disconnect() {
     const old = socket;
     socket = null;
+    labActive = false;
+    labOwned = false;
     if (old) old.close();
     status("OFFLINE", "Bridge disconnected (RAW local test mode).");
   }
@@ -35,6 +39,8 @@
     try {
       const current = new WebSocket(WS_URL);
       socket = current;
+      labActive = false;
+      labOwned = false;
       current.onopen = () => {
         if (socket !== current) return;
         status("CONNECTED", "Čekam status DAW Bridge servera…");
@@ -44,10 +50,36 @@
         try {
           const msg = JSON.parse(event.data);
           if (msg.type === "bridge-status") {
+            labActive = msg.lab === true;
+            if (labActive) {
+              current.send(JSON.stringify({type:"studio-claim"}));
+              status("CLAIMING", "Preuzimam slobodni studio (testni saldo, bez naplate)...");
+              return;
+            }
             status(msg.mode === "midi" ? "MIDI OUT" : "DRY RUN",
               msg.mode === "midi"
                 ? "MIDI izlaz " + msg.port + " · CC21 → Cubase QC1 (nije potvrda Cubasea)"
                 : "Simulacija MIDI CC; Cubase i hardver nisu upravljani.");
+          } else if (msg.type === "studio-state") {
+            labOwned = msg.owner === true;
+            if (labOwned) {
+              status("STUDIO YOURS", "EKSKLUZIVNO · TEST " +
+                (msg.balanceCents / 100).toFixed(2) + " EUR · " +
+                (msg.rateCentsPerMin / 100).toFixed(2) + " EUR/min · " +
+                msg.devices.join(", "));
+            } else {
+              status(msg.status === "occupied" ? "OCCUPIED" :
+                msg.status === "credits-exhausted" ? "NO TEST CREDIT" : "FREE",
+                msg.status === "occupied" ? "Studio koristi drugi klijent. Upravljanje blokirano." :
+                  msg.status === "credits-exhausted" ? "Testni saldo potrošen. Nema MIDI komandi." :
+                  "Studio slobodan. Klikni DISCONNECT pa CONNECT za pokušaj preuzimanja.");
+            }
+          } else if (msg.type === "studio-denied") {
+            labOwned = false;
+            status("OCCUPIED", msg.reason || "Studio occupied");
+          } else if (msg.type === "studio-expired") {
+            labOwned = false;
+            status("EXPIRED", "Testni saldo potrošen. Obrada i MIDI komande zaustavljeni.");
           } else if (msg.type === "parameter-ack") {
             const cc = msg.midi;
             status(msg.status === "midi-sent" ? "MIDI SENT" : "SIMULATED",
@@ -64,6 +96,8 @@
       current.onclose = event => {
         if (socket !== current) return;
         socket = null;
+        labActive = false;
+        labOwned = false;
         const reason = event.reason ? " · " + event.reason : "";
         status("OFFLINE", "Bridge connection closed (WebSocket code " + event.code + ")" + reason +
           ". Provjeri DAW Bridge terminal. 1006 obično znači odbijenu vezu ili nedostupan server.");
@@ -75,6 +109,7 @@
     // First milestone deliberately sends only one knob, no hardware settings.
     if (message?.type !== "parameter-change" ||
         message.deviceId !== "bettermaker_eq" || message.parameter !== "eq1Gain") return;
+    if (labActive && !labOwned) return;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       // Demo EQ still operates locally, irrespective of bridge status.
       return;
