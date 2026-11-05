@@ -1037,6 +1037,18 @@ function renderPlugin() {
         </div>
       </div>
 
+      <div class="rack-size-toolbar" aria-label="Velicina prikaza studijskih uređaja">
+        <div class="rack-size-caption">
+          <strong>RACK SIZE</strong>
+          <span>Proporcionalno smanjenje svih kontrola</span>
+        </div>
+        <div class="rack-size-buttons">
+          <button type="button" class="ghost-btn rack-size-btn" data-rack-size="70" onclick="setRackSize(70)">70%</button>
+          <button type="button" class="ghost-btn rack-size-btn" data-rack-size="80" onclick="setRackSize(80)">80%</button>
+          <button type="button" class="ghost-btn rack-size-btn" data-rack-size="90" onclick="setRackSize(90)">90%</button>
+          <button type="button" class="ghost-btn rack-size-btn" data-rack-size="100" onclick="setRackSize(100)">100%</button>
+        </div>
+      </div>
       <div class="chain-rack">
         ${devices.map((device, index) => renderChainDeviceModule(device, index)).join("")}
       </div>
@@ -1417,27 +1429,46 @@ window.duplicateSessionSettings = async function(sessionId) {
     alert(err.message);
   }
 };
+// Relative rack size: default 70% of the previous responsive scale.
+// Rack is scaled as a whole: controls, text, meters and labels keep their proportions.
+const RACK_SIZE_OPTIONS = [70, 80, 90, 100];
+let rackSizePercent = (() => {
+  const stored = Number(localStorage.getItem("rawRackSizePercent"));
+  return RACK_SIZE_OPTIONS.includes(stored) ? stored : 70;
+})();
+
+window.setRackSize = function(percent) {
+  const next = Number(percent);
+  if (!RACK_SIZE_OPTIONS.includes(next)) return;
+  rackSizePercent = next;
+  localStorage.setItem("rawRackSizePercent", String(next));
+  fitRackDevices();
+};
+
 function fitRackDevices() {
+  const factor = rackSizePercent / 100;
   document.querySelectorAll("[data-rack-fit]").forEach(wrapper => {
     const rack = wrapper.querySelector(".rack-scaled");
     if (!rack) return;
 
     const availableWidth = wrapper.clientWidth;
     const designWidth = Number(rack.dataset.designWidth || 1380);
-
-    // smanjuje se kad nema mjesta, ali se može i malo povećati kad ima mjesta
-    const minScale = 0.55;
     const maxScale = Number(rack.dataset.maxScale || 1.22);
 
-    const scale = Math.max(
-      minScale,
-      Math.min(maxScale, availableWidth / designWidth)
-    );
+    // Fit the design to its container, then apply the user-selected size.
+    // Do not force a minimum scale that might overflow on a narrow viewport.
+    const baselineScale = Math.max(0.1, Math.min(maxScale, availableWidth / designWidth));
+    const scale = baselineScale * factor;
 
     rack.style.transformOrigin = "top center";
     rack.style.transform = `scale(${scale})`;
+    wrapper.style.height = `${Math.ceil(rack.offsetHeight * scale)}px`;
+  });
 
-    wrapper.style.height = `${rack.offsetHeight * scale}px`;
+  document.querySelectorAll(".rack-size-btn").forEach(button => {
+    const active = Number(button.dataset.rackSize) === rackSizePercent;
+    button.classList.toggle("active", active);
+    button.setAttribute("aria-pressed", String(active));
   });
 }
 function initDemoAudioEngine() {
