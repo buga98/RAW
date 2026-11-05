@@ -209,6 +209,7 @@
   </div>
 
 
+  <script src="audio-diagnostics.js"></script>
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import {
@@ -1040,15 +1041,20 @@ function renderPlugin() {
         ${devices.map((device, index) => renderChainDeviceModule(device, index)).join("")}
       </div>
 
-      <div class="audio-region-panel">
+      <div class="audio-region-panel" id="rawAudioDock" aria-label="Audio transport — uvijek dostupan">
         <div class="audio-region-head">
           <div>
             <strong>AUDIO REGION</strong>
             <span class="file-pill">♫ ${firstAudioFile ? firstAudioFile.name : "Nema učitanog filea"}</span>
           </div>
-          <button class="ghost-btn" onclick="goTo('upload')">CHANGE FILE</button>
+          <div class="audio-dock-actions">
+            <button class="ghost-btn" type="button" onclick="toggleRawDiagnostics()" id="rawDiagnosticsToggle" aria-expanded="false">📊 DIAGNOSTICS</button>
+            <button class="ghost-btn" type="button" onclick="toggleRawAudioDock()" id="rawDockToggle" aria-expanded="true">− MINIMIZE</button>
+            <button class="ghost-btn" onclick="goTo('upload')">CHANGE FILE</button>
+          </div>
         </div>
 
+        <div id="rawAudioDockBody">
         <div id="waveTimeline" class="wave-timeline"></div>
         <div id="waveform" class="waveform"></div>
 
@@ -1069,6 +1075,21 @@ function renderPlugin() {
           <button class="transport-btn" onclick="zoomWave(-20)">−</button>
           <button class="transport-btn" onclick="zoomWave(20)">+</button>
           <button class="ghost-btn" onclick="loopRegion()">LOOP REGION</button>
+        </div>
+        <div id="rawDiagnosticsDetails" class="raw-diagnostics" hidden>
+          <div class="diag-heading"><strong>AUDIO DIAGNOSTICS</strong><span>DEMO WEB AUDIO · nije mjerenje analognog hardvera</span></div>
+          <div class="diag-meters" aria-live="off">
+            <div><small>INPUT RMS</small><strong id="diagInput">— dBFS</strong></div>
+            <div><small>OUTPUT RMS</small><strong id="diagOutput">— dBFS</strong></div>
+            <div><small>OUTPUT − INPUT</small><strong id="diagDelta">—</strong></div>
+          </div>
+          <canvas id="diagSpectrum" class="diag-spectrum" aria-label="Spektar ulaza i izlaza: siva ulaz, zelena izlaz"></canvas>
+          <div class="diag-actions">
+            <span><i class="diag-key diag-key-input"></i> INPUT <i class="diag-key diag-key-output"></i> OUTPUT</span>
+            <button type="button" class="ghost-btn" onclick="RAWAudioDiagnostics.runOfflineTest()">RUN 1 kHz EQ TEST</button>
+          </div>
+          <div id="diagTestResult" class="diag-test-result" role="status">Offline test provjerava matematičku obradu EQ filtra, bez slušanja i bez studijskog hardvera.</div>
+        </div>
         </div>
       </div>
 
@@ -1491,10 +1512,16 @@ function initDemoAudioEngine() {
   dryGain.gain.value = 0;
   wetGain.gain.value = 1;
 
-  demoMediaSource.connect(dryGain);
-  dryGain.connect(demoAudioCtx.destination);
+  const inputMeter = demoAudioCtx.createAnalyser();
+  const outputMeter = demoAudioCtx.createAnalyser();
+  inputMeter.fftSize = outputMeter.fftSize = 2048;
+  inputMeter.smoothingTimeConstant = outputMeter.smoothingTimeConstant = 0.8;
 
-  demoMediaSource
+  demoMediaSource.connect(inputMeter);
+  inputMeter.connect(dryGain);
+  dryGain.connect(outputMeter);
+
+  inputMeter
     .connect(hpf)
     .connect(eq1)
     .connect(eq2)
@@ -1503,7 +1530,8 @@ function initDemoAudioEngine() {
     .connect(lpf)
     .connect(output)
     .connect(wetGain)
-    .connect(demoAudioCtx.destination);
+    .connect(outputMeter);
+  outputMeter.connect(demoAudioCtx.destination);
 
   demoAudioEngine = {
     hpf,
@@ -1515,9 +1543,12 @@ function initDemoAudioEngine() {
     output,
     dryGain,
     wetGain,
+    inputMeter,
+    outputMeter,
     engaged: true
   };
 
+  window.RAWAudioDiagnostics?.attach(inputMeter, outputMeter);
   console.log("DEMO AUDIO ENGINE READY");
 }
 
@@ -1626,6 +1657,24 @@ function applyDemoAudioParam(deviceId, parameter, value) {
   }
 }
 
+window.toggleRawDiagnostics = function() {
+  const details = document.getElementById("rawDiagnosticsDetails");
+  const button = document.getElementById("rawDiagnosticsToggle");
+  if (!details) return;
+  details.hidden = !details.hidden;
+  if (button) button.setAttribute("aria-expanded", String(!details.hidden));
+};
+window.toggleRawAudioDock = function() {
+  const dock = document.getElementById("rawAudioDock");
+  const button = document.getElementById("rawDockToggle");
+  if (!dock) return;
+  dock.classList.toggle("minimized");
+  if (button) {
+    const expanded = !dock.classList.contains("minimized");
+    button.setAttribute("aria-expanded", String(expanded));
+    button.textContent = expanded ? "− MINIMIZE" : "+ EXPAND";
+  }
+};
 window.addEventListener("resize", fitRackDevices);
 
 
@@ -2530,6 +2579,13 @@ function formatBillingTime(totalSeconds) {
 
 
 function initWaveform(file) {
+  window.RAWAudioDiagnostics?.detach();
+  if (demoMediaSource) {
+    try { demoMediaSource.disconnect(); } catch (_) {}
+    demoMediaSource = null;
+  }
+  demoMediaElement = null;
+  demoAudioEngine = null;
   if (waveSurfer) {
     waveSurfer.destroy();
     waveSurfer = null;
