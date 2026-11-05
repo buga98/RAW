@@ -1,0 +1,14 @@
+node_modules/
+dist/
+out/
+.env
+.env.*
+!.env.example
+*.log
+uploads/
+recordings/
+*.wav
+*.mp3
+*.aiff
+*service-account*.json
+serviceAccountKey.json

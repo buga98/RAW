@@ -1,0 +1,3098 @@
+<!DOCTYPE html>
+<html lang="hr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Remote Audio Workstation</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app">
+    <aside class="sidebar glass">
+      <button class="sidebar-toggle" onclick="toggleSidebar()" title="Smanji meni">
+  ☰
+</button>
+      <div class="brand">
+        <div class="logo">🎛️</div>
+        <div>
+          <h1>Remote Studio</h1>
+          <p>Analog workstation</p>
+        </div>
+      </div>
+
+      <div class="nav">
+<button class="tab active" data-screen="login">
+  <span class="nav-icon">🔐</span>
+  <span class="nav-text">Prijava</span>
+</button>
+
+<button class="tab" data-screen="upload">
+  <span class="nav-icon">📤</span>
+  <span class="nav-text">Upload</span>
+</button>
+
+<button class="tab" data-screen="devices">
+  <span class="nav-icon">🔌</span>
+  <span class="nav-text">Patch Chain</span>
+</button>
+
+<button class="tab" data-screen="plugin">
+  <span class="nav-icon">🎛️</span>
+  <span class="nav-text">Control Room</span>
+</button>
+
+<button class="tab" data-screen="sessions">
+  <span class="nav-icon">📁</span>
+  <span class="nav-text">Sessions</span>
+</button>
+      </div>
+<div class="user-panel" id="userPanel" style="display:none;">
+  <div>
+    <small>USER</small>
+    <strong id="userEmail">-</strong>
+  </div>
+
+  <div>
+    <small>CREDITS</small>
+    <strong id="userCredits">0.00 €</strong>
+  </div>
+
+  <button onclick="logoutUser()">Odjava</button>
+</div>
+      <div class="sidebar-status">
+        <span class="pulse"></span>
+        <div>
+          <strong>Aktivnost</strong>
+          <small>Kontrola rada</small>
+        </div>
+      </div>
+    </aside>
+
+    <main class="main glass">
+      <section id="login" class="screen active">
+        <div class="screen-head">
+          <div>
+            <h2>Prijava</h2>
+            <p class="sub">Prijavi se u remote analog studio.</p>
+          </div>
+          <span class="badge">verzija 1.0</span>
+        </div>
+
+        <div class="card login-card">
+          <label>Email</label>
+<input id="loginEmail" placeholder="Email" />
+
+<label>Lozinka</label>
+<input id="loginPassword" placeholder="Lozinka" type="password" />
+<label class="remember-row">
+  <input id="rememberLogin" type="checkbox" checked />
+  Zapamti prijavu na ovom računalu
+</label>
+<button class="primary" onclick="loginUser()">Prijavi se</button>
+<button class="primary" onclick="registerUser()" style="margin-top:10px;background:rgba(255,255,255,.1);color:white;">
+  Registriraj se
+</button>
+        </div>
+      </section>
+
+      <section id="upload" class="screen">
+        <div class="screen-head">
+          <div>
+            <h2>Upload audio fileova</h2>
+            <p class="sub">Dodaj do 20 WAV / AIFF / MP3 fileova.</p>
+          </div>
+          <span class="badge" id="fileCounter">0 / 20 files</span>
+        </div>
+
+        <div class="upload-layout">
+          <div class="dropzone" id="dropzone">
+            <div class="drop-inner">
+              <div class="drop-icon">⬆</div>
+              <strong>Povuci audio fileove ovdje</strong>
+              <small>max 20 datoteka • WAV / AIFF / MP3</small>
+            </div>
+          </div>
+<div id="uploadStatus" class="upload-status"></div>
+          <div class="file-panel">
+            <h3>Dodane datoteke</h3>
+            <div class="file-table-head">
+              <span>Naziv</span>
+              <span>Veličina</span>
+              <span></span>
+            </div>
+            <div id="fileList" class="file-list">
+              <div class="empty-files">Nema dodanih fileova.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button class="primary" onclick="goTo('devices')">Dalje na uređaje</button>
+        </div>
+      </section>
+
+      <section id="devices" class="screen">
+        <div class="screen-head">
+          <div>
+           <h2>Patch Chain</h2>
+           <p class="sub">Složi redoslijed analognih uređaja. Svi uređaji rade u jednoj session.</p>
+          </div>
+          <span class="badge">Device engine</span>
+        </div>
+
+<div class="patch-app">
+  <div class="patch-header">
+    <div>
+      <small>SIGNAL FLOW</small>
+      <strong>AUDIO INPUT</strong>
+    </div>
+
+    <div class="patch-price">
+      <small>TOTAL PRICE</small>
+      <strong id="chainPrice">0 €/h</strong>
+    </div>
+  </div>
+
+  <div class="patch-flow">
+    <div class="patch-node fixed">
+      <span>INPUT</span>
+      <strong>AUDIO FILE</strong>
+    </div>
+
+    <div id="patchChain" class="patch-chain"></div>
+
+    <div class="patch-node fixed">
+      <span>OUTPUT</span>
+      <strong>PRINT MASTER</strong>
+    </div>
+  </div>
+
+  <div class="patch-actions">
+    <button class="primary" onclick="startChainSession()">START CHAIN SESSION</button>
+    <button class="ghost-btn" onclick="resetPatchChain()">RESET CHAIN</button>
+  </div>
+</div>
+      </section>
+<section id="sessions" class="screen">
+  <div class="screen-head">
+    <div>
+      <h2>Moje sessions</h2>
+      <p class="sub">Pregled uploadova, chainova, troškova i završenih radova.</p>
+    </div>
+
+    <div class="status-row">
+      <button class="ghost-btn" onclick="renderSessions()">↻ Refresh</button>
+      <span class="badge">Session history</span>
+    </div>
+  </div>
+
+  <div id="sessionsHost" class="sessions-host">
+    <div class="empty-files">Sessions će se prikazati ovdje.</div>
+  </div>
+</section>
+      <section id="plugin" class="screen">
+        <div class="screen-head compact">
+          <div>
+            <h2>Kontrola uređaja</h2>
+            <p class="sub">Grafika kasnije šalje promjene prema pravom analognom hardwareu.</p>
+          </div>
+          <div class="status-row">
+            <span class="badge" id="pluginDeviceType">ANALOG DEVICE</span>
+            <span class="status" id="status">READY</span>
+          </div>
+        </div>
+
+        <div id="pluginHost"></div>
+      </section>
+    </main>
+  </div>
+
+
+  <script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
+import {
+  getFirestore,
+  collection,
+  doc,
+  onSnapshot,
+  runTransaction,
+  updateDoc,
+  setDoc,
+  getDoc,
+  getDocs,
+  query,
+  where,
+  increment,
+  serverTimestamp
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-firestore.js";
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  sendEmailVerification,
+  onAuthStateChanged,
+  signOut,
+  setPersistence,
+browserLocalPersistence,
+browserSessionPersistence
+} from "https://www.gstatic.com/firebasejs/12.12.0/firebase-auth.js";
+import WaveSurfer from "https://unpkg.com/wavesurfer.js@7/dist/wavesurfer.esm.js";
+import RegionsPlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/regions.esm.js";
+import TimelinePlugin from "https://unpkg.com/wavesurfer.js@7/dist/plugins/timeline.esm.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD3LBWoS-uX9BnxDaMzQs_rlh9BMm_RRTM",
+  authDomain: "remoteaudioworkstation.firebaseapp.com",
+  projectId: "remoteaudioworkstation",
+  storageBucket: "remoteaudioworkstation.firebasestorage.app",
+  messagingSenderId: "222949189564",
+  appId: "1:222949189564:web:d47dcd2dba5661e3eaadb9"
+};
+
+const appFirebase = initializeApp(firebaseConfig);
+const db = getFirestore(appFirebase);
+const auth = getAuth(appFirebase);
+
+let currentUser = null;
+let currentUserData = null;
+
+function getUserId() {
+  return currentUser?.uid;
+}
+const MAX_FILES = 20;
+
+let uploadedFiles = [];
+let selectedDevice = null;
+let activeSessionId = null;
+let draftSessionId = null;
+let availableDevices = [];
+let chainDevices = [];
+let draggedDeviceId = null;
+
+let sessionStartedAtMs = null;
+let billingTimer = null;
+const dropzone = document.getElementById("dropzone");
+const fileList = document.getElementById("fileList");
+const fileCounter = document.getElementById("fileCounter");
+const deviceGrid = document.getElementById("deviceGrid");
+const chainSlot = null;
+const pluginHost = document.getElementById("pluginHost");
+let controlSocket = null;
+let waveSurfer = null;
+let regionsPlugin = null;
+let currentRegion = null;
+let authReady = false;
+let isBillingRunning = false;
+let spentThisSession = 0;
+let spentBeforeCurrentRun = 0;
+let isEndingSession = false;
+let heartbeatTimer = null;
+let demoAudioCtx = null;
+let demoMediaSource = null;
+let demoMediaElement = null;
+let demoAudioEngine = null;
+
+
+
+
+function connectControlSocket() {
+  controlSocket = new WebSocket("ws://localhost:7071");
+
+  controlSocket.onopen = () => {
+    console.log("Connected to control server");
+  };
+
+  controlSocket.onerror = (err) => {
+    console.error("Control socket error:", err);
+  };
+
+  controlSocket.onclose = () => {
+    console.log("Control socket closed");
+  };
+}
+function startHeartbeat() {
+  stopHeartbeat();
+
+  heartbeatTimer = setInterval(async () => {
+    if (!activeSessionId || !currentUser) return;
+
+    try {
+      await updateDoc(doc(db, "sessions", activeSessionId), {
+        heartbeatAt: serverTimestamp(),
+        clientStatus: "online",
+        liveCostEstimate: Number(spentThisSession.toFixed(2)),
+        updatedAt: serverTimestamp()
+      });
+    } catch (err) {
+      console.error("HEARTBEAT ERROR:", err);
+    }
+  }, 15000);
+}
+
+function stopHeartbeat() {
+  if (heartbeatTimer) {
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  }
+}
+function sendControlMessage(message) {
+  if (!controlSocket || controlSocket.readyState !== WebSocket.OPEN) {
+    console.warn("Control socket nije spojen.");
+    return;
+  }
+
+  const payload = {
+    ...message,
+    sessionId: activeSessionId,
+    userId: getUserId()
+  };
+
+  console.log("SEND CONTROL:", payload);
+
+  controlSocket.send(JSON.stringify(payload));
+}
+
+connectControlSocket();
+/* NAV */
+window.goTo = function(screenId) {
+  if (!currentUser && screenId !== "login") {
+  screenId = "login";
+}
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(screenId).classList.add("active");
+
+  document.querySelectorAll(".tab").forEach(t => {
+    t.classList.toggle("active", t.dataset.screen === screenId);
+  });
+
+  if (screenId === "plugin") renderPlugin();
+  if (screenId === "sessions") renderSessions();
+};
+
+
+window.toggleSidebar = function() {
+  document.body.classList.toggle("sidebar-collapsed");
+
+  localStorage.setItem(
+    "sidebarCollapsed",
+    document.body.classList.contains("sidebar-collapsed") ? "1" : "0"
+  );
+
+setTimeout(fitRackDevices, 80);
+setTimeout(fitRackDevices, 260);
+};
+
+if (localStorage.getItem("sidebarCollapsed") === "1") {
+  document.body.classList.add("sidebar-collapsed");
+}
+
+window.loginUser = async function() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+const remember = document.getElementById("rememberLogin").checked;
+
+await setPersistence(
+  auth,
+  remember ? browserLocalPersistence : browserSessionPersistence
+);
+  try {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+
+    if (!cred.user.emailVerified) {
+      alert("Prvo potvrdi email.");
+      await signOut(auth);
+      return;
+    }
+
+    window.goTo("upload");
+  } catch (err) {
+    console.error(err);
+    alert("Pogrešan email ili lozinka.");
+  }
+};
+
+window.registerUser = async function() {
+  const email = document.getElementById("loginEmail").value.trim();
+  const password = document.getElementById("loginPassword").value;
+
+  try {
+    const cred = await createUserWithEmailAndPassword(auth, email, password);
+
+    await setDoc(doc(db, "users", cred.user.uid), {
+      email,
+      ime: "",
+      prezime: "",
+      credits: 0,
+      role: "user",
+      plan: "free",
+      lang: "hr",
+      activeSessionId: null,
+      totalSpent: 0,
+      billingEnabled: false,
+      createdAt: serverTimestamp()
+    });
+
+    await sendEmailVerification(cred.user);
+
+    alert("Registracija uspjela. Provjeri email za potvrdu.");
+    await signOut(auth);
+  } catch (err) {
+    console.error(err);
+    alert(err.message);
+  }
+};
+
+window.logoutUser = async function() {
+  try {
+    if (activeSessionId) {
+      const ok = confirm("Imaš aktivnu session. Želiš završiti session i odjaviti se?");
+      if (!ok) return;
+
+      await window.endChainSession({
+        silent: true,
+        stayOnPage: true,
+        reason: "logout"
+      });
+    }
+
+    stopWave();
+    stopBillingTimer();
+    stopHeartbeat();
+
+    await signOut(auth);
+
+    currentUser = null;
+    currentUserData = null;
+    activeSessionId = null;
+
+    updateUserPanel();
+    window.goTo("login");
+  } catch (err) {
+    console.error("LOGOUT ERROR:", err);
+    alert(err.message || "Greška kod odjave.");
+  }
+};
+onAuthStateChanged(auth, async (user) => {
+  authReady = true;
+
+  if (!user || !user.emailVerified) {
+    currentUser = null;
+    currentUserData = null;
+    window.goTo("login");
+    return;
+  }
+
+  currentUser = user;
+
+  const userSnap = await getDoc(doc(db, "users", user.uid));
+  currentUserData = userSnap.exists() ? userSnap.data() : {};
+
+  updateUserPanel();
+  window.goTo("upload");
+});
+document.querySelectorAll(".tab").forEach(btn => {
+  btn.onclick = () => window.goTo(btn.dataset.screen);
+});
+
+/* FIREBASE DEVICES */
+onSnapshot(
+  collection(db, "devices"),
+  (snapshot) => {
+    availableDevices = [];
+
+    snapshot.forEach((docSnap) => {
+      availableDevices.push({
+        id: docSnap.id,
+        ...docSnap.data()
+      });
+    });
+
+    if (!chainDevices.length) {
+      chainDevices = availableDevices.map(d => d.id);
+    }
+
+    renderPatchChain();
+  },
+  (error) => {
+    console.error("FIREBASE DEVICES ERROR:", error);
+    alert(error.message);
+  }
+);
+function updateChain() {
+  return;
+}
+function renderPatchChain() {
+  const patchChain = document.getElementById("patchChain");
+  const chainPrice = document.getElementById("chainPrice");
+
+  if (!patchChain) return;
+
+  patchChain.innerHTML = "";
+
+  chainDevices.forEach((deviceId, index) => {
+    const device = availableDevices.find(d => d.id === deviceId);
+    if (!device) return;
+
+    const card = document.createElement("div");
+    card.className = `patch-device ${device.id}`;
+    card.draggable = true;
+    card.dataset.deviceId = device.id;
+    card.style.setProperty("--device-accent", getDeviceAccent(device.id));
+
+    card.innerHTML = `
+      <div class="patch-device-top">
+        <span class="patch-led"></span>
+        <small>${index + 1}</small>
+      </div>
+
+      <strong>${device.name}</strong>
+      <span>${getDeviceType(device.id)}</span>
+
+      <div class="patch-device-footer">
+        <em>${device.pricePerHour || 0} €/h</em>
+        <button onclick="togglePatchBypass(event, '${device.id}')">BYPASS</button>
+      </div>
+    `;
+
+    card.addEventListener("dragstart", () => {
+      draggedDeviceId = device.id;
+      card.classList.add("dragging");
+    });
+
+    card.addEventListener("dragend", () => {
+      draggedDeviceId = null;
+      card.classList.remove("dragging");
+    });
+
+    card.addEventListener("dragover", (e) => {
+      e.preventDefault();
+    });
+
+    card.addEventListener("drop", (e) => {
+      e.preventDefault();
+
+      const targetDeviceId = card.dataset.deviceId;
+      reorderChain(draggedDeviceId, targetDeviceId);
+    });
+
+    patchChain.appendChild(card);
+  });
+
+  const total = chainDevices.reduce((sum, id) => {
+    const d = availableDevices.find(x => x.id === id);
+    return sum + Number(d?.pricePerHour || 0);
+  }, 0);
+
+  if (chainPrice) chainPrice.textContent = `${total} €/h`;
+}
+
+function getChainDeviceObjects() {
+  return chainDevices
+    .map(id => availableDevices.find(d => d.id === id))
+    .filter(Boolean);
+}
+
+function getChainTotalPrice() {
+  return getChainDeviceObjects().reduce((sum, device) => {
+    return sum + Number(device.pricePerHour || 0);
+  }, 0);
+}
+
+window.startChainSession = async function() {
+  try {
+    const devices = getChainDeviceObjects();
+
+    if (!devices.length) {
+      alert("Nema uređaja u chainu.");
+      return;
+    }
+const sessionRef = draftSessionId
+  ? doc(db, "sessions", draftSessionId)
+  : doc(collection(db, "sessions"));
+
+const newSessionId = sessionRef.id;
+const totalPrice = getChainTotalPrice();
+
+    await runTransaction(db, async (transaction) => {
+      for (const device of devices) {
+        const deviceRef = doc(db, "devices", device.id);
+        const freshDevice = await transaction.get(deviceRef);
+
+        if (!freshDevice.exists()) {
+          throw new Error(`Uređaj ne postoji: ${device.name}`);
+        }
+
+        const data = freshDevice.data();
+
+        if (data.status === "busy" && data.lockedBy !== getUserId()) {
+          throw new Error(`Uređaj je zauzet: ${data.name}`);
+        }
+      }
+
+      transaction.set(sessionRef, {
+        userId: getUserId(),
+        status: "active",
+        sessionType: "chain",
+        chainDevices: devices.map(d => ({
+          id: d.id,
+          name: d.name,
+          type: getDeviceType(d.id),
+          pricePerHour: Number(d.pricePerHour || 0)
+        })),
+        chainOrder: devices.map(d => d.id),
+        pricePerHour: totalPrice,
+        startedAt: serverTimestamp(),
+        endedAt: null,
+        cost: 0,
+        heartbeatAt: serverTimestamp(),
+clientStatus: "online",
+updatedAt: serverTimestamp(),
+hardwareState: {}
+}, { merge: true });
+
+      for (const device of devices) {
+        transaction.update(doc(db, "devices", device.id), {
+          status: "busy",
+          lockedBy: getUserId(),
+          currentSessionId: newSessionId
+        });
+      }
+    });
+
+    activeSessionId = newSessionId;
+    draftSessionId = null;
+    startHeartbeat();
+    selectedDevice = devices[0];
+
+    sessionStartedAtMs = null;
+    spentThisSession = 0;
+    isBillingRunning = false;
+
+    renderPlugin();
+    window.goTo("plugin");
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Greška kod pokretanja chain sessiona.");
+  }
+};
+
+
+
+function reorderChain(fromId, toId) {
+  if (!fromId || !toId || fromId === toId) return;
+
+  const fromIndex = chainDevices.indexOf(fromId);
+  const toIndex = chainDevices.indexOf(toId);
+
+  if (fromIndex < 0 || toIndex < 0) return;
+
+  const [moved] = chainDevices.splice(fromIndex, 1);
+  chainDevices.splice(toIndex, 0, moved);
+
+  renderPatchChain();
+}
+
+window.resetPatchChain = function() {
+  chainDevices = availableDevices.map(d => d.id);
+  renderPatchChain();
+};
+
+window.togglePatchBypass = function(e, deviceId) {
+  e.stopPropagation();
+  e.currentTarget.classList.toggle("active");
+};
+function renderDeviceCard(device) {
+  const isBusy = device.status === "busy";
+  const isMine = device.lockedBy === getUserId();
+  const isSelected = selectedDevice?.id === device.id;
+
+  const card = document.createElement("div");
+  card.className = `device ${isSelected ? "selected" : ""}`;
+  card.style.setProperty("--device-accent", getDeviceAccent(device.id));
+
+  card.innerHTML = `
+    <div class="device-top">
+      <span class="device-led"></span>
+      <span>${getDeviceType(device.id)}</span>
+    </div>
+
+    <h3>${device.name}</h3>
+    <p>${device.pricePerHour || 0} €/h</p>
+
+    <div style="margin-top:16px;">
+      <span style="
+        display:inline-flex;
+        padding:8px 10px;
+        border-radius:999px;
+        font-size:12px;
+        font-weight:900;
+        background:${isBusy ? "rgba(255,93,115,0.22)" : "rgba(110,231,183,0.22)"};
+        color:${isBusy ? "#ff8fa0" : "#6ee7b7"};
+      ">
+        ${isBusy ? (isMine ? "YOUR SESSION" : "BUSY") : "AVAILABLE"}
+      </span>
+    </div>
+
+    <button class="primary" style="width:100%;margin-top:18px;" ${isBusy && !isMine ? "disabled" : ""}>
+      ${isMine ? "End Session" : "Start Session"}
+    </button>
+  `;
+
+  card.addEventListener("click", () => {
+    selectedDevice = device;
+    updateChain();
+    renderPlugin();
+  });
+
+  card.querySelector("button").addEventListener("click", async (e) => {
+    e.stopPropagation();
+
+    if (isMine) {
+      await endSession(device);
+    } else {
+      await startSession(device);
+    }
+  });
+
+  deviceGrid.appendChild(card);
+}
+async function chargeSessionFor(sessionId) {
+  if (!currentUser || !sessionId) return;
+  if (spentThisSession <= 0) return;
+
+  const finalCost = Number(spentThisSession.toFixed(2));
+
+  if (finalCost <= 0) return;
+
+  try {
+    await updateDoc(doc(db, "users", currentUser.uid), {
+      credits: increment(-finalCost),
+      totalSpent: increment(finalCost),
+      activeSessionId: null,
+      lastChargedAt: serverTimestamp()
+    });
+
+    await updateDoc(doc(db, "sessions", sessionId), {
+      cost: finalCost,
+      chargedAt: serverTimestamp()
+    });
+
+    currentUserData.credits = Math.max(
+      0,
+      Number(currentUserData.credits || 0) - finalCost
+    );
+
+    currentUserData.totalSpent =
+      Number(currentUserData.totalSpent || 0) + finalCost;
+
+    updateUserPanel();
+
+    console.log("CHARGED:", finalCost);
+  } catch (err) {
+    console.error("CHARGE ERROR:", err);
+    alert("Greška kod skidanja kredita.");
+  }
+}
+
+async function chargeSession() {
+  return chargeSessionFor(activeSessionId);
+}
+
+
+async function startSession(device) {
+  try {
+    const deviceRef = doc(db, "devices", device.id);
+    const sessionRef = doc(collection(db, "sessions"));
+    const newSessionId = sessionRef.id;
+
+    await runTransaction(db, async (transaction) => {
+      const freshDevice = await transaction.get(deviceRef);
+
+      if (!freshDevice.exists()) throw new Error("Uređaj ne postoji.");
+
+      const data = freshDevice.data();
+
+      if (data.status === "busy" && data.lockedBy !== getUserId()) {
+        throw new Error("Uređaj je zauzet.");
+      }
+
+      transaction.set(sessionRef, {
+        userId: getUserId(),
+        deviceId: device.id,
+        deviceName: data.name,
+        status: "active",
+        pricePerHour: data.pricePerHour,
+        startedAt: serverTimestamp(),
+        endedAt: null
+      });
+
+      transaction.update(deviceRef, {
+        status: "busy",
+        lockedBy: getUserId(),
+        currentSessionId: sessionRef.id
+      });
+    });
+
+    activeSessionId = newSessionId;
+console.log("ACTIVE SESSION ID:", activeSessionId);
+    console.log("ACTIVE SESSION ID:", activeSessionId);
+    selectedDevice = device;
+sessionStartedAtMs = null;
+spentThisSession = 0;
+isBillingRunning = false;
+renderPlugin();
+window.goTo("plugin");
+  } catch (err) {
+    console.error(err);
+    alert(err.message || "Greška kod pokretanja sessiona.");
+  }
+}
+function updateUserPanel() {
+  const panel = document.getElementById("userPanel");
+  const emailEl = document.getElementById("userEmail");
+  const creditsEl = document.getElementById("userCredits");
+
+  if (!currentUser) {
+    panel.style.display = "none";
+    return;
+  }
+
+  panel.style.display = "grid";
+  emailEl.textContent = currentUser.email || "-";
+  creditsEl.textContent = `${Number(currentUserData?.credits || 0).toFixed(2)} €`;
+}
+window.endChainSession = async function(options = {}) {
+  const {
+    silent = false,
+    stayOnPage = false,
+    reason = "user"
+  } = options;
+
+  const sessionId = activeSessionId;
+
+  if (!sessionId) {
+    if (!stayOnPage) window.goTo("devices");
+    return;
+  }
+
+  if (isEndingSession) {
+    console.log("Session close već traje, preskačem dupli poziv.");
+    return;
+  }
+
+  isEndingSession = true;
+
+  try {
+    console.log("ENDING CHAIN SESSION:", sessionId, reason);
+
+    stopWave();
+    stopBillingTimer();
+    stopHeartbeat();
+
+    await chargeSessionFor(sessionId);
+
+    const ids = getChainDeviceObjects().map(d => d.id);
+
+    console.log("RELEASING DEVICES:", ids);
+
+    await Promise.all(ids.map(deviceId =>
+      updateDoc(doc(db, "devices", deviceId), {
+        status: "available",
+        lockedBy: null,
+        currentSessionId: null
+      })
+    ));
+
+    await updateDoc(doc(db, "sessions", sessionId), {
+      status: "ended",
+      endedAt: serverTimestamp(),
+      endedBy: reason,
+      clientStatus: "ended",
+      heartbeatAt: serverTimestamp()
+    });
+
+    activeSessionId = null;
+    sessionStartedAtMs = null;
+    spentThisSession = 0;
+    spentBeforeCurrentRun = 0;
+    isBillingRunning = false;
+
+    if (!silent) {
+      alert("Chain session završen.");
+    }
+
+    if (!stayOnPage) {
+      window.goTo("devices");
+    }
+  } catch (err) {
+    console.error("END CHAIN ERROR FULL:", err);
+    if (!silent) {
+      alert(err.message || "Greška kod završavanja chain sessiona.");
+    }
+  } finally {
+    isEndingSession = false;
+  }
+};
+
+
+function getActiveChainDevices() {
+  return getChainDeviceObjects();
+}
+
+function renderPlugin() {
+  const devices = getActiveChainDevices();
+  const firstAudioFile = uploadedFiles[0];
+
+  if (!devices.length) {
+    pluginHost.innerHTML = `<div class="empty-files">Prvo složi patch chain.</div>`;
+    return;
+  }
+
+  document.getElementById("pluginDeviceType").textContent = "CHAIN SESSION";
+
+  pluginHost.innerHTML = `
+    <div class="pro-plugin chain-control">
+      <div class="pro-top">
+        <div>          
+          <button class="ghost-btn" onclick="goTo('devices')">←</button>
+          <button class="ghost-btn danger-btn" onclick="endChainSession()">✕ END SESSION</button>
+          <span class="pro-title">Analog Chain Control</span>
+          <span class="active-dot"></span>
+          <span class="active-text">ACTIVE CHAIN</span>
+        </div>
+
+        <div class="live-billing">
+          <div>
+            <small>CREDITS</small>
+            <strong id="liveCredits">${Number(currentUserData?.credits || 0).toFixed(2)} €</strong>
+          </div>
+          <div>
+            <small>SPENT</small>
+            <strong id="liveSpent">0.00 €</strong>
+          </div>
+          <div>
+            <small>TIME</small>
+            <strong id="liveTime">00:00</strong>
+          </div>
+          <button class="ghost-btn" onclick="logoutUser()">Odjava</button>
+        </div>
+      </div>
+
+      <div class="chain-rack">
+        ${devices.map((device, index) => renderChainDeviceModule(device, index)).join("")}
+      </div>
+
+      <div class="audio-region-panel">
+        <div class="audio-region-head">
+          <div>
+            <strong>AUDIO REGION</strong>
+            <span class="file-pill">♫ ${firstAudioFile ? firstAudioFile.name : "Nema učitanog filea"}</span>
+          </div>
+          <button class="ghost-btn" onclick="goTo('upload')">CHANGE FILE</button>
+        </div>
+
+        <div id="waveTimeline" class="wave-timeline"></div>
+        <div id="waveform" class="waveform"></div>
+
+        <div class="region-info">
+          <div><small>START</small><strong id="regionStart">0:00.000</strong></div>
+          <div><small>DURATION</small><strong id="regionDuration">0:00.000</strong></div>
+          <div><small>END</small><strong id="regionEnd">0:00.000</strong></div>
+        </div>
+
+        <div class="transport">
+          <button class="transport-btn" onclick="playPauseWave()">▶</button>
+          <button class="transport-btn" onclick="stopWave()">■</button>
+          <button class="transport-btn" onclick="skipWave(-5)">⏮</button>
+          <button class="transport-btn" onclick="skipWave(5)">⏭</button>
+
+          <div class="transport-time" id="playheadTime">0:00.000</div>
+
+          <button class="transport-btn" onclick="zoomWave(-20)">−</button>
+          <button class="transport-btn" onclick="zoomWave(20)">+</button>
+          <button class="ghost-btn" onclick="loopRegion()">LOOP REGION</button>
+        </div>
+      </div>
+
+      <div class="session-billing-bar">
+        <div>
+          <small>SESSION TIME</small>
+          <strong id="billingTime">00:00</strong>
+        </div>
+        <div>
+          <small>CHAIN PRICE</small>
+          <strong>${getChainTotalPrice()} €/h</strong>
+        </div>
+        <div>
+          <small>CURRENT COST</small>
+          <strong id="billingCost">0.00 €</strong>
+        </div>
+        <div>
+          <small>SESSION ID</small>
+          <strong>${activeSessionId || "no-session"}</strong>
+        </div>
+      </div>
+    </div>
+  `;
+
+attachKnobs();
+attachChainSwitches();
+attachNgBusButtons();
+attachNgTubeButtons();
+attachBettermakerButtons();
+fitRackDevices();
+initWaveform(firstAudioFile);
+}
+window.renderSessions = async function() {
+  const host = document.getElementById("sessionsHost");
+  if (!host) return;
+
+  if (!currentUser) {
+    host.innerHTML = `<div class="empty-files">Prvo se prijavi.</div>`;
+    return;
+  }
+
+  host.innerHTML = `
+    <div class="sessions-loading">
+      <div class="upload-loader"></div>
+      <strong>Učitavam sessions...</strong>
+    </div>
+  `;
+
+  try {
+    const q = query(
+      collection(db, "sessions"),
+      where("userId", "==", getUserId())
+    );
+
+    const snap = await getDocs(q);
+
+    const sessions = snap.docs
+      .map(docSnap => ({
+        id: docSnap.id,
+        ...docSnap.data()
+      }))
+      .sort((a, b) => {
+        const aTime = getSessionSortTime(a);
+        const bTime = getSessionSortTime(b);
+        return bTime - aTime;
+      });
+
+    if (!sessions.length) {
+      host.innerHTML = `
+        <div class="empty-files">
+          Još nema sessiona. Uploadaj file, složi patch chain i pokreni prvu session.
+        </div>
+      `;
+      return;
+    }
+
+    host.innerHTML = `
+      <div class="sessions-grid">
+        ${sessions.map(renderSessionCard).join("")}
+      </div>
+    `;
+  } catch (err) {
+    console.error("SESSIONS LOAD ERROR:", err);
+    host.innerHTML = `
+      <div class="empty-files">
+        Greška kod učitavanja sessions: ${err.message}
+      </div>
+    `;
+  }
+};
+
+function renderSessionCard(session) {
+  const status = session.status || "unknown";
+  const chain = getSessionChainLabel(session);
+  const fileLabel = getSessionFileLabel(session);
+  const started = formatSessionDate(session.startedAt || session.createdAt);
+  const ended = formatSessionDate(session.endedAt);
+  const cost = Number(session.cost || 0).toFixed(2);
+  const price = Number(session.pricePerHour || 0).toFixed(2);
+  const duration = getSessionDurationLabel(session);
+
+  return `
+    <article class="session-card ${status}">
+      <div class="session-card-head">
+        <div>
+          <small>${formatSessionId(session.id)}</small>
+          <strong>${fileLabel}</strong>
+        </div>
+
+        <span class="session-status ${status}">
+          ${formatSessionStatus(status)}
+        </span>
+      </div>
+
+      <div class="session-meta">
+        <div>
+          <small>CHAIN</small>
+          <strong>${chain}</strong>
+        </div>
+
+        <div>
+          <small>START</small>
+          <strong>${started}</strong>
+        </div>
+
+        <div>
+          <small>END</small>
+          <strong>${ended || "—"}</strong>
+        </div>
+
+        <div>
+          <small>DURATION</small>
+          <strong>${duration}</strong>
+        </div>
+
+        <div>
+          <small>PRICE</small>
+          <strong>${price} €/h</strong>
+        </div>
+
+        <div>
+          <small>COST</small>
+          <strong>${cost} €</strong>
+        </div>
+      </div>
+
+      <div class="session-files">
+        ${renderSessionFiles(session)}
+      </div>
+
+      <div class="session-actions">
+        <button class="ghost-btn" onclick="inspectSession('${session.id}')">
+          DETAILS
+        </button>
+
+        <button class="ghost-btn" onclick="duplicateSessionSettings('${session.id}')">
+          DUPLICATE SETTINGS
+        </button>
+      </div>
+    </article>
+  `;
+}
+
+function renderSessionFiles(session) {
+  const files = session.files || [];
+
+  if (!files.length) {
+    return `<span class="session-file-pill">No attached files yet</span>`;
+  }
+
+  return files.map(file => `
+    <span class="session-file-pill">
+      ♫ ${file.originalName || file.displayName || file.savedName || "audio file"}
+    </span>
+  `).join("");
+}
+
+function getSessionChainLabel(session) {
+  if (Array.isArray(session.chainDevices) && session.chainDevices.length) {
+    return session.chainDevices
+      .map(d => d.name || d.id)
+      .join(" → ");
+  }
+
+  if (Array.isArray(session.chainOrder) && session.chainOrder.length) {
+    return session.chainOrder.join(" → ");
+  }
+
+  return session.deviceName || session.deviceId || "—";
+}
+
+function getSessionFileLabel(session) {
+  const firstFile = session.files?.[0];
+
+  if (firstFile) {
+    return firstFile.originalName || firstFile.displayName || firstFile.savedName || "Audio session";
+  }
+
+  if (session.sessionType === "chain") {
+    return "Analog chain session";
+  }
+
+  return "Audio session";
+}
+
+function getSessionSortTime(session) {
+  const value =
+    session.startedAt?.toDate?.() ||
+    session.createdAt?.toDate?.() ||
+    session.endedAt?.toDate?.();
+
+  return value ? value.getTime() : 0;
+}
+
+function formatSessionDate(timestamp) {
+  const date = timestamp?.toDate?.();
+  if (!date) return "";
+
+  return date.toLocaleString("hr-HR", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+
+function getSessionDurationLabel(session) {
+  const start = session.startedAt?.toDate?.();
+  const end = session.endedAt?.toDate?.();
+
+  if (!start) return "—";
+
+  const endTime = end || new Date();
+  const totalSeconds = Math.max(0, Math.floor((endTime.getTime() - start.getTime()) / 1000));
+
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+function formatSessionId(id) {
+  return `SESSION ${String(id).slice(0, 8).toUpperCase()}`;
+}
+
+function formatSessionStatus(status) {
+  const map = {
+    draft: "DRAFT",
+    active: "ACTIVE",
+    ended: "COMPLETED",
+    failed: "FAILED"
+  };
+
+  return map[status] || String(status).toUpperCase();
+}
+
+window.inspectSession = async function(sessionId) {
+  try {
+    const snap = await getDoc(doc(db, "sessions", sessionId));
+
+    if (!snap.exists()) {
+      alert("Session ne postoji.");
+      return;
+    }
+
+    const session = snap.data();
+    const chain = getSessionChainLabel(session);
+    const cost = Number(session.cost || 0).toFixed(2);
+
+    alert(
+      `Session: ${sessionId}\n` +
+      `Status: ${session.status || "-"}\n` +
+      `Chain: ${chain}\n` +
+      `Cost: ${cost} €\n` +
+      `Files: ${(session.files || []).length}\n\n` +
+      `Detaljni prikaz ćemo kasnije napraviti kao modal.`
+    );
+  } catch (err) {
+    console.error("INSPECT SESSION ERROR:", err);
+    alert(err.message);
+  }
+};
+
+window.duplicateSessionSettings = async function(sessionId) {
+  try {
+    const snap = await getDoc(doc(db, "sessions", sessionId));
+
+    if (!snap.exists()) {
+      alert("Session ne postoji.");
+      return;
+    }
+
+    const session = snap.data();
+
+    if (Array.isArray(session.chainOrder) && session.chainOrder.length) {
+      chainDevices = [...session.chainOrder];
+      renderPatchChain();
+      window.goTo("devices");
+      alert("Chain settings kopirani u Patch Chain.");
+      return;
+    }
+
+    alert("Ova session nema chainOrder za kopiranje.");
+  } catch (err) {
+    console.error("DUPLICATE SESSION ERROR:", err);
+    alert(err.message);
+  }
+};
+function fitRackDevices() {
+  document.querySelectorAll("[data-rack-fit]").forEach(wrapper => {
+    const rack = wrapper.querySelector(".rack-scaled");
+    if (!rack) return;
+
+    const availableWidth = wrapper.clientWidth;
+    const designWidth = Number(rack.dataset.designWidth || 1380);
+
+    // smanjuje se kad nema mjesta, ali se može i malo povećati kad ima mjesta
+    const minScale = 0.55;
+    const maxScale = Number(rack.dataset.maxScale || 1.22);
+
+    const scale = Math.max(
+      minScale,
+      Math.min(maxScale, availableWidth / designWidth)
+    );
+
+    rack.style.transformOrigin = "top center";
+    rack.style.transform = `scale(${scale})`;
+
+    wrapper.style.height = `${rack.offsetHeight * scale}px`;
+  });
+}
+function initDemoAudioEngine() {
+  if (!waveSurfer) return;
+
+  const media =
+    typeof waveSurfer.getMediaElement === "function"
+      ? waveSurfer.getMediaElement()
+      : null;
+
+  if (!media) {
+    console.warn("WaveSurfer media element nije dostupan.");
+    return;
+  }
+
+  if (!demoAudioCtx) {
+    demoAudioCtx = new AudioContext();
+  }
+
+  if (demoMediaElement === media && demoAudioEngine) {
+    return;
+  }
+
+  demoMediaElement = media;
+
+  try {
+    demoMediaSource = demoAudioCtx.createMediaElementSource(media);
+  } catch (err) {
+    console.warn("Demo audio source već postoji ili nije moguće spojiti:", err.message);
+    return;
+  }
+
+  const hpf = demoAudioCtx.createBiquadFilter();
+  hpf.type = "highpass";
+  hpf.frequency.value = 20;
+  hpf.Q.value = 0.7;
+
+  const eq1 = demoAudioCtx.createBiquadFilter();
+  eq1.type = "peaking";
+  eq1.frequency.value = 132;
+  eq1.gain.value = 0;
+  eq1.Q.value = 1.5;
+
+  const eq2 = demoAudioCtx.createBiquadFilter();
+  eq2.type = "peaking";
+  eq2.frequency.value = 537;
+  eq2.gain.value = 0;
+  eq2.Q.value = 1.6;
+
+  const eq3 = demoAudioCtx.createBiquadFilter();
+  eq3.type = "peaking";
+  eq3.frequency.value = 2890;
+  eq3.gain.value = 0;
+  eq3.Q.value = 1.6;
+
+  const eq4 = demoAudioCtx.createBiquadFilter();
+  eq4.type = "peaking";
+  eq4.frequency.value = 5450;
+  eq4.gain.value = 0;
+  eq4.Q.value = 1.6;
+
+  const lpf = demoAudioCtx.createBiquadFilter();
+  lpf.type = "lowpass";
+  lpf.frequency.value = 18000;
+  lpf.Q.value = 0.7;
+
+  const output = demoAudioCtx.createGain();
+  output.gain.value = 1;
+
+  const dryGain = demoAudioCtx.createGain();
+  const wetGain = demoAudioCtx.createGain();
+
+  dryGain.gain.value = 0;
+  wetGain.gain.value = 1;
+
+  demoMediaSource.connect(dryGain);
+  dryGain.connect(demoAudioCtx.destination);
+
+  demoMediaSource
+    .connect(hpf)
+    .connect(eq1)
+    .connect(eq2)
+    .connect(eq3)
+    .connect(eq4)
+    .connect(lpf)
+    .connect(output)
+    .connect(wetGain)
+    .connect(demoAudioCtx.destination);
+
+  demoAudioEngine = {
+    hpf,
+    eq1,
+    eq2,
+    eq3,
+    eq4,
+    lpf,
+    output,
+    dryGain,
+    wetGain,
+    engaged: true
+  };
+
+  console.log("DEMO AUDIO ENGINE READY");
+}
+
+async function resumeDemoAudioEngine() {
+  if (demoAudioCtx && demoAudioCtx.state !== "running") {
+    await demoAudioCtx.resume();
+  }
+}
+
+function dbToGain(db) {
+  return Math.pow(10, Number(db) / 20);
+}
+
+function setAudioParam(param, value, ramp = 0.015) {
+  if (!demoAudioCtx || !param) return;
+
+  const safeValue = Number(value);
+  if (Number.isNaN(safeValue)) return;
+
+  param.cancelScheduledValues(demoAudioCtx.currentTime);
+  param.linearRampToValueAtTime(safeValue, demoAudioCtx.currentTime + ramp);
+}
+
+function applyDemoAudioParam(deviceId, parameter, value) {
+  if (deviceId !== "bettermaker_eq") return;
+  if (!demoAudioEngine) return;
+
+  const engine = demoAudioEngine;
+
+  switch (parameter) {
+    case "hpfFreq":
+      setAudioParam(engine.hpf.frequency, value);
+      break;
+
+    case "hpfResonance":
+      setAudioParam(engine.hpf.Q, Math.max(0.1, Number(value) / 20));
+      break;
+
+    case "eq1Freq":
+      setAudioParam(engine.eq1.frequency, value);
+      break;
+
+    case "eq1Gain":
+      setAudioParam(engine.eq1.gain, value);
+      break;
+
+    case "eq1Q":
+      setAudioParam(engine.eq1.Q, value);
+      break;
+
+    case "eq2Freq":
+      setAudioParam(engine.eq2.frequency, value);
+      break;
+
+    case "eq2Gain":
+      setAudioParam(engine.eq2.gain, value);
+      break;
+
+    case "eq2Q":
+      setAudioParam(engine.eq2.Q, value);
+      break;
+
+    case "eq3Freq":
+      setAudioParam(engine.eq3.frequency, value);
+      break;
+
+    case "eq3Gain":
+      setAudioParam(engine.eq3.gain, value);
+      break;
+
+    case "eq3Q":
+      setAudioParam(engine.eq3.Q, value);
+      break;
+
+    case "eq4Freq":
+      setAudioParam(engine.eq4.frequency, value);
+      break;
+
+    case "eq4Gain":
+      setAudioParam(engine.eq4.gain, value);
+      break;
+
+    case "eq4Q":
+      setAudioParam(engine.eq4.Q, value);
+      break;
+
+    case "lpfFreq":
+      setAudioParam(engine.lpf.frequency, value);
+      break;
+
+    case "outputGain":
+    case "level":
+      setAudioParam(engine.output.gain, dbToGain(value));
+      break;
+
+    case "engage": {
+      const engaged = value === true || value === "true";
+      engine.engaged = engaged;
+
+      setAudioParam(engine.wetGain.gain, engaged ? 1 : 0);
+      setAudioParam(engine.dryGain.gain, engaged ? 0 : 1);
+
+      console.log("DEMO AUDIO ENGAGE:", engaged);
+      break;
+    }
+  }
+}
+
+window.addEventListener("resize", fitRackDevices);
+
+
+function attachNgBusButtons() {
+  document.querySelectorAll(".ng-btn, .ng-square").forEach(button => {
+    button.addEventListener("click", () => {
+      const param = button.dataset.param;
+      const fixedValue = button.dataset.value;
+
+      if (!param) return;
+
+      let value;
+
+      if (fixedValue === "toggle") {
+        const isActive = button.classList.toggle("active");
+        value = isActive;
+      } else {
+        value = fixedValue;
+
+        document
+          .querySelectorAll(`.ng-btn[data-param="${param}"], .ng-square[data-param="${param}"]`)
+          .forEach(btn => btn.classList.remove("active"));
+
+        button.classList.add("active");
+      }
+
+      updateNgBusDisplay(param, String(value).toUpperCase());
+
+      console.log("BUTTON PRESS:", {
+        deviceId: button.dataset.deviceId,
+        parameter: param,
+        value
+      });
+
+      sendControlMessage({
+        type: "parameter-change",
+        deviceId: button.dataset.deviceId,
+        parameter: param,
+        value
+      });
+    });
+  });
+}
+function renderChainDeviceModule(device, index) {
+  const controls = getControlsForDevice(device.id);
+    if (device.id === "ngbuscomp") {
+    return renderNgBusCompHardware(device, index);
+  }
+  if (device.id === "ngtubecomp") {
+  return renderNgTubeCompHardware(device, index);
+}
+
+if (device.id === "bettermaker_eq") {
+  return renderBettermakerHardware(device, index);
+}
+  const accent = getDeviceAccent(device.id);
+
+  return `
+    <div class="chain-module ${device.id}" style="--accent:${accent}">
+      <div class="chain-module-head">
+        <div>
+          <small>MODULE ${index + 1}</small>
+          <strong>${device.name}</strong>
+          <span>${getDeviceType(device.id)}</span>
+        </div>
+
+        <button class="chain-bypass" data-device-id="${device.id}">
+          IN
+        </button>
+      </div>
+
+      <div class="chain-module-body">
+        ${controls.map(c => knobTemplateForDevice(c, device.id)).join("")}
+      </div>
+    </div>
+  `;
+}
+const NGBUSCOMP = {
+  attack: [
+    { label: "0.1 ms", value: 0.1 },
+    { label: "0.3 ms", value: 0.3 },
+    { label: "1 ms", value: 1 },
+    { label: "3 ms", value: 3 },
+    { label: "5 ms", value: 5 },
+    { label: "10 ms", value: 10 },
+    { label: "15 ms", value: 15 },
+    { label: "30 ms", value: 30 }
+  ],
+  release: [
+    { label: "0.05 s", value: 0.05 },
+    { label: "0.1 s", value: 0.1 },
+    { label: "0.3 s", value: 0.3 },
+    { label: "0.5 s", value: 0.5 },
+    { label: "0.6 s", value: 0.6 },
+    { label: "0.9 s", value: 0.9 },
+    { label: "1.2 s", value: 1.2 },
+    { label: "AUTO", value: "auto" }
+  ],
+  ratio: [
+    { label: "1.5:1", value: 1.5 },
+    { label: "2:1", value: 2 },
+    { label: "4:1", value: 4 },
+    { label: "10:1", value: 10 },
+    { label: "∞:1", value: "inf" }
+  ],
+  sidechain: [
+    { label: "OFF", value: "off" },
+    { label: "60 Hz", value: "60" },
+    { label: "90 Hz", value: "90" },
+    { label: "150 Hz", value: "150" },
+    { label: "T1", value: "t1" },
+    { label: "T2", value: "t2" },
+    { label: "EXT", value: "ext" }
+  ]
+};
+function renderNgBusCompHardware(device, index) {
+  return `
+    <div class="rack-fit" data-rack-fit>
+      <div class="ngbus-hardware rack-scaled" data-design-width="1380" style="--accent:#6ee7b7">
+        <div class="ngbus-titlebar">
+          <div>
+            <small>MODULE ${index + 1}</small>
+            <strong>ngBusComp</strong>
+          </div>
+
+          <div class="ngbus-modes">
+            <button class="ng-btn active" data-device-id="ngbuscomp" data-param="mode" data-value="dual">DUAL</button>
+            <button class="ng-btn" data-device-id="ngbuscomp" data-param="mode" data-value="stereo">STEREO</button>
+            <button class="ng-btn" data-device-id="ngbuscomp" data-param="mode" data-value="ms">MID/SIDE</button>
+          </div>
+        </div>
+
+        <div class="ngbus-panel">
+          ${renderNgBusChannel("LEFT / MID", "L")}
+          ${renderNgBusCenter()}
+          ${renderNgBusChannel("RIGHT / SIDE", "R")}
+        </div>
+      </div>
+    </div>
+  `;
+}
+function renderBettermakerHardware(device, index) {
+  return `
+    <div class="rack-fit" data-rack-fit>
+      <div class="bettermaker-hardware rack-scaled" data-design-width="1380" data-max-scale="1.22" style="--accent:#4fd1ff">
+        <div class="bm-topbar">
+          <div>
+            <small>MODULE ${index + 1}</small>
+            <strong>Bettermaker Mastering Equalizer</strong>
+            <span>ANALOG EQ / DIGITAL RECALL</span>
+          </div>
+
+          <div class="bm-top-actions">
+            <button class="bm-btn active" data-device-id="bettermaker_eq" data-param="mode" data-value="stereo" data-group="bm-mode">STEREO</button>
+            <button class="bm-btn" data-device-id="bettermaker_eq" data-param="mode" data-value="ms" data-group="bm-mode">M/S</button>
+            <button class="bm-btn" data-device-id="bettermaker_eq" data-param="mode" data-value="dualMono" data-group="bm-mode">DUAL MONO</button>
+            <button class="bm-btn engage active" data-device-id="bettermaker_eq" data-param="engage" data-value="toggle">ENGAGE</button>
+          </div>
+        </div>
+
+        <div class="bm-face">
+          <div class="bm-side bm-left">
+            ${bmEncoder("level", "LEVEL", -10, 10, 0, 0.1, "-10", "+10", "dB")}
+            ${bmMeter("input", "INPUT")}
+          </div>
+
+          <div class="bm-screen">
+            <div class="bm-screen-header">
+              <div>
+                <span class="bm-mini-label">MAIN SCREEN</span>
+                <strong id="bmSelectedFilter">EQ CURVE</strong>
+              </div>
+
+              <div class="bm-ab">
+                <button class="bm-btn active" data-device-id="bettermaker_eq" data-param="abState" data-value="A" data-group="bm-ab">A</button>
+                <button class="bm-btn" data-device-id="bettermaker_eq" data-param="abState" data-value="B" data-group="bm-ab">B</button>
+                <button class="bm-btn" data-device-id="bettermaker_eq" data-param="copyAtoB" data-value="trigger">A → B</button>
+              </div>
+            </div>
+
+            <div class="bm-graph">
+              <svg viewBox="0 0 900 360" preserveAspectRatio="none">
+                <defs>
+                  <linearGradient id="bmCurveGlow" x1="0" x2="1">
+                    <stop offset="0%" stop-color="#4fd1ff"/>
+                    <stop offset="55%" stop-color="#6ee7b7"/>
+                    <stop offset="100%" stop-color="#4fd1ff"/>
+                  </linearGradient>
+                </defs>
+
+                ${Array.from({ length: 13 }).map((_, i) => `<line x1="${i * 75}" y1="0" x2="${i * 75}" y2="360" />`).join("")}
+                ${Array.from({ length: 9 }).map((_, i) => `<line x1="0" y1="${i * 45}" x2="900" y2="${i * 45}" />`).join("")}
+
+                <path id="bmEqCurve"
+                  d="M 0 230 C 70 230, 85 155, 120 155 C 180 155, 210 190, 260 190 C 350 190, 410 180, 470 180 C 560 180, 610 180, 680 180 C 760 180, 785 130, 840 130 C 880 130, 895 210, 900 250"
+                />
+              </svg>
+
+              <div class="bm-frequency-labels">
+                <span>10</span><span>20</span><span>50</span><span>100</span><span>200</span><span>500</span><span>1k</span><span>2k</span><span>5k</span><span>10k</span><span>20k</span><span>38k</span>
+              </div>
+            </div>
+
+            <div class="bm-filter-row">
+              ${bmFilterTile("hpf", "HPF", "45 Hz", "12/24 dB", true)}
+              ${bmFilterTile("eq1", "EQ1", "132 Hz", "0.0 dB / Q 1.5", true)}
+              ${bmFilterTile("eq2", "EQ2", "537 Hz", "0.0 dB / Q 1.6", true)}
+              ${bmFilterTile("eq3", "EQ3", "2.89 kHz", "0.0 dB / Q 1.6", true)}
+              ${bmFilterTile("eq4", "EQ4", "5.45 kHz", "0.0 dB / Q 1.6", true)}
+              ${bmFilterTile("lpf", "LPF", "18 kHz", "12 dB/oct", true)}
+              ${bmFilterTile("passive", "PASSIVE", "AIR", "20 / 28 kHz", false)}
+              ${bmFilterTile("menu", "MENU", "SETUP", "PRESETS", false)}
+            </div>
+
+            <div class="bm-param-strip">
+              ${bmMiniKnob("hpfFreq", "HPF FREQ", 10, 240, 45, 1, "10", "240", "Hz")}
+              ${bmMiniKnob("hpfResonance", "HPF RES", 0, 100, 0, 1, "0", "100", "%")}
+              ${bmMiniKnob("eq1Freq", "EQ1 FREQ", 22, 470, 132, 1, "22", "470", "Hz")}
+              ${bmMiniKnob("eq1Gain", "EQ1 GAIN", -15, 15, 0, 0.1, "-15", "+15", "dB")}
+              ${bmMiniKnob("eq1Q", "EQ1 Q", 0.2, 7, 1.5, 0.1, "0.2", "7", "Q")}
+              ${bmMiniKnob("eq2Freq", "EQ2 FREQ", 90, 2000, 537, 1, "90", "2k", "Hz")}
+              ${bmMiniKnob("eq2Gain", "EQ2 GAIN", -15, 15, 0, 0.1, "-15", "+15", "dB")}
+              ${bmMiniKnob("eq2Q", "EQ2 Q", 0.2, 7, 1.6, 0.1, "0.2", "7", "Q")}
+              ${bmMiniKnob("eq3Freq", "EQ3 FREQ", 480, 10000, 2890, 10, "480", "10k", "Hz")}
+              ${bmMiniKnob("eq3Gain", "EQ3 GAIN", -15, 15, 0, 0.1, "-15", "+15", "dB")}
+              ${bmMiniKnob("eq3Q", "EQ3 Q", 0.2, 7, 1.6, 0.1, "0.2", "7", "Q")}
+              ${bmMiniKnob("eq4Freq", "EQ4 FREQ", 1000, 23000, 5450, 10, "1k", "23k", "Hz")}
+              ${bmMiniKnob("eq4Gain", "EQ4 GAIN", -15, 15, 0, 0.1, "-15", "+15", "dB")}
+              ${bmMiniKnob("eq4Q", "EQ4 Q", 0.2, 7, 1.6, 0.1, "0.2", "7", "Q")}
+              ${bmMiniKnob("lpfFreq", "LPF FREQ", 2000, 38000, 18000, 100, "2k", "38k", "Hz")}
+              ${bmMiniKnob("outputGain", "OUTPUT", -10, 10, 0, 0.1, "-10", "+10", "dB")}
+            </div>
+          </div>
+
+          <div class="bm-side bm-right">
+            ${bmMeter("output", "OUTPUT")}
+            ${bmEncoder("p1", "P1", 0, 100, 50, 1, "MIN", "MAX", "%")}
+            ${bmEncoder("p2", "P2", 0, 100, 50, 1, "MIN", "MAX", "%")}
+            ${bmEncoder("p3", "P3", 0, 100, 50, 1, "MIN", "MAX", "%")}
+
+            <div class="bm-utility">
+              <button class="bm-btn" data-device-id="bettermaker_eq" data-param="focus" data-value="toggle">FOCUS</button>
+              <button class="bm-btn" data-device-id="bettermaker_eq" data-param="meterMode" data-value="peak" data-group="bm-meter">PEAK</button>
+              <button class="bm-btn" data-device-id="bettermaker_eq" data-param="meterMode" data-value="rms" data-group="bm-meter">RMS</button>
+              <button class="bm-btn" data-device-id="bettermaker_eq" data-param="resetAll" data-value="trigger">RESET</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+function bmFilterTile(id, label, value, sub, active) {
+  return `
+    <button class="bm-filter-tile ${active ? "active" : ""}"
+      data-device-id="bettermaker_eq"
+      data-param="${id}_selected"
+      data-value="trigger"
+      data-filter="${id}">
+      <strong>${label}</strong>
+      <span>${value}</span>
+      <small>${sub}</small>
+    </button>
+  `;
+}
+
+function bmMeter(id, label) {
+  return `
+    <div class="bm-meter-block">
+      <strong>${label}</strong>
+      <div class="bm-stereo-meter" data-bm-meter="${id}">
+        ${["L","R"].map(ch => `
+          <div>
+            <span>${ch}</span>
+            <i style="height:${id === "input" ? 72 : 64}%"></i>
+          </div>
+        `).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function bmEncoder(id, label, min, max, value, step, minLabel, maxLabel, unit) {
+  const deg = -135 + ((value - min) / (max - min)) * 270;
+
+  return `
+    <div class="bm-encoder bm-control">
+      <div class="bm-scale"><span>${minLabel}</span><span>${maxLabel}</span></div>
+      <div class="bm-encoder-ring">
+        <div class="knob bm-knob"
+          data-device-id="bettermaker_eq"
+          data-id="${id}"
+          data-min="${min}"
+          data-max="${max}"
+          data-step="${step}"
+          data-value="${value}"
+          data-unit="${unit}"
+          style="transform:rotate(${deg}deg)">
+        </div>
+      </div>
+      <div class="knob-label">${label}</div>
+      <div class="knob-value">${formatBettermakerValue(id, value, unit)}</div>
+    </div>
+  `;
+}
+
+function bmMiniKnob(id, label, min, max, value, step, minLabel, maxLabel, unit) {
+  const deg = -135 + ((value - min) / (max - min)) * 270;
+
+  return `
+    <div class="bm-mini-control bm-control">
+      <div class="bm-scale"><span>${minLabel}</span><span>${maxLabel}</span></div>
+      <div class="bm-mini-ring">
+        <div class="knob bm-mini-knob"
+          data-device-id="bettermaker_eq"
+          data-id="${id}"
+          data-min="${min}"
+          data-max="${max}"
+          data-step="${step}"
+          data-value="${value}"
+          data-unit="${unit}"
+          style="transform:rotate(${deg}deg)">
+        </div>
+      </div>
+      <div class="knob-label">${label}</div>
+      <div class="knob-value">${formatBettermakerValue(id, value, unit)}</div>
+    </div>
+  `;
+}
+
+function formatBettermakerValue(parameterId, value, unit) {
+  const id = parameterId || "";
+  const n = Number(value);
+
+  if (id.includes("Freq") || unit === "Hz") {
+    if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)} kHz`;
+    return `${Math.round(n)} Hz`;
+  }
+
+  if (unit === "dB") return `${n.toFixed(1)} dB`;
+  if (unit === "Q") return `Q ${n.toFixed(1)}`;
+  if (unit === "%") return `${Math.round(n)} %`;
+
+  return formatControlValue(value, unit);
+}
+
+function updateBettermakerDisplay(parameter, displayValue) {
+  const selected = document.getElementById("bmSelectedFilter");
+  if (!selected) return;
+
+  if (parameter) {
+    selected.textContent = `${parameter}  ${displayValue ?? ""}`;
+  }
+}
+
+function renderNgTubeCompHardware(device, index) {
+return `
+  <div class="rack-fit" data-rack-fit>
+    <div class="ngtube-hardware rack-scaled" style="--accent:#ffb86b">
+      <div class="ngtube-titlebar">
+        <div>
+          <small>MODULE ${index + 1}</small>
+          <strong>WesAudio ngTubeComp</strong>
+          <span>VARI-MU TUBE COMPRESSOR</span>
+        </div>
+
+        <div class="ngtube-status">
+          <span class="tube-glow"></span>
+          ANALOG SOUND / DIGITAL RECALL
+        </div>
+      </div>
+
+      <div class="ngtube-panel">
+        ${renderNgTubeChannel("LEFT / MID", "L")}
+        ${renderNgTubeCenter()}
+        ${renderNgTubeChannel("RIGHT / SIDE", "R")}
+      </div>
+    </div>
+     </div>
+  `;
+}
+function renderNgTubeChannel(title, side) {
+  return `
+    <div class="ngtube-channel">
+      <div class="ngtube-channel-title">${title}</div>
+
+      <div class="ngtube-meter-row">
+        ${ngTubeLedMeter(side, "input", "IN")}
+        ${ngTubeVuMeter(side)}
+        ${ngTubeLedMeter(side, "output", "OUT")}
+      </div>
+
+      <div class="ngtube-controls">
+        ${ngTubeKnob(side, "threshold", "THRESHOLD", -20, 20, 0, 0.5, "-20", "+20", "dB")}
+        ${ngTubeKnob(side, "mix", "MIX", 0, 100, 100, 1, "DRY", "WET", "%")}
+        ${ngTubeKnob(side, "attack", "ATTACK", 0.5, 100, 10, 0.5, "FAST", "SLOW", "ms")}
+        ${ngTubeButton(side, "limit", "LIMIT")}
+        ${ngTubeKnob(side, "input", "INPUT", -15, 15, 0, 0.25, "-15", "+15", "dB")}
+
+        ${ngTubeButton(side, "feedForward", "FEED-FWD")}
+        ${ngTubeKnob(side, "release", "RELEASE", 0.1, 3, 0.6, 0.1, "0.1", "3.0", "s")}
+        ${ngTubeKnob(side, "thd", "THD", 0, 8, 0, 0.1, "0%", "8%", "%")}
+        ${ngTubeKnob(side, "tube", "TUBE", -15, 15, 0, 0.25, "CLEAN", "DRIVE", "dB")}
+        ${ngTubeButton(side, "thdEnabled", "THD ON")}
+
+        ${ngTubeButton(side, "tubeEnabled", "TUBE ON")}
+        ${ngTubeKnob(side, "output", "OUTPUT", -15, 15, 0, 0.25, "-15", "+15", "dB")}
+        ${ngTubeKnob(side, "ironPad", "IRON PAD", 0, 15, 0, 1, "0", "-15", "dB")}
+        ${ngTubeKnob(side, "scHpf", "S.C. HPF", 20, 500, 20, 1, "20Hz", "500Hz", "Hz")}
+        ${ngTubeButton(side, "hpfEnabled", "HPF ON")}
+
+        ${ngTubeKnob(side, "scBell", "S.C. BELL", 2000, 20000, 2000, 100, "2k", "20k", "Hz")}
+        ${ngTubeButton(side, "highBellEnabled", "H-BELL")}
+        ${ngTubeButton(side, "scListen", "S.C. LISTEN")}
+        ${ngTubeButton(side, "bypass", "BYPASS")}
+        ${ngTubeButton(side, "mute", "MUTE")}
+      </div>
+    </div>
+  `;
+}
+
+function renderNgTubeCenter() {
+  return `
+    <div class="ngtube-center">
+      <h4>PARAMETER LINK</h4>
+
+      <button class="ngtube-global-btn"
+        data-device-id="ngtubecomp"
+        data-param="parameterLink"
+        data-value="toggle">
+        PARAM LINK
+      </button>
+
+      <div class="ngtube-mode-grid">
+        <button class="ngtube-global-btn active" data-device-id="ngtubecomp" data-param="mode" data-value="dual" data-group="mode">DUAL</button>
+        <button class="ngtube-global-btn" data-device-id="ngtubecomp" data-param="mode" data-value="stereo" data-group="mode">STEREO</button>
+        <button class="ngtube-global-btn" data-device-id="ngtubecomp" data-param="mode" data-value="ms" data-group="mode">M/S</button>
+      </div>
+
+      <div class="ngtube-lcd" id="ngtubeDisplay">
+        <div><span>LAST PARAM</span><b>READY</b></div>
+        <div><span>VALUE</span><b>---</b></div>
+        <div><span>MODE</span><b>DUAL</b></div>
+        <div><span>SESSION</span><b>${activeSessionId ? "ACTIVE" : "OFF"}</b></div>
+      </div>
+
+      <div class="ngtube-bypass-grid">
+        <button class="ngtube-global-btn" data-device-id="ngtubecomp" data-param="L_bypass" data-value="toggle">L BYPASS</button>
+        <button class="ngtube-global-btn" data-device-id="ngtubecomp" data-param="R_bypass" data-value="toggle">R BYPASS</button>
+      </div>
+
+      <h4>FAST MEMORY</h4>
+
+      <div class="ngtube-mode-grid">
+        <button class="ngtube-global-btn active" data-device-id="ngtubecomp" data-param="preset" data-value="A" data-group="preset">A</button>
+        <button class="ngtube-global-btn" data-device-id="ngtubecomp" data-param="preset" data-value="B" data-group="preset">B</button>
+        <button class="ngtube-global-btn" data-device-id="ngtubecomp" data-param="preset" data-value="C" data-group="preset">C</button>
+      </div>
+
+      <button class="ngtube-power"
+        data-device-id="ngtubecomp"
+        data-param="power"
+        data-value="toggle">
+        POWER
+      </button>
+    </div>
+  `;
+}
+
+function ngTubeKnob(side, id, label, min, max, value, step, minLabel, maxLabel, unit) {
+  const fullId = `${side}_${id}`;
+  const deg = -135 + ((value - min) / (max - min)) * 270;
+
+  return `
+    <div class="ngtube-control">
+      <div class="ngtube-scale">
+        <span>${minLabel}</span>
+        <span>${maxLabel}</span>
+      </div>
+
+      <div class="ngtube-knob-ring">
+        <div class="knob ngtube-knob"
+          data-device-id="ngtubecomp"
+          data-id="${fullId}"
+          data-min="${min}"
+          data-max="${max}"
+          data-step="${step}"
+          data-value="${value}"
+          data-unit="${unit}"
+          style="transform:rotate(${deg}deg)">
+        </div>
+      </div>
+
+      <div class="knob-label">${label}</div>
+      <div class="knob-value">${formatNgTubeValue(fullId, value, unit)}</div>
+    </div>
+  `;
+}
+
+function ngTubeButton(side, id, label) {
+  return `
+    <button class="ngtube-btn"
+      data-device-id="ngtubecomp"
+      data-param="${side}_${id}"
+      data-value="toggle">
+      ${label}
+    </button>
+  `;
+}
+
+function ngTubeVuMeter(side) {
+  return `
+    <div class="ngtube-vu">
+      <div class="ngtube-vu-face">
+        <div class="ngtube-needle" data-ngtube-vu="${side}"></div>
+        <span>GR</span>
+      </div>
+    </div>
+  `;
+}
+
+function ngTubeLedMeter(side, kind, label) {
+  return `
+    <div class="ngtube-led-wrap">
+      <small>${label}</small>
+      <div class="ngtube-led-meter" data-ngtube-led="${side}_${kind}">
+        ${[26, 20, 16, 12, 8, 4, 2, 0].map(v => `<span><i></i>${v}</span>`).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function attachNgTubeButtons() {
+  document.querySelectorAll(".ngtube-btn, .ngtube-global-btn, .ngtube-power").forEach(button => {
+    button.addEventListener("click", () => {
+      const param = button.dataset.param;
+      const rawValue = button.dataset.value;
+      const group = button.dataset.group;
+
+      if (!param) return;
+
+      let value;
+
+      if (rawValue === "toggle") {
+        const active = button.classList.toggle("active");
+        value = active;
+      } else {
+        value = rawValue;
+
+        if (group) {
+          document
+            .querySelectorAll(`.ngtube-global-btn[data-group="${group}"]`)
+            .forEach(btn => btn.classList.remove("active"));
+        }
+
+        button.classList.add("active");
+      }
+
+      updateNgTubeDisplay(param, String(value).toUpperCase());
+
+      console.log("NGTUBE BUTTON:", {
+        deviceId: button.dataset.deviceId,
+        parameter: param,
+        value
+      });
+
+      sendControlMessage({
+        type: "parameter-change",
+        deviceId: button.dataset.deviceId,
+        parameter: param,
+        value
+      });
+    });
+  });
+}
+
+
+function attachBettermakerButtons() {
+  document.querySelectorAll(".bm-btn, .bm-filter-tile").forEach(button => {
+    button.addEventListener("click", () => {
+      const param = button.dataset.param;
+      const rawValue = button.dataset.value;
+      const group = button.dataset.group;
+      const filter = button.dataset.filter;
+
+      if (!param) return;
+
+      let value;
+
+      if (rawValue === "toggle") {
+        const active = button.classList.toggle("active");
+        value = active;
+      } else if (rawValue === "trigger") {
+        value = true;
+
+        if (filter) {
+          document.querySelectorAll(".bm-filter-tile").forEach(btn => btn.classList.remove("selected"));
+          button.classList.add("selected");
+          updateBettermakerDisplay("selectedFilter", filter.toUpperCase());
+        } else {
+          button.classList.add("active");
+          setTimeout(() => button.classList.remove("active"), 140);
+        }
+      } else {
+        value = rawValue;
+
+        if (group) {
+          document
+            .querySelectorAll(`.bm-btn[data-group="${group}"]`)
+            .forEach(btn => btn.classList.remove("active"));
+        }
+
+        button.classList.add("active");
+      }
+
+      console.log("BETTERMAKER BUTTON:", {
+        deviceId: button.dataset.deviceId,
+        parameter: param,
+        value
+      });
+applyDemoAudioParam(button.dataset.deviceId, param, value);
+      sendControlMessage({
+        type: "parameter-change",
+        deviceId: button.dataset.deviceId,
+        parameter: param,
+        value
+      });
+    });
+  });
+}
+
+function renderNgBusChannel(title, side) {
+  return `
+    <div class="ng-channel">
+      <div class="ng-channel-title">${title}</div>
+
+      <div class="ng-row top ngbus-meter-row">
+        ${ngLedMeter(side, "input")}
+        ${ngVuMeter(side)}
+        ${ngLedMeter(side, "output")}
+      </div>
+
+      <div class="ng-row mid">
+        ${ngContinuousKnob(side, "threshold", "THRESHOLD", -20, 20, -8.5, 0.5, "-20", "+20", "dB")}
+        ${ngButton(side, "mute", "MUTE")}
+        ${ngSteppedKnob(side, "ratio", "RATIO", NGBUSCOMP.ratio, 2)}
+        ${ngButton(side, "bypass", "BYPASS")}
+        ${ngContinuousKnob(side, "makeup", "MAKE UP", 0, 20, 0, 0.25, "0", "+20", "dB")}
+      </div>
+
+      <div class="ng-row bottom">
+        ${ngContinuousKnob(side, "mix", "MIX", 0, 100, 100, 1, "DRY", "WET", "%")}
+        ${ngSteppedKnob(side, "attack", "ATTACK", NGBUSCOMP.attack, 5)}
+        ${ngSteppedKnob(side, "release", "RELEASE", NGBUSCOMP.release, 2)}
+        ${ngContinuousKnob(side, "thd", "THD", 0, 8, 0, 0.1, "0%", "8%", "%")}
+        ${ngSteppedKnob(side, "sidechain", "SIDECHAIN", NGBUSCOMP.sidechain, 0)}
+        ${ngButton(side, "iron", "IRON")}
+        ${ngContinuousKnob(side, "ironPad", "IRON PAD", 0, 15, 0, 1, "0 dB", "-15 dB", "dB")}
+        ${ngButton(side, "ironLink", "IRON LINK")}
+      </div>
+    </div>
+  `;
+}
+function ngContinuousKnob(side, id, label, min, max, value, step, minLabel, maxLabel, unit) {
+  const fullId = `${side}_${id}`;
+  const deg = -135 + ((value - min) / (max - min)) * 270;
+
+  return `
+    <div class="ng-control">
+      <div class="ng-scale"><span>${minLabel}</span><span>${maxLabel}</span></div>
+
+      <div class="ng-knob-ring">
+        <div class="knob ng-knob"
+          data-device-id="ngbuscomp"
+          data-id="${fullId}"
+          data-min="${min}"
+          data-max="${max}"
+          data-step="${step}"
+          data-value="${value}"
+          data-unit="${unit}"
+          style="transform:rotate(${deg}deg)">
+        </div>
+      </div>
+
+      <div class="knob-label">${label}</div>
+      <div class="knob-value">${formatNgBusValue(fullId, value, unit)}</div>
+    </div>
+  `;
+}
+
+function ngSteppedKnob(side, id, label, options, selectedIndex = 0) {
+  const fullId = `${side}_${id}`;
+  const max = options.length - 1;
+  const value = selectedIndex;
+  const deg = -135 + (value / max) * 270;
+
+  return `
+    <div class="ng-control">
+      <div class="ng-scale">
+        <span>${options[0].label}</span>
+        <span>${options[max].label}</span>
+      </div>
+
+      <div class="ng-knob-ring stepped">
+        <div class="knob ng-knob"
+          data-device-id="ngbuscomp"
+          data-id="${fullId}"
+          data-min="0"
+          data-max="${max}"
+          data-step="1"
+          data-value="${value}"
+          data-stepped="true"
+          data-options='${JSON.stringify(options)}'
+          data-unit="${label}"
+          style="transform:rotate(${deg}deg)">
+        </div>
+      </div>
+
+      <div class="knob-label">${label}</div>
+      <div class="knob-value">${options[selectedIndex].label}</div>
+    </div>
+  `;
+}
+function renderNgBusCenter() {
+  return `
+    <div class="ng-center">
+      <h4>CONFIGURATION</h4>
+
+      <div class="ng-center-section">
+        <span>CONFIG BANK</span>
+      </div>
+
+      <div class="ng-preset-grid">
+        ${["1","2","3"].map(v => `<button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="configBank" data-value="${v}">${v}</button>`).join("")}
+      </div>
+
+      <div class="ng-center-section">
+        <span>FAST PRESETS</span>
+      </div>
+
+      <div class="ng-preset-grid">
+        ${["A","B","C"].map(v => `<button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="fastPreset" data-value="${v}">${v}</button>`).join("")}
+      </div>
+
+      <div class="ng-display" id="ngbusDisplay">
+        <div><span>LAST PARAM</span><b>READY</b></div>
+        <div><span>VALUE</span><b>---</b></div>
+        <div><span>DEVICE</span><b>ngBusComp</b></div>
+        <div><span>SESSION</span><b>${activeSessionId ? "ACTIVE" : "OFF"}</b></div>
+      </div>
+
+      <div class="ng-center-section">
+        <span>PARAMETER LINK</span>
+      </div>
+
+      <div class="ng-preset-grid two">
+        <button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="parameterLinkLM" data-value="toggle">L/M</button>
+        <button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="parameterLinkRS" data-value="toggle">R/S</button>
+      </div>
+
+      <div class="ng-center-section">
+        <span>SIDECHAIN</span>
+      </div>
+
+      <div class="ng-preset-grid two">
+        <button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="sidechain" data-value="int">INT</button>
+        <button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="sidechain" data-value="ext">EXT</button>
+      </div>
+    </div>
+  `;
+}
+
+function ngButton(side, id, label) {
+  return `
+    <button class="ng-rocker ng-btn"
+      data-device-id="ngbuscomp"
+      data-param="${side}_${id}"
+      data-value="toggle">
+      ${label}
+    </button>
+  `;
+}
+
+function ngVuMeter(side) {
+  return `
+    <div class="ng-vu">
+      <div class="ng-vu-face">
+        <div class="ng-needle" data-vu="${side}"></div>
+        <span>VU</span>
+      </div>
+    </div>
+  `;
+}
+
+function ngLedMeter(side) {
+  return `
+    <div class="ng-led-meter">
+      ${[0,2,4,8,12,16,20,24].map(v => `<span><i></i>${v}</span>`).join("")}
+    </div>
+  `;
+}
+
+function knobTemplateForDevice(c, deviceId) {
+  const normalized = (c.value - c.min) / (c.max - c.min);
+  const deg = -135 + normalized * 270;
+
+  return `
+    <div class="pro-control compact">
+      <div class="knob-scale">
+        <span>${c.minLabel || c.min}</span>
+        <span>${c.maxLabel || c.max}</span>
+      </div>
+
+      <div class="pro-knob-shell">
+        <div class="pro-knob-glow"></div>
+        <div class="knob"
+          data-device-id="${deviceId}"
+          data-id="${c.id}"
+          data-min="${c.min}"
+          data-max="${c.max}"
+          data-step="${c.step}"
+          data-value="${c.value}"
+          data-unit="${c.unit}"
+          style="transform:rotate(${deg}deg)">
+        </div>
+      </div>
+
+      <div class="knob-label">${c.label}</div>
+      <div class="knob-value">${formatControlValue(c.value, c.unit)}</div>
+    </div>
+  `;
+}
+
+function startBillingTimer(pricePerHour) {
+  if (isBillingRunning) return;
+
+  const credits = Number(currentUserData?.credits || 0);
+
+  if (credits <= 0) {
+    alert("Nemaš dovoljno kredita za pokretanje.");
+    return;
+  }
+
+  isBillingRunning = true;
+  sessionStartedAtMs = Date.now();
+
+  billingTimer = setInterval(() => {
+    const elapsedSeconds = Math.floor((Date.now() - sessionStartedAtMs) / 1000);
+    const currentRunCost = (pricePerHour / 3600) * elapsedSeconds;
+
+    spentThisSession = spentBeforeCurrentRun + currentRunCost;
+
+    const remaining = Math.max(0, credits - spentThisSession);
+
+    updateBillingUI(elapsedSeconds, spentThisSession, remaining);
+
+    if (remaining <= 0) {
+      stopBillingTimer();
+      alert("Krediti su potrošeni. Playback je zaustavljen.");
+      stopWave();
+    }
+  }, 1000);
+}
+
+function stopBillingTimer() {
+  if (billingTimer) {
+    clearInterval(billingTimer);
+    billingTimer = null;
+  }
+
+  spentBeforeCurrentRun = spentThisSession;
+  isBillingRunning = false;
+}
+
+function updateBillingUI(elapsedSeconds, spent, remaining) {
+  const timeText = formatBillingTime(elapsedSeconds);
+  const spentText = `${spent.toFixed(2)} €`;
+  const remainingText = `${remaining.toFixed(2)} €`;
+
+  const billingTime = document.getElementById("billingTime");
+  const billingCost = document.getElementById("billingCost");
+  const liveTime = document.getElementById("liveTime");
+  const liveSpent = document.getElementById("liveSpent");
+  const liveCredits = document.getElementById("liveCredits");
+  const userCredits = document.getElementById("userCredits");
+
+  if (billingTime) billingTime.textContent = timeText;
+  if (billingCost) billingCost.textContent = spentText;
+  if (liveTime) liveTime.textContent = timeText;
+  if (liveSpent) liveSpent.textContent = spentText;
+  if (liveCredits) liveCredits.textContent = remainingText;
+  if (userCredits) userCredits.textContent = remainingText;
+}
+
+function formatBillingTime(totalSeconds) {
+  const minutes = Math.floor(totalSeconds / 60);
+  const seconds = totalSeconds % 60;
+
+  return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+}
+
+
+function initWaveform(file) {
+  if (waveSurfer) {
+    waveSurfer.destroy();
+    waveSurfer = null;
+  }
+
+  if (!file) return;
+
+  regionsPlugin = RegionsPlugin.create();
+
+  waveSurfer = WaveSurfer.create({
+    container: "#waveform",
+    waveColor: "rgba(160, 180, 200, 0.25)",
+    progressColor: "#39f5bd",
+    cursorColor: "#39f5bd",
+    height: 150,
+    barWidth: 2,
+    barGap: 1,
+    barRadius: 2,
+    normalize: true,
+    plugins: [
+      regionsPlugin,
+      TimelinePlugin.create({
+        container: "#waveTimeline"
+      })
+    ]
+  });
+
+  const url = URL.createObjectURL(file);
+  waveSurfer.load(url);
+
+  waveSurfer.on("ready", () => {
+    initDemoAudioEngine();
+    const duration = waveSurfer.getDuration();
+
+    currentRegion = regionsPlugin.addRegion({
+      start: Math.min(10, duration * 0.15),
+      end: Math.min(duration * 0.75, duration),
+      color: "rgba(57, 245, 189, 0.24)",
+      drag: true,
+      resize: true
+    });
+
+    updateRegionInfo(currentRegion);
+
+    regionsPlugin.enableDragSelection({
+      color: "rgba(57, 245, 189, 0.18)"
+    });
+  });
+
+  waveSurfer.on("audioprocess", () => {
+    document.getElementById("playheadTime").textContent =
+      formatTime(waveSurfer.getCurrentTime());
+  });
+
+  waveSurfer.on("seek", () => {
+    document.getElementById("playheadTime").textContent =
+      formatTime(waveSurfer.getCurrentTime());
+  });
+
+  regionsPlugin.on("region-updated", (region) => {
+    currentRegion = region;
+    updateRegionInfo(region);
+
+    sendControlMessage({
+      type: "region-change",
+      deviceId: selectedDevice?.id,
+      start: region.start,
+      end: region.end
+    });
+  });
+
+  regionsPlugin.on("region-clicked", (region, e) => {
+    e.stopPropagation();
+    currentRegion = region;
+    region.play();
+  });
+}
+
+function updateRegionInfo(region) {
+  document.getElementById("regionStart").textContent = formatTime(region.start);
+  document.getElementById("regionEnd").textContent = formatTime(region.end);
+  document.getElementById("regionDuration").textContent =
+    formatTime(region.end - region.start);
+}
+
+function formatTime(seconds) {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  const ms = Math.floor((seconds % 1) * 1000);
+  return `${mins}:${String(secs).padStart(2, "0")}.${String(ms).padStart(3, "0")}`;
+}
+
+window.playPauseWave = async function() {
+  if (!waveSurfer) return;
+
+  await resumeDemoAudioEngine();
+
+  const credits = Number(currentUserData?.credits || 0);
+
+  if (!isBillingRunning && credits <= 0) {
+    alert("Nemaš kredita. Nadoplati račun.");
+    return;
+  }
+
+  waveSurfer.playPause();
+
+  if (waveSurfer.isPlaying()) {
+    startBillingTimer(getChainTotalPrice());
+  } else {
+    stopBillingTimer();
+  }
+};
+
+window.stopWave = function() {
+  if (waveSurfer) waveSurfer.stop();
+  stopBillingTimer();
+};
+
+window.skipWave = function(seconds) {
+  if (!waveSurfer) return;
+  waveSurfer.setTime(
+    Math.max(0, Math.min(waveSurfer.getDuration(), waveSurfer.getCurrentTime() + seconds))
+  );
+};
+
+window.zoomWave = function(amount) {
+  if (!waveSurfer) return;
+  const current = waveSurfer.options.minPxPerSec || 0;
+  waveSurfer.zoom(Math.max(0, current + amount));
+};
+
+window.loopRegion = function() {
+  if (!currentRegion) return;
+  currentRegion.play();
+};
+function knobTemplate(c) {
+  const normalized = (c.value - c.min) / (c.max - c.min);
+  const deg = -135 + normalized * 270;
+
+  return `
+    <div class="pro-control ${c.size === "large" ? "large" : ""}">
+      <div class="knob-scale">
+        <span>${c.minLabel || c.min}</span>
+        <span>${c.maxLabel || c.max}</span>
+      </div>
+
+      <div class="pro-knob-shell">
+        <div class="pro-knob-glow"></div>
+        <div class="knob"
+          data-id="${c.id}"
+          data-min="${c.min}"
+          data-max="${c.max}"
+          data-step="${c.step}"
+          data-value="${c.value}"
+          data-unit="${c.unit}"
+          style="transform:rotate(${deg}deg)">
+        </div>
+      </div>
+
+      <div class="knob-label">${c.label}</div>
+      <div class="knob-sub">${c.sub || ""}</div>
+      <div class="knob-value">${formatControlValue(c.value, c.unit)}</div>
+    </div>
+  `;
+}
+
+function attachKnobs() {
+  document.querySelectorAll(".knob").forEach(knob => {
+    let dragging = false;
+    let startY = 0;
+    let startValue = Number(knob.dataset.value);
+
+    knob.addEventListener("mousedown", e => {
+      dragging = true;
+      startY = e.clientY;
+      startValue = Number(knob.dataset.value);
+      knob.classList.add("dragging");
+      document.body.classList.add("is-dragging");
+    });
+
+    window.addEventListener("mousemove", e => {
+      if (!dragging) return;
+
+      const min = Number(knob.dataset.min);
+      const max = Number(knob.dataset.max);
+      const step = Number(knob.dataset.step);
+      const delta = (startY - e.clientY) * step * 0.12;
+
+      let value = Math.min(max, Math.max(min, startValue + delta));
+      value = Math.round(value / step) * step;
+
+      setKnobValue(knob, value);
+    });
+
+    window.addEventListener("mouseup", () => {
+      dragging = false;
+      knob.classList.remove("dragging");
+      document.body.classList.remove("is-dragging");
+    });
+  });
+}
+
+function setKnobValue(knob, value) {
+  const oldValue = Number(knob.dataset.value);
+  if (oldValue === value) return;
+
+  const min = Number(knob.dataset.min);
+  const max = Number(knob.dataset.max);
+  const unit = knob.dataset.unit;
+  const isStepped = knob.dataset.stepped === "true";
+
+  value = Math.min(max, Math.max(min, value));
+
+if (isStepped) {
+  value = Math.round(value);
+} else {
+  const step = Number(knob.dataset.step || 1);
+  value = Math.round(value / step) * step;
+  value = Number(value.toFixed(4));
+}
+
+  knob.dataset.value = value;
+
+  const normalized = (value - min) / (max - min);
+  const deg = -135 + normalized * 270;
+  knob.style.transform = `rotate(${deg}deg)`;
+
+  const controlEl =
+  knob.closest(".pro-control") ||
+  knob.closest(".ng-control") ||
+  knob.closest(".ngtube-control") ||
+  knob.closest(".bm-control") ||
+  knob.closest(".control");
+
+  let sendValue = value;
+  let displayValue = formatControlValue(value, unit);
+
+  if (isStepped) {
+    const options = JSON.parse(knob.dataset.options || "[]");
+    const option = options[value];
+
+    if (option) {
+      sendValue = option.value;
+      displayValue = option.label;
+    }
+} else {
+  if (knob.dataset.deviceId === "bettermaker_eq") {
+    displayValue = formatBettermakerValue(knob.dataset.id, value, unit);
+  } else if (knob.dataset.deviceId === "ngtubecomp") {
+    displayValue = formatNgTubeValue(knob.dataset.id, value, unit);
+  } else {
+    displayValue = formatNgBusValue(knob.dataset.id, value, unit);
+  }
+}
+
+  if (controlEl?.querySelector(".knob-value")) {
+    controlEl.querySelector(".knob-value").textContent = displayValue;
+  }
+
+  updateNgBusMeters(knob.dataset.id, sendValue);
+  updateNgBusDisplay(knob.dataset.id, displayValue);
+  updateNgTubeMeters(knob.dataset.id, sendValue);
+  updateNgTubeDisplay(knob.dataset.id, displayValue);
+  updateBettermakerDisplay(knob.dataset.id, displayValue);
+  applyDemoAudioParam(knob.dataset.deviceId || selectedDevice?.id, knob.dataset.id, sendValue);
+
+  console.log("KNOB MOVE:", {
+    deviceId: knob.dataset.deviceId || selectedDevice?.id,
+    parameter: knob.dataset.id,
+    value: sendValue,
+    displayValue
+  });
+
+  sendControlMessage({
+    type: "parameter-change",
+    deviceId: knob.dataset.deviceId || selectedDevice?.id,
+    parameter: knob.dataset.id,
+    value: sendValue
+  });
+}
+
+function updateNgBusMeters(parameter, value) {
+  if (!parameter) return;
+
+  const side = parameter.startsWith("L_") ? "L" : parameter.startsWith("R_") ? "R" : null;
+  if (!side) return;
+
+  const needle = document.querySelector(`.ng-needle[data-vu="${side}"]`);
+  if (!needle) return;
+
+  const normalized = Math.max(0, Math.min(1, (Number(value) + 24) / 48));
+  const deg = -38 + normalized * 76;
+
+  needle.style.transform = `translateX(-50%) rotate(${deg}deg)`;
+}
+function updateNgTubeMeters(parameter, value) {
+  if (!parameter) return;
+
+  const side = parameter.startsWith("L_") ? "L" : parameter.startsWith("R_") ? "R" : null;
+  if (!side) return;
+
+  const needle = document.querySelector(`.ngtube-needle[data-ngtube-vu="${side}"]`);
+  if (!needle) return;
+
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) return;
+
+  const normalized = Math.max(0, Math.min(1, Math.abs(numeric) / 20));
+  const deg = -38 + normalized * 76;
+
+  needle.style.transform = `translateX(-50%) rotate(${deg}deg)`;
+}
+
+function attachChainSwitches() {
+  document.querySelectorAll(".chain-bypass").forEach(button => {
+    button.addEventListener("click", () => {
+      const isBypassed = button.classList.toggle("bypassed");
+      button.textContent = isBypassed ? "BYPASS" : "IN";
+
+      sendControlMessage({
+        type: "parameter-change",
+        deviceId: button.dataset.deviceId,
+        parameter: "bypass",
+        value: isBypassed
+      });
+    });
+  });
+}
+window.setPluginLive = function() {
+  document.getElementById("status").textContent = "LIVE";
+  document.getElementById("status").classList.add("live");
+};
+
+window.processAudio = function() {
+  const status = document.getElementById("status");
+  status.textContent = "PROCESSING";
+  setTimeout(() => status.textContent = "DONE", 1200);
+};
+
+/* DEVICE HELPERS */
+function getDeviceAccent(id) {
+  if (id === "ngbuscomp") return "#6ee7b7";
+  if (id === "ngtubecomp") return "#ffb86b";
+  if (id === "bettermaker_eq") return "#4fd1ff";
+  return "#4fd1ff";
+}
+
+function getDeviceType(id) {
+  if (id === "ngbuscomp") return "BUS COMPRESSOR";
+  if (id === "ngtubecomp") return "TUBE COMPRESSOR";
+  if (id === "bettermaker_eq") return "MASTERING EQUALIZER";
+  return "ANALOG DEVICE";
+}
+
+function getControlsForDevice(id) {
+  if (id === "ngbuscomp") {
+    return [
+      { id: "threshold", label: "THRESHOLD", sub: "Compression start", unit: "dB", min: -20, max: 10, value: -4, step: 0.5, minLabel: "-20", maxLabel: "+10", size: "large" },
+      { id: "attack", label: "ATTACK", sub: "Transient speed", unit: "ms", min: 0.1, max: 30, value: 10, step: 0.5, minLabel: "FAST", maxLabel: "SLOW" },
+      { id: "release", label: "RELEASE", sub: "Recovery time", unit: "s", min: 0.1, max: 1.2, value: 0.3, step: 0.05, minLabel: ".1", maxLabel: "1.2" },
+      { id: "ratio", label: "RATIO", sub: "Compression amount", unit: ":1", min: 1.5, max: 10, value: 2, step: 0.5, minLabel: "1.5", maxLabel: "10" },
+      { id: "makeup", label: "MAKEUP", sub: "Output gain", unit: "dB", min: 0, max: 12, value: 2, step: 0.5, minLabel: "0", maxLabel: "+12" },
+      { id: "mix", label: "MIX", sub: "Parallel blend", unit: "%", min: 0, max: 100, value: 100, step: 1, minLabel: "DRY", maxLabel: "WET" }
+    ];
+  }
+
+  if (id === "ngtubecomp") {
+    return [
+      { id: "input", label: "INPUT", sub: "Drive input", unit: "dB", min: -12, max: 12, value: 0, step: 0.5, minLabel: "-12", maxLabel: "+12", size: "large" },
+      { id: "saturation", label: "SATURATION", sub: "Tube color", unit: "%", min: 0, max: 100, value: 35, step: 1, minLabel: "CLEAN", maxLabel: "HOT", size: "large" },
+      { id: "attack", label: "ATTACK", sub: "Tube response", unit: "ms", min: 1, max: 80, value: 25, step: 1, minLabel: "FAST", maxLabel: "SLOW" },
+      { id: "release", label: "RELEASE", sub: "Recovery", unit: "ms", min: 50, max: 900, value: 250, step: 10, minLabel: "50", maxLabel: "900" },
+      { id: "output", label: "OUTPUT", sub: "Final level", unit: "dB", min: -12, max: 12, value: 0, step: 0.5, minLabel: "-12", maxLabel: "+12" }
+    ];
+  }
+
+  return [
+    { id: "lowGain", label: "LOW GAIN", sub: "Low shelf amount", unit: "dB", min: -12, max: 12, value: 0, step: 0.5, minLabel: "-12", maxLabel: "+12" },
+    { id: "lowFreq", label: "LOW FREQ", sub: "Low frequency", unit: "Hz", min: 20, max: 470, value: 80, step: 5, minLabel: "20", maxLabel: "470" },
+    { id: "midGain", label: "MID GAIN", sub: "Presence control", unit: "dB", min: -10, max: 10, value: 0, step: 0.5, minLabel: "-10", maxLabel: "+10", size: "large" },
+    { id: "highFreq", label: "HIGH FREQ", sub: "Air frequency", unit: "kHz", min: 2, max: 28, value: 12, step: 0.5, minLabel: "2", maxLabel: "28" },
+    { id: "output", label: "OUTPUT", sub: "Final level", unit: "dB", min: -12, max: 12, value: 0, step: 0.5, minLabel: "-12", maxLabel: "+12" }
+  ];
+}
+
+function formatControlValue(value, unit) {
+  if (unit === "kHz") return `${Number(value).toFixed(1)} kHz`;
+  if (unit === "Hz") return `${Math.round(value)} Hz`;
+  if (unit === "ms") return `${Number(value).toFixed(1)} ms`;
+  if (unit === "s") return `${Number(value).toFixed(2)} s`;
+  if (unit === "%") return `${Math.round(value)} %`;
+  if (unit === ":1") return `${Number(value).toFixed(1)}:1`;
+  return `${Number(value).toFixed(1)} ${unit}`;
+}
+function formatNgBusValue(parameterId, value, fallbackUnit) {
+  const id = parameterId || "";
+
+  if (typeof value === "string") return value.toUpperCase();
+
+  if (id.includes("threshold")) return `${Number(value).toFixed(1)} dB`;
+  if (id.includes("makeup")) return `${Number(value).toFixed(2)} dB`;
+  if (id.includes("ironPad")) return `-${Math.round(value)} dB`;
+  if (id.includes("thd")) return `${Number(value).toFixed(1)} %`;
+  if (id.includes("mix")) return `${Math.round(value)} %`;
+
+  return formatControlValue(value, fallbackUnit);
+}
+function formatNgTubeValue(parameterId, value, fallbackUnit) {
+  const id = parameterId || "";
+
+  if (id.includes("threshold")) return `${Number(value).toFixed(1)} dB`;
+  if (id.includes("mix")) return `${Math.round(value)} %`;
+  if (id.includes("attack")) return `${Number(value).toFixed(1)} ms`;
+  if (id.includes("input")) return `${Number(value).toFixed(2)} dB`;
+  if (id.includes("release")) return `${Number(value).toFixed(1)} s`;
+  if (id.includes("thd")) return `${Number(value).toFixed(1)} %`;
+  if (id.includes("tube")) return `${Number(value).toFixed(2)} dB`;
+  if (id.includes("output")) return `${Number(value).toFixed(2)} dB`;
+  if (id.includes("ironPad")) return `-${Math.round(value)} dB`;
+  if (id.includes("scHpf")) return `${Math.round(value)} Hz`;
+  if (id.includes("scBell")) return `${(Number(value) / 1000).toFixed(1)} kHz`;
+
+  return formatControlValue(value, fallbackUnit);
+}
+
+function updateNgTubeDisplay(parameter, displayValue) {
+  const display = document.getElementById("ngtubeDisplay");
+  if (!display) return;
+
+  const rows = display.querySelectorAll("b");
+  if (rows[0]) rows[0].textContent = parameter || "READY";
+  if (rows[1]) rows[1].textContent = displayValue ?? "---";
+
+  if (parameter === "mode" && rows[2]) {
+    rows[2].textContent = String(displayValue).toUpperCase();
+  }
+}
+function updateNgBusDisplay(parameter, displayValue) {
+  const display = document.getElementById("ngbusDisplay");
+  if (!display) return;
+
+  const rows = display.querySelectorAll("b");
+
+  if (rows[0]) rows[0].textContent = parameter || "READY";
+  if (rows[1]) rows[1].textContent = displayValue ?? "---";
+}
+/* UPLOAD */
+dropzone.addEventListener("dragover", e => {
+  e.preventDefault();
+  dropzone.classList.add("dragover");
+});
+
+dropzone.addEventListener("dragleave", () => {
+  dropzone.classList.remove("dragover");
+});
+
+dropzone.addEventListener("drop", e => {
+  e.preventDefault();
+  dropzone.classList.remove("dragover");
+  addFiles(Array.from(e.dataTransfer.files));
+});
+
+function addFiles(files) {
+  for (const file of files) {
+    if (uploadedFiles.length >= MAX_FILES) {
+      alert("Možeš dodati maksimalno 20 datoteka.");
+      break;
+    }
+
+    const exists = uploadedFiles.some(f => f.name === file.name && f.size === file.size);
+    if (!exists) uploadedFiles.push(file);
+  }
+
+  renderFileList();
+  simulateUpload();
+}
+async function ensureDraftSession() {
+  if (!currentUser) {
+    throw new Error("Nisi prijavljen — ne mogu kreirati draft session.");
+  }
+
+  if (draftSessionId) {
+    return draftSessionId;
+  }
+
+  const sessionRef = doc(collection(db, "sessions"));
+  draftSessionId = sessionRef.id;
+
+  await setDoc(sessionRef, {
+    userId: getUserId(),
+    status: "draft",
+    sessionType: "chain",
+    files: [],
+    chainDevices: [],
+    chainOrder: [],
+    pricePerHour: 0,
+    cost: 0,
+    createdAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+
+  console.log("DRAFT SESSION CREATED:", draftSessionId);
+
+  return draftSessionId;
+}
+
+async function simulateUpload() {
+  const uploadStatus = document.getElementById("uploadStatus");
+  if (!uploadStatus) return;
+
+  if (!uploadedFiles.length) {
+    uploadStatus.innerHTML = "";
+    return;
+  }
+
+  uploadStatus.innerHTML = `
+    <div class="upload-loader"></div>
+    <strong>Upload u tijeku...</strong>
+  `;
+
+  try {
+const sessionId = await ensureDraftSession();
+
+const formData = new FormData();
+
+formData.append("userId", getUserId());
+formData.append("sessionId", sessionId);
+
+    uploadedFiles.forEach(file => {
+      formData.append("files", file);
+    });
+
+    const response = await fetch("http://localhost:7072/upload", {
+      method: "POST",
+      body: formData
+    });
+
+    const result = await response.json();
+
+    if (!response.ok || !result.ok) {
+      throw new Error(result.message || "Upload nije uspio.");
+    }
+
+await updateDoc(doc(db, "sessions", sessionId), {
+  files: result.files.map(file => ({
+    originalName: file.originalName,
+    savedName: file.savedName,
+    path: file.path,
+    size: file.size,
+    userId: file.userId,
+    sessionId: file.sessionId,
+    uploadedAt: new Date().toISOString()
+  })),
+  updatedAt: serverTimestamp()
+});
+
+uploadStatus.innerHTML = `
+  <span class="upload-done">✓</span>
+  <strong>Upload gotovo — ${result.files.length} fileova spremljeno</strong>
+`;
+
+console.log("UPLOAD RESULT:", result);
+  } catch (err) {
+    console.error("UPLOAD ERROR:", err);
+
+    uploadStatus.innerHTML = `
+      <span style="color:#ff8fa0;font-weight:900;font-size:22px;">×</span>
+      <strong>Greška kod uploada</strong>
+    `;
+  }
+}
+function renderFileList() {
+  fileList.innerHTML = "";
+  fileCounter.textContent = `${uploadedFiles.length} / ${MAX_FILES} files`;
+
+  if (!uploadedFiles.length) {
+    fileList.innerHTML = `<div class="empty-files">Nema dodanih fileova.</div>`;
+    return;
+  }
+
+  uploadedFiles.forEach((file, index) => {
+    const row = document.createElement("div");
+    row.className = "file-item";
+    row.innerHTML = `
+      <div class="file-name">${index + 1}. ${file.name}</div>
+      <div class="file-size">${formatFileSize(file.size)}</div>
+      <button class="file-remove" onclick="removeFile(${index})">×</button>
+    `;
+    fileList.appendChild(row);
+  });
+}
+
+window.removeFile = function(index) {
+  uploadedFiles.splice(index, 1);
+  renderFileList();
+};
+
+function formatFileSize(bytes) {
+  return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+}
+
+/* ELECTRON IPC */
+window.openPluginSession = function() {
+  if (!window.require) {
+    alert("Electron IPC nije dostupan.");
+    return;
+  }
+
+  const { ipcRenderer } = window.require("electron");
+  ipcRenderer.send("open-plugin-session");
+};
+
+renderPlugin();
+window.addEventListener("beforeunload", () => {
+  if (!activeSessionId) return;
+
+  try {
+    stopHeartbeat();
+
+    updateDoc(doc(db, "sessions", activeSessionId), {
+      clientStatus: "closing",
+      updatedAt: serverTimestamp()
+    });
+  } catch (err) {
+    console.warn("beforeunload cleanup nije uspio:", err);
+  }
+});
+document.addEventListener("visibilitychange", async () => {
+  if (!activeSessionId) return;
+
+  try {
+    await updateDoc(doc(db, "sessions", activeSessionId), {
+      clientVisibility: document.visibilityState,
+      updatedAt: serverTimestamp()
+    });
+  } catch (err) {
+    console.warn("visibility update nije uspio:", err.message);
+  }
+});
+</script>
+</body>
+</html>
