@@ -47,17 +47,23 @@ const server = new WebSocketServer({
   maxPayload: 4096,
   perMessageDeflate: false,
   verifyClient: (info, done) => {
-    // Electron file:// origins use "null"; CLI test clients often omit Origin.
-    // Access from browser websites is intentionally denied.
+    // Electron file:// pages may report Origin: "file://" OR "null".
+    // Native CLI test clients may omit Origin. Keep HTTP(S) websites rejected.
+    // Listening only on 127.0.0.1 is still essential.
     const origin = info.origin;
-    done(!origin || origin === "null", 403, "Local Electron only");
+    const allowed = !origin || origin === "null" || origin === "file://" || origin.startsWith("file:///");
+    console.log("DAW Bridge handshake:", JSON.stringify({origin: origin ?? "(missing)", allowed}));
+    done(allowed, 403, "Local Electron file origin only");
   }
 });
 console.log(`RAW DAW Bridge on ws://${host}:${serverPort} · ${mode.toUpperCase()}`);
 if (midiOutput) console.log("MIDI OUT:", midiPortName, "CC21 ch1 -> Focused Quick Control #1");
 else console.log("DRY RUN: logs CC; will not send MIDI to Cubase.");
 
-server.on("connection", socket => {
+server.on("connection", (socket, request) => {
+  console.log("DAW Bridge client connected:", request.socket.remoteAddress || "unknown");
+  socket.on("close", (code, reason) => console.log("DAW Bridge client closed:", code, reason?.toString() || ""));
+  socket.on("error", error => console.warn("DAW Bridge socket error:", error.message));
   let lastMessageAt = 0;
   let messagesInWindow = 0;
   let windowStart = Date.now();
