@@ -57,6 +57,26 @@ try {
     throw new Error("Unexpected MIDI mapping or status: " + JSON.stringify(ack));
   }
   console.log("PASS: RAW EQ1 +6 dB -> WS 127.0.0.1:7073 -> dry-run MIDI CC21 value 89 -> ACK simulated.");
+  // Electron's file-origin handshake must succeed, while a remote webpage is refused.
+  const electronSocket = new WebSocket("ws://127.0.0.1:7073", { origin: "file://" });
+  await new Promise((resolve, reject) => {
+    electronSocket.once("open", resolve);
+    electronSocket.once("error", reject);
+  });
+  console.log("PASS: Electron Origin file:// is accepted by local bridge.");
+  electronSocket.close();
+
+  await new Promise((resolve, reject) => {
+    const browserSocket = new WebSocket("ws://127.0.0.1:7073", { origin: "https://untrusted.example" });
+    browserSocket.on("open", () => { browserSocket.terminate(); reject(new Error("Security failure: remote website was accepted.")); });
+    browserSocket.on("unexpected-response", (_request, response) => {
+      response.resume();
+      if (response.statusCode === 403) resolve();
+      else reject(new Error("Unexpected rejection status: " + response.statusCode));
+    });
+    browserSocket.on("error", error => reject(error));
+  });
+  console.log("PASS: Untrusted HTTPS Origin rejected with HTTP 403.");
   console.log("NOTE: Cubase and physical hardware were NOT tested.");
 } catch (error) {
   console.error("FAIL:", error.message);
