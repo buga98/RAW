@@ -3455,3 +3455,11 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
 
 #plugin.active .diag-action-buttons { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
 #plugin.active:has(.audio-region-panel.minimized) #pluginHost { padding-bottom: 70px; }
+
+
+/* A backdrop-filter ancestor would make position:fixed relative to .main.
+   Disable it while Control Room is visible so the dock anchors to viewport. */
+.main:has(#plugin.active) {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
