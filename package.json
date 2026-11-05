@@ -11,7 +11,10 @@
     "bridge:dry": "node daw-bridge.mjs",
     "bridge:ports": "node daw-bridge.mjs --ports",
     "bridge:midi": "node daw-bridge.mjs --midi --port RAW_TO_CUBASE",
-    "bridge:check": "node scripts/bridge-selftest.mjs"
+    "bridge:check": "node scripts/bridge-selftest.mjs",
+    "studio:lab:dry": "node studio-lab-bridge.mjs",
+    "studio:lab:midi": "node studio-lab-bridge.mjs --midi",
+    "studio:lab:check": "node scripts/studio-lab-selftest.mjs"
   },
   "keywords": [],
   "author": "",
