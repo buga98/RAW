@@ -53,8 +53,10 @@ try{
     deviceId:"bettermaker_eq",parameter:"eq1Gain",value:6}));
   const valid=await ack;
   if(valid.status!=="simulated"||valid.midi.value!==89)throw Error("Unexpected MIDI routing");
-  const secondOwn=until(b,m=>m.type==="studio-state"&&m.status==="yours");
+  const free=until(b,m=>m.type==="studio-state"&&m.status==="free");
   a.send(JSON.stringify({type:"studio-release"}));
+  await free;
+  const secondOwn=until(b,m=>m.type==="studio-state"&&m.status==="yours");
   b.send(JSON.stringify({type:"studio-claim"}));
   await secondOwn;
   console.log("PASS: first client owns entire studio, second client denied control.");
