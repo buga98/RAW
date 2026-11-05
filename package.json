@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "start": "electron .",
-    "dev": "node start-all.mjs"
+    "dev": "node start-all.mjs",
+    "test:local": "node launch-local-demo.mjs",
+    "test:smoke": "node --test"
   },
   "keywords": [],
   "author": "",
