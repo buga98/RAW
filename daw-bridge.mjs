@@ -56,9 +56,18 @@ const server = new WebSocketServer({
     done(allowed, 403, "Local Electron file origin only");
   }
 });
-console.log(`RAW DAW Bridge on ws://${host}:${serverPort} · ${mode.toUpperCase()}`);
-if (midiOutput) console.log("MIDI OUT:", midiPortName, "CC21 ch1 -> Focused Quick Control #1");
-else console.log("DRY RUN: logs CC; will not send MIDI to Cubase.");
+server.on("listening", () => {
+  console.log(`RAW DAW Bridge LISTENING on ws://${host}:${serverPort} · ${mode.toUpperCase()}`);
+  if (midiOutput) console.log("MIDI OUT:", midiPortName, "CC21 ch1 -> Focused Quick Control #1");
+  else console.log("DRY RUN: logs CC; will not send MIDI to Cubase.");
+});
+server.on("error", error => {
+  console.error(error.code === "EADDRINUSE"
+    ? `DAW Bridge ERROR: port ${serverPort} is already in use. Only one bridge may listen on this port.`
+    : "DAW Bridge server ERROR:", error.message);
+  try { midiOutput?.close(); } catch (_) {}
+  process.exitCode = 1;
+});
 
 server.on("connection", (socket, request) => {
   console.log("DAW Bridge client connected:", request.socket.remoteAddress || "unknown");
