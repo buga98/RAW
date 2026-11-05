@@ -20,7 +20,8 @@ function createWindow() {
     }
   });
 
-  win.loadFile("index.html");
+  const testMode = process.env.RAW_TEST_MODE === "1";
+  win.loadFile("index.html", testMode ? { query: { testMode: "1" } } : undefined);
 }
 
 ipcMain.on("open-plugin-session", () => {
