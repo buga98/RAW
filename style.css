@@ -3451,3 +3451,7 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
   #plugin.active .waveform { height:60px; }
   #plugin.active .region-info { display:none; }
 }
+
+
+#plugin.active .diag-action-buttons { display:flex; flex-wrap:wrap; gap:6px; justify-content:flex-end; }
+#plugin.active:has(.audio-region-panel.minimized) #pluginHost { padding-bottom: 70px; }
