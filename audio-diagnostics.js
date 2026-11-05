@@ -93,7 +93,7 @@
 
   async function sineMeasure(gainDb) {
     const rate = 48000;
-    const context = new OfflineAudioContext(1, rate, rate * 2);
+    const context = new OfflineAudioContext(1, rate * 2, rate);
     const source = context.createOscillator();
     source.type = "sine";
     source.frequency.value = 1000;
@@ -111,7 +111,7 @@
     const samples = rendered.getChannelData(0);
     let energy = 0;
     const startSample = Math.floor(rate * 0.25);
-    const endSample = Math.floor(rate * 1.7);
+    const endSample = Math.min(samples.length, Math.floor(rate * 1.7));
     for (let i = startSample; i < endSample; i++) {
       energy += samples[i] * samples[i];
     }
@@ -126,6 +126,9 @@
       const [reference, boost, cut] = await Promise.all([
         sineMeasure(0), sineMeasure(6), sineMeasure(-6)
       ]);
+      if (!Number.isFinite(reference) || reference <= 0 || !Number.isFinite(boost) || !Number.isFinite(cut)) {
+        throw new Error("Offline analiza nije vratila ispravan signal.");
+      }
       const boostDb = 20 * Math.log10(boost / reference);
       const cutDb = 20 * Math.log10(cut / reference);
       const ok = Math.abs(boostDb - 6) <= 0.6 && Math.abs(cutDb + 6) <= 0.6;
