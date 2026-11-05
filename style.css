@@ -3495,3 +3495,38 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
   #plugin.active .rack-size-toolbar { padding:9px; }
   #plugin.active .rack-size-caption span { display:none; }
 }
+
+
+/* Responsive scaled-rack containment: original 1380px panel is absolute,
+   only its transformed visual bounds count toward the page layout. */
+#plugin.active,
+#plugin.active #pluginHost,
+#plugin.active .pro-plugin,
+#plugin.active .chain-rack,
+#plugin.active .rack-fit { min-width: 0; max-width: 100%; }
+#plugin.active .rack-fit {
+  position: relative;
+  display: block;
+  width: 100%;
+  overflow: visible;
+}
+#plugin.active .rack-scaled {
+  position: absolute;
+  top: 0;
+  left: 0;
+  flex: none;
+  transform-origin: top left;
+}
+#plugin.active .chain-rack { overflow: visible; }
+#plugin.active .pro-plugin { overflow: visible; }
+@media (max-width: 1100px) {
+  .app { grid-template-columns: minmax(90px,220px) minmax(0,1fr); gap: 12px; padding: 12px; }
+  .main { min-width: 0; padding: 16px; }
+  #plugin.active .pro-plugin { padding: 12px; }
+  #plugin.active .rack-size-toolbar { padding: 8px 10px; }
+  #plugin.active .audio-region-panel { left: 12px; right: 12px; }
+}
+@media (max-width: 760px) {
+  .app { grid-template-columns: 1fr; }
+  #plugin.active .audio-region-panel { left: 6px; right: 6px; }
+}
