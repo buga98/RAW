@@ -3374,3 +3374,80 @@ body.sidebar-collapsed .pulse {
     grid-template-columns: 1fr;
   }
 }
+
+/* =========================================================
+   RAW v1.1 — persistent mastering transport and diagnostics
+   Dock is fixed only while Control Room is visible.
+   ========================================================= */
+#plugin.active #pluginHost { padding-bottom: 285px; }
+#plugin.active .audio-region-panel {
+  position: fixed;
+  z-index: 100;
+  left: 310px;
+  right: 34px;
+  bottom: 14px;
+  max-height: min(69vh, 620px);
+  overflow-y: auto;
+  padding: 10px 16px 12px;
+  border-radius: 18px;
+  background: linear-gradient(160deg, #182b38 0%, #101922 90%);
+  border: 1px solid rgba(79,209,255,.33);
+  box-shadow: 0 -16px 54px rgba(0,0,0,.62), 0 0 0 1px rgba(255,255,255,.035) inset;
+  backdrop-filter: blur(24px);
+}
+body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
+#plugin.active .audio-region-head { margin-bottom: 8px; gap: 10px; }
+#plugin.active .audio-region-head > div { min-width: 0; display:flex; align-items:center; gap:10px; }
+#plugin.active .audio-region-head strong { font-size: 13px; margin: 0; white-space: nowrap; }
+#plugin.active .file-pill {
+  max-width: min(33vw, 470px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  font-size: 12px; padding: 6px 10px;
+}
+#plugin.active .audio-dock-actions { display:flex; align-items:center; gap:7px; flex-wrap:wrap; justify-content:flex-end; }
+#plugin.active .audio-dock-actions .ghost-btn { font-size:11px; padding:8px 10px; }
+#plugin.active .waveform { height: 88px; border-radius: 10px; }
+#plugin.active .wave-timeline { height: 20px; }
+#plugin.active .region-info { gap:10px; margin:8px 0; }
+#plugin.active .region-info div { padding:4px 10px; border-radius:8px; }
+#plugin.active .region-info small { font-size: 10px; }
+#plugin.active .region-info strong { margin-top:0; font-size: 12px; }
+#plugin.active .transport { gap:7px; }
+#plugin.active .transport-btn { width: 36px; height: 34px; font-size:15px; border-radius:8px; flex-shrink:0; }
+#plugin.active .transport-time { font-size:18px; }
+#plugin.active .transport .ghost-btn { padding:8px 10px; font-size:11px; }
+#plugin.active .audio-region-panel.minimized { max-height:none; }
+#plugin.active .audio-region-panel.minimized #rawAudioDockBody { display:none; }
+#plugin.active:has(.audio-region-panel.minimized) #pluginHost { padding-bottom:70px; }
+#plugin.active:has(#rawDiagnosticsDetails:not([hidden])) #pluginHost { padding-bottom:445px; }
+#plugin.active:has(#rawDiagnosticsDetails:not([hidden])) .audio-region-panel.minimized #pluginHost { padding-bottom:70px; }
+#plugin.active #rawDiagnosticsDetails[hidden] { display: none !important; }
+#plugin.active .raw-diagnostics { padding: 10px 2px 0; margin-top:10px; border-top:1px solid rgba(255,255,255,.12); }
+#plugin.active .diag-heading { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px; }
+#plugin.active .diag-heading strong { font-size:12px; letter-spacing:.09em; color:#6ee7b7; }
+#plugin.active .diag-heading span { color:#aab9c7; font-size:10px; }
+#plugin.active .diag-meters { display:grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap:9px; margin-bottom:8px; }
+#plugin.active .diag-meters > div { background:rgba(0,0,0,.22); border-radius:9px; padding:7px 10px; min-width:0; }
+#plugin.active .diag-meters small { display:block; font-size:9px; color:#92a9b8; letter-spacing:.08em; margin-bottom:2px; }
+#plugin.active .diag-meters strong { color:#6ee7b7; font-variant-numeric: tabular-nums; font-size:14px; }
+#plugin.active .diag-spectrum { display:block; width:100%; height:92px; background:rgba(3,12,19,.7); border:1px solid rgba(255,255,255,.08); border-radius:10px; }
+#plugin.active .diag-actions { display:flex; gap:12px; align-items:center; justify-content:space-between; padding-top:7px; }
+#plugin.active .diag-actions span { font-size:10px; color:#b5c7d1; }
+#plugin.active .diag-actions .ghost-btn { padding:8px 10px; font-size:10px; }
+#plugin.active .diag-key { display:inline-block; width:8px; height:8px; border-radius:3px; margin:0 4px 0 10px; }
+#plugin.active .diag-key-input { background:#97a6b9; }
+#plugin.active .diag-key-output { background:#41edbf; }
+#plugin.active .diag-test-result { font-size:11px; line-height:1.45; color:#c2cfdb; margin-top:7px; }
+#plugin.active .diag-test-result[data-state="pass"] { color:#6ee7b7; }
+#plugin.active .diag-test-result[data-state="fail"] { color:#ff8fa0; }
+@media (max-width: 1050px) {
+  #plugin.active .audio-region-panel { left: 20px; right:20px; bottom:10px; }
+  body.sidebar-collapsed #plugin.active .audio-region-panel { left:20px; }
+  #plugin.active .audio-region-head { flex-wrap:wrap; }
+  #plugin.active .transport { flex-wrap:wrap; }
+  #plugin.active .file-pill { max-width:42vw; }
+}
+@media (max-height: 700px) {
+  #plugin.active .audio-region-panel { max-height: 56vh; }
+  #plugin.active .waveform { height:60px; }
+  #plugin.active .region-info { display:none; }
+}
