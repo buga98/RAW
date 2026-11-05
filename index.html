@@ -1451,18 +1451,24 @@ function fitRackDevices() {
     const rack = wrapper.querySelector(".rack-scaled");
     if (!rack) return;
 
-    const availableWidth = wrapper.clientWidth;
+    // The original device design is always laid out at its native dimensions.
+    // Its transformed visual rectangle must be positioned independently from
+    // CSS layout, otherwise a 1380px flex item overflows the narrow viewport.
+    const availableWidth = Math.max(1, wrapper.clientWidth);
     const designWidth = Number(rack.dataset.designWidth || 1380);
     const maxScale = Number(rack.dataset.maxScale || 1.22);
-
-    // Fit the design to its container, then apply the user-selected size.
-    // Do not force a minimum scale that might overflow on a narrow viewport.
-    const baselineScale = Math.max(0.1, Math.min(maxScale, availableWidth / designWidth));
+    const baselineScale = Math.min(maxScale, availableWidth / designWidth);
     const scale = baselineScale * factor;
+    const visualWidth = designWidth * scale;
+    const visualHeight = rack.offsetHeight * scale;
 
-    rack.style.transformOrigin = "top center";
+    rack.style.position = "absolute";
+    rack.style.top = "0";
+    rack.style.left = `${Math.max(0, (availableWidth - visualWidth) / 2)}px`;
+    rack.style.transformOrigin = "top left";
     rack.style.transform = `scale(${scale})`;
-    wrapper.style.height = `${Math.ceil(rack.offsetHeight * scale)}px`;
+    // Transforms don't affect document flow: reserve exactly the visible height.
+    wrapper.style.height = `${Math.ceil(visualHeight)}px`;
   });
 
   document.querySelectorAll(".rack-size-btn").forEach(button => {
