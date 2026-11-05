@@ -82,7 +82,13 @@ server.on("connection", socket => {
         send(socket, lab.snapshot(socket));
         return;
       }
-      // Recheck the authoritative clock immediately before any MIDI action.\n      const expiredNow = lab.tick();\n      if (expiredNow) {\n        send(expiredNow, {type:"studio-expired",reason:"FAKE test credits exhausted"});\n        broadcast();\n      }\n      if (!lab.owns(socket)) throw new Error("Studio occupied, not claimed, or test credits exhausted");
+      // Recheck the authoritative clock immediately before any MIDI action.
+      const expiredNow = lab.tick();
+      if (expiredNow) {
+        send(expiredNow, {type:"studio-expired",reason:"FAKE test credits exhausted"});
+        broadcast();
+      }
+      if (!lab.owns(socket)) throw new Error("Studio occupied, not claimed, or test credits exhausted");
       if (msg.type !== "parameter-change") throw new Error("Unsupported studio command");
       if (!lab.enabledDevices.has(msg.deviceId)) throw new Error("Device not enabled for this session");
       const now = Date.now();
