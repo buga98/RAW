@@ -3,6 +3,7 @@
   "use strict";
   let input = null;
   let output = null;
+  let currentEngine = null;
   let frame = 0;
   let last = 0;
   const FFT_SIZE = 2048;
@@ -138,16 +139,46 @@
     }
   }
 
-  function attach(before, after) {
+  function measureCurrentEq() {
+    const result = document.getElementById("diagCurrentEq");
+    if (!result) return;
+    if (!currentEngine) {
+      result.textContent = "Prvo učitaj pjesmu u Control Room.";
+      return;
+    }
+    if (!currentEngine.engaged) {
+      result.textContent = "EQ je u BYPASS modu: očekivani odziv je 0 dB.";
+      return;
+    }
+    const freqs = [45, 132, 537, 1000, 2890, 5450, 12000];
+    const audioFreqs = Float32Array.from(freqs);
+    const stages = ["hpf", "eq1", "eq2", "eq3", "eq4", "lpf"];
+    const gains = freqs.map(() => Math.max(0.00001, currentEngine.output.gain.value));
+    for (const name of stages) {
+      const magnitude = new Float32Array(audioFreqs.length);
+      const phase = new Float32Array(audioFreqs.length);
+      currentEngine[name].getFrequencyResponse(audioFreqs, magnitude, phase);
+      magnitude.forEach((v, i) => { gains[i] *= Math.max(v, 0.00001); });
+    }
+    const response = gains.map((magnitude, i) => {
+      const db = 20 * Math.log10(Math.max(0.000001, magnitude));
+      return freqs[i] + " Hz: " + (db >= 0 ? "+" : "") + db.toFixed(1) + " dB";
+    });
+    result.textContent = "Izračun trenutačnog DEMO EQ-a · " + response.join("  |  ");
+  }
+
+  function attach(before, after, engine) {
     input = before;
     output = after;
+    currentEngine = engine || null;
     start();
   }
 
   function detach() {
     input = null;
     output = null;
+    currentEngine = null;
   }
 
-  window.RAWAudioDiagnostics = { attach, detach, runOfflineTest };
+  window.RAWAudioDiagnostics = { attach, detach, runOfflineTest, measureCurrentEq };
 })();
