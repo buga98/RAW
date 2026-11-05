@@ -3462,3 +3462,36 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
+
+
+/* RAW compact rack sizing — scale the complete device faceplates, not individual knobs. */
+#plugin.active .rack-size-toolbar {
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  flex-wrap:wrap;
+  gap:12px;
+  margin:0 2px 14px;
+  padding:10px 14px;
+  border:1px solid rgba(255,255,255,.11);
+  border-radius:14px;
+  background:rgba(255,255,255,.035);
+}
+#plugin.active .rack-size-caption { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+#plugin.active .rack-size-caption strong { font-size:11px; letter-spacing:.08em; color:#6ee7b7; }
+#plugin.active .rack-size-caption span { font-size:11px; color:#a9bbc8; }
+#plugin.active .rack-size-buttons { display:flex; gap:7px; align-items:center; flex-wrap:wrap; }
+#plugin.active .rack-size-btn {
+  padding:7px 11px; min-width:48px; border-radius:9px; font-size:11px;
+}
+#plugin.active .rack-size-btn.active {
+  background:rgba(79,209,255,.2);
+  border-color:rgba(79,209,255,.7);
+  color:#9aeaff;
+}
+#plugin.active .chain-rack { gap:14px; }
+#plugin.active .rack-fit { overflow:visible; }
+@media (max-width:850px) {
+  #plugin.active .rack-size-toolbar { padding:9px; }
+  #plugin.active .rack-size-caption span { display:none; }
+}
