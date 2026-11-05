@@ -61,10 +61,12 @@
       current.onerror = () => {
         if (socket === current) status("ERROR", "Bridge nije dostupan: pokreni npm run bridge:dry.");
       };
-      current.onclose = () => {
+      current.onclose = event => {
         if (socket !== current) return;
         socket = null;
-        status("OFFLINE", "Bridge connection closed.");
+        const reason = event.reason ? " · " + event.reason : "";
+        status("OFFLINE", "Bridge connection closed (WebSocket code " + event.code + ")" + reason +
+          ". Provjeri DAW Bridge terminal. 1006 obično znači odbijenu vezu ili nedostupan server.");
       };
     } catch (error) { status("ERROR", error.message); }
   }
