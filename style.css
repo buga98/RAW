@@ -3419,7 +3419,6 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
 #plugin.active .audio-region-panel.minimized #rawAudioDockBody { display:none; }
 #plugin.active:has(.audio-region-panel.minimized) #pluginHost { padding-bottom:70px; }
 #plugin.active:has(#rawDiagnosticsDetails:not([hidden])) #pluginHost { padding-bottom:445px; }
-#plugin.active:has(#rawDiagnosticsDetails:not([hidden])) .audio-region-panel.minimized #pluginHost { padding-bottom:70px; }
 #plugin.active #rawDiagnosticsDetails[hidden] { display: none !important; }
 #plugin.active .raw-diagnostics { padding: 10px 2px 0; margin-top:10px; border-top:1px solid rgba(255,255,255,.12); }
 #plugin.active .diag-heading { display:flex; align-items:baseline; justify-content:space-between; gap:10px; margin-bottom:8px; }
