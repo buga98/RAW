@@ -1086,8 +1086,9 @@ function renderPlugin() {
           <canvas id="diagSpectrum" class="diag-spectrum" aria-label="Spektar ulaza i izlaza: siva ulaz, zelena izlaz"></canvas>
           <div class="diag-actions">
             <span><i class="diag-key diag-key-input"></i> INPUT <i class="diag-key diag-key-output"></i> OUTPUT</span>
-            <button type="button" class="ghost-btn" onclick="RAWAudioDiagnostics.runOfflineTest()">RUN 1 kHz EQ TEST</button>
+            <div class="diag-action-buttons"><button type="button" class="ghost-btn" onclick="RAWAudioDiagnostics.measureCurrentEq()">MEASURE CURRENT EQ</button><button type="button" class="ghost-btn" onclick="RAWAudioDiagnostics.runOfflineTest()">RUN 1 kHz EQ TEST</button></div>
           </div>
+          <div id="diagCurrentEq" class="diag-test-result" role="status">Klikni MEASURE CURRENT EQ nakon promjene gumba; analiza ne zahtijeva playback.</div>
           <div id="diagTestResult" class="diag-test-result" role="status">Offline test provjerava matematičku obradu EQ filtra, bez slušanja i bez studijskog hardvera.</div>
         </div>
         </div>
@@ -1548,7 +1549,7 @@ function initDemoAudioEngine() {
     engaged: true
   };
 
-  window.RAWAudioDiagnostics?.attach(inputMeter, outputMeter);
+  window.RAWAudioDiagnostics?.attach(inputMeter, outputMeter, demoAudioEngine);
   console.log("DEMO AUDIO ENGINE READY");
 }
 
