@@ -26,3 +26,5 @@ jobs:
         run: npm run test:smoke
       - name: Bridge dry-run integration test
         run: npm run bridge:check
+      - name: Two-client exclusive studio lab test
+        run: npm run studio:lab:check
