@@ -37,7 +37,8 @@ test("diagnostics module exposes audio measures and a non-hardware offline test"
   assert.match(js, /getFrequencyResponse/);
   assert.match(js, /getFloatTimeDomainData/);
   assert.match(js, /getFloatFrequencyData/);
-  assert.match(js, /new OfflineAudioContext/);
+  assert.match(js, /new OfflineAudioContext\(1, rate \* 2, rate\)/);
+  assert.match(js, /Number\.isFinite\(reference\)/);
   assert.match(js, /sineMeasure\(6\)/);
   assert.match(js, /sineMeasure\(-6\)/);
 });
