@@ -210,6 +210,7 @@
 
 
   <script src="audio-diagnostics.js"></script>
+  <script src="daw-bridge-client.js"></script>
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import {
@@ -289,6 +290,7 @@ const deviceGrid = document.getElementById("deviceGrid");
 const chainSlot = null;
 const pluginHost = document.getElementById("pluginHost");
 let controlSocket = null;
+window.RAWBridgeTestSessionId = () => TEST_MODE ? activeSessionId : null;
 let waveSurfer = null;
 let regionsPlugin = null;
 let currentRegion = null;
@@ -350,7 +352,8 @@ function stopHeartbeat() {
 }
 function sendControlMessage(message) {
   if (TEST_MODE) {
-    console.info("TEST CONTROL (not transmitted):", message);
+    console.info("TEST CONTROL:", message);
+    window.RAWDawBridge?.send(message); // explicit loopback bridge opt-in; no Firebase writes
     return;
   }
   if (!controlSocket || controlSocket.readyState !== WebSocket.OPEN) {
@@ -1037,6 +1040,17 @@ function renderPlugin() {
         </div>
       </div>
 
+      <div class="raw-daw-toolbar" aria-label="DAW Bridge local test">
+        <div class="raw-daw-title">
+          <strong>DAW BRIDGE v1</strong>
+          <span>EQ1 GAIN → MIDI CC21 → CUBASE QUICK CONTROL 1</span>
+        </div>
+        <div class="raw-daw-actions">
+          <span id="rawBridgeStatus">OFFLINE</span>
+          <button type="button" class="ghost-btn" id="rawBridgeConnect" onclick="RAWDawBridge.connect()">CONNECT</button>
+        </div>
+        <small id="rawBridgeDetails">Start: npm run bridge:dry; zatim klikni CONNECT.</small>
+      </div>
       <div class="rack-size-toolbar" aria-label="Velicina prikaza studijskih uređaja">
         <div class="rack-size-caption">
           <strong>RACK SIZE</strong>
@@ -1132,6 +1146,7 @@ attachChainSwitches();
 attachNgBusButtons();
 attachNgTubeButtons();
 attachBettermakerButtons();
+window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
 }
