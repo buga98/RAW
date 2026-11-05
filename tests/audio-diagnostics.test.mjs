@@ -23,7 +23,7 @@ test("diagnostics observes before and after actual Web Audio signal graph", () =
   assert.match(html, /inputMeter\s*\.connect\(hpf\)/);
   assert.match(html, /wetGain\)\s*\.connect\(outputMeter\)/);
   assert.match(html, /outputMeter\.connect\(demoAudioCtx\.destination\)/);
-  assert.match(html, /RAWAudioDiagnostics\?\.attach\(inputMeter, outputMeter\)/);
+  assert.match(html, /RAWAudioDiagnostics\?\.attach\(inputMeter, outputMeter, demoAudioEngine\)/);
 });
 
 test("diagnostics module exposes audio measures and a non-hardware offline test", () => {
@@ -33,6 +33,8 @@ test("diagnostics module exposes audio measures and a non-hardware offline test"
   assert.equal(typeof sandbox.window.RAWAudioDiagnostics.attach, "function");
   assert.equal(typeof sandbox.window.RAWAudioDiagnostics.detach, "function");
   assert.equal(typeof sandbox.window.RAWAudioDiagnostics.runOfflineTest, "function");
+  assert.equal(typeof sandbox.window.RAWAudioDiagnostics.measureCurrentEq, "function");
+  assert.match(js, /getFrequencyResponse/);
   assert.match(js, /getFloatTimeDomainData/);
   assert.match(js, /getFloatFrequencyData/);
   assert.match(js, /new OfflineAudioContext/);
