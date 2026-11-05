@@ -3530,3 +3530,19 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
   .app { grid-template-columns: 1fr; }
   #plugin.active .audio-region-panel { left: 6px; right: 6px; }
 }
+
+
+/* DAW Bridge v1: local MIDI handshake, below Control Room header. */
+#plugin.active .raw-daw-toolbar {
+  display:flex; align-items:center; flex-wrap:wrap; gap:8px 14px;
+  margin:0 2px 12px; padding:10px 14px;
+  border:1px solid rgba(110,231,183,.25);
+  border-radius:13px; background:rgba(8,28,30,.58);
+}
+#plugin.active .raw-daw-title { display:flex; align-items:center; flex-wrap:wrap; gap:10px; flex:1; }
+#plugin.active .raw-daw-title strong { color:#6ee7b7; font-size:11px; letter-spacing:.1em; }
+#plugin.active .raw-daw-title span { color:#a4b9c6; font-size:11px; }
+#plugin.active .raw-daw-actions { display:flex; align-items:center; gap:8px; }
+#plugin.active #rawBridgeStatus { color:#7dedbb; font-size:11px; font-weight:950; min-width:78px; text-align:right; }
+#plugin.active #rawBridgeConnect { font-size:11px; padding:8px 12px; }
+#plugin.active #rawBridgeDetails { flex-basis:100%; color:#91aebd; font-size:11px; }
