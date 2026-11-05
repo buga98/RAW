@@ -7,6 +7,7 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
   <div class="app">
     <aside class="sidebar glass">
       <button class="sidebar-toggle" onclick="toggleSidebar()" title="Smanji meni">
@@ -252,6 +253,15 @@ const firebaseConfig = {
 const appFirebase = initializeApp(firebaseConfig);
 const db = getFirestore(appFirebase);
 const auth = getAuth(appFirebase);
+// The Electron main process passes testMode=1 only when RAW_TEST_MODE=1.
+// Local testing never writes sessions, uploads, hardware state, or credits.
+const TEST_MODE = new URLSearchParams(window.location.search).get("testMode") === "1";
+const localTestSessions = [];
+if (TEST_MODE) {
+  document.getElementById("testModeBanner").style.display = "block";
+  document.body.style.paddingTop = "35px";
+  console.info("REMOTE STUDIO LOCAL TEST MODE: cloud writes and billing disabled");
+}
 
 let currentUser = null;
 let currentUserData = null;
@@ -296,6 +306,7 @@ let demoAudioEngine = null;
 
 
 function connectControlSocket() {
+  if (TEST_MODE) return;
   controlSocket = new WebSocket("ws://localhost:7071");
 
   controlSocket.onopen = () => {
@@ -311,6 +322,7 @@ function connectControlSocket() {
   };
 }
 function startHeartbeat() {
+  if (TEST_MODE) return;
   stopHeartbeat();
 
   heartbeatTimer = setInterval(async () => {
@@ -336,6 +348,10 @@ function stopHeartbeat() {
   }
 }
 function sendControlMessage(message) {
+  if (TEST_MODE) {
+    console.info("TEST CONTROL (not transmitted):", message);
+    return;
+  }
   if (!controlSocket || controlSocket.readyState !== WebSocket.OPEN) {
     console.warn("Control socket nije spojen.");
     return;
@@ -412,6 +428,7 @@ await setPersistence(
 };
 
 window.registerUser = async function() {
+  if (TEST_MODE) { alert("Registracija je isključena u lokalnom testnom načinu."); return; }
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
 
@@ -613,6 +630,26 @@ const sessionRef = draftSessionId
 const newSessionId = sessionRef.id;
 const totalPrice = getChainTotalPrice();
 
+    if (TEST_MODE) {
+      activeSessionId = `test-${Date.now()}`;
+      draftSessionId = null;
+      selectedDevice = devices[0];
+      sessionStartedAtMs = null;
+      spentThisSession = 0;
+      spentBeforeCurrentRun = 0;
+      isBillingRunning = false;
+      localTestSessions.unshift({
+        id: activeSessionId, status: "active", sessionType: "chain",
+        chainDevices: devices.map(d => ({id:d.id, name:d.name})),
+        chainOrder: devices.map(d => d.id), pricePerHour: 0, cost: 0,
+        files: uploadedFiles.map(f => ({originalName:f.name, size:f.size})),
+        startedAt: {toDate: () => new Date()}
+      });
+      renderPlugin();
+      window.goTo("plugin");
+      return;
+    }
+
     await runTransaction(db, async (transaction) => {
       for (const device of devices) {
         const deviceRef = doc(db, "devices", device.id);
@@ -757,6 +794,7 @@ function renderDeviceCard(device) {
   deviceGrid.appendChild(card);
 }
 async function chargeSessionFor(sessionId) {
+  if (TEST_MODE) return;
   if (!currentUser || !sessionId) return;
   if (spentThisSession <= 0) return;
 
@@ -800,6 +838,10 @@ async function chargeSession() {
 
 
 async function startSession(device) {
+  if (TEST_MODE) {
+    chainDevices = [device.id];
+    return window.startChainSession();
+  }
   try {
     const deviceRef = doc(db, "devices", device.id);
     const sessionRef = doc(collection(db, "sessions"));
@@ -859,7 +901,7 @@ function updateUserPanel() {
 
   panel.style.display = "grid";
   emailEl.textContent = currentUser.email || "-";
-  creditsEl.textContent = `${Number(currentUserData?.credits || 0).toFixed(2)} €`;
+  creditsEl.textContent = TEST_MODE ? "TEST — bez naplate" : `${Number(currentUserData?.credits || 0).toFixed(2)} €`;
 }
 window.endChainSession = async function(options = {}) {
   const {
@@ -888,6 +930,22 @@ window.endChainSession = async function(options = {}) {
     stopWave();
     stopBillingTimer();
     stopHeartbeat();
+
+    if (TEST_MODE) {
+      const local = localTestSessions.find(x => x.id === sessionId);
+      if (local) {
+        local.status = "ended";
+        local.endedAt = {toDate: () => new Date()};
+      }
+      activeSessionId = null;
+      sessionStartedAtMs = null;
+      spentThisSession = 0;
+      spentBeforeCurrentRun = 0;
+      isBillingRunning = false;
+      if (!silent) alert("TEST sesija završena — stvarni krediti i uređaji nisu mijenjani.");
+      if (!stayOnPage) window.goTo("sessions");
+      return;
+    }
 
     await chargeSessionFor(sessionId);
 
@@ -964,7 +1022,7 @@ function renderPlugin() {
         <div class="live-billing">
           <div>
             <small>CREDITS</small>
-            <strong id="liveCredits">${Number(currentUserData?.credits || 0).toFixed(2)} €</strong>
+            <strong id="liveCredits">${TEST_MODE ? "TEST" : Number(currentUserData?.credits || 0).toFixed(2) + " €"}</strong>
           </div>
           <div>
             <small>SPENT</small>
@@ -1021,7 +1079,7 @@ function renderPlugin() {
         </div>
         <div>
           <small>CHAIN PRICE</small>
-          <strong>${getChainTotalPrice()} €/h</strong>
+          <strong>${TEST_MODE ? "TEST (bez naplate)" : getChainTotalPrice() + " €/h"}</strong>
         </div>
         <div>
           <small>CURRENT COST</small>
@@ -1049,6 +1107,13 @@ window.renderSessions = async function() {
 
   if (!currentUser) {
     host.innerHTML = `<div class="empty-files">Prvo se prijavi.</div>`;
+    return;
+  }
+
+  if (TEST_MODE) {
+    host.innerHTML = localTestSessions.length
+      ? `<div class="sessions-grid">${localTestSessions.map(renderSessionCard).join("")}</div>`
+      : `<div class="empty-files">TEST MODE: još nema lokalnih testnih sesija.</div>`;
     return;
   }
 
@@ -1269,6 +1334,11 @@ function formatSessionStatus(status) {
 }
 
 window.inspectSession = async function(sessionId) {
+  if (TEST_MODE) {
+    const session = localTestSessions.find(x => x.id === sessionId);
+    alert(session ? `TEST SESSION: ${session.id}\nStatus: ${session.status}\nTrošak: 0 €` : "Testna sesija nije pronađena.");
+    return;
+  }
   try {
     const snap = await getDoc(doc(db, "sessions", sessionId));
 
@@ -1296,6 +1366,11 @@ window.inspectSession = async function(sessionId) {
 };
 
 window.duplicateSessionSettings = async function(sessionId) {
+  if (TEST_MODE) {
+    const session = localTestSessions.find(x => x.id === sessionId);
+    if (session) { chainDevices = [...session.chainOrder]; renderPatchChain(); window.goTo("devices"); }
+    return;
+  }
   try {
     const snap = await getDoc(doc(db, "sessions", sessionId));
 
@@ -2385,6 +2460,7 @@ function knobTemplateForDevice(c, deviceId) {
 }
 
 function startBillingTimer(pricePerHour) {
+  if (TEST_MODE) return;
   if (isBillingRunning) return;
 
   const credits = Number(currentUserData?.credits || 0);
@@ -2553,7 +2629,7 @@ window.playPauseWave = async function() {
 
   const credits = Number(currentUserData?.credits || 0);
 
-  if (!isBillingRunning && credits <= 0) {
+  if (!TEST_MODE && !isBillingRunning && credits <= 0) {
     alert("Nemaš kredita. Nadoplati račun.");
     return;
   }
@@ -2931,6 +3007,7 @@ function addFiles(files) {
   simulateUpload();
 }
 async function ensureDraftSession() {
+  if (TEST_MODE) return "test-local-upload";
   if (!currentUser) {
     throw new Error("Nisi prijavljen — ne mogu kreirati draft session.");
   }
@@ -2961,6 +3038,13 @@ async function ensureDraftSession() {
 }
 
 async function simulateUpload() {
+  if (TEST_MODE) {
+    const uploadStatus = document.getElementById("uploadStatus");
+    if (uploadStatus) uploadStatus.textContent = uploadedFiles.length
+      ? `${uploadedFiles.length} datoteka učitano LOKALNO — nisu poslane u studio ni u Firebase.`
+      : "";
+    return;
+  }
   const uploadStatus = document.getElementById("uploadStatus");
   if (!uploadStatus) return;
 
@@ -3068,7 +3152,7 @@ window.openPluginSession = function() {
 
 renderPlugin();
 window.addEventListener("beforeunload", () => {
-  if (!activeSessionId) return;
+  if (!activeSessionId || TEST_MODE) return;
 
   try {
     stopHeartbeat();
@@ -3082,7 +3166,7 @@ window.addEventListener("beforeunload", () => {
   }
 });
 document.addEventListener("visibilitychange", async () => {
-  if (!activeSessionId) return;
+  if (!activeSessionId || TEST_MODE) return;
 
   try {
     await updateDoc(doc(db, "sessions", activeSessionId), {
