@@ -11,7 +11,8 @@ const paths=["bettermaker-engine-v3.js","bettermaker-manual-v4.js",
  "raw-portable-project-v1.js","raw-portable-project-panel-v1.js"];
 function setup(){
  const ctx={window:{crypto:webcrypto,File,Blob},TextEncoder,TextDecoder,
-  Blob,File,Uint8Array,DataView,JSON,Date};
+  Blob,File,Uint8Array,DataView,Date};
+ // Keep the VM's native JSON intrinsic; injecting host JSON changes object prototypes.
  vm.createContext(ctx);
  for(const p of paths)
   vm.runInContext(readFileSync(new URL("../"+p,import.meta.url),"utf8"),ctx);
