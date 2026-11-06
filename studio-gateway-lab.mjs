@@ -28,7 +28,7 @@ export function createStudioGatewayLab({
  if(clientToken===agentToken)throw Error("Client and agent tokens must differ");
  if(!Number.isSafeInteger(leaseMs)||leaseMs<1000||leaseMs>120000)throw Error("Invalid lease duration");
  const expected={client:digest(clientToken),agent:digest(agentToken)};
- const agents=new Set(),authenticated=new Map();
+ const authenticated=new Map(),connections=new Set();
  let agent=null,lease=null,epoch=0;
  const pending=new Map(),receipts=new Map();
  const server=new WebSocketServer({
@@ -76,7 +76,7 @@ export function createStudioGatewayLab({
   if(!timingSafeEqual(actual,expected[msg.role]))throw safe("Bad local authentication","AUTH_FAILED");
   if(msg.role==="agent"&&agent)throw safe("Agent already online","AGENT_OCCUPIED");
   authenticated.set(ws,msg.role);
-  if(msg.role==="agent"){agent=ws;agents.add(ws);}
+  if(msg.role==="agent")agent=ws;
   send(ws,{type:"gateway-auth-ok",role:msg.role,labOnly:true,hardwareVerified:false,
    agentOnline:!!agent,leaseActive:!!lease});
   if(msg.role==="client")
@@ -191,12 +191,14 @@ export function createStudioGatewayLab({
   send(p.client,out);
  }
  server.on("connection",ws=>{
+  connections.add(ws);
   let authed=false;
   const timer=setTimeout(()=>{if(!authed)ws.close(1008,"Authentication required");},5000);
   timer.unref?.();
   ws.on("message",raw=>{
+   let msg=null;
    try{
-    const msg=JSON.parse(raw.toString());
+    msg=JSON.parse(raw.toString());
     if(!msg||typeof msg!=="object"||Array.isArray(msg))throw safe("Invalid object","INVALID_MESSAGE");
     if(!authed){
      auth(ws,msg);authed=true;clearTimeout(timer);return;
@@ -204,7 +206,7 @@ export function createStudioGatewayLab({
     if(authenticatedRole(ws)==="agent")agentMessage(ws,msg);
     else clientMessage(ws,msg);
    }catch(e){
-    error(ws,e.code||"INVALID_MESSAGE",null);
+    error(ws,e.code||"INVALID_MESSAGE",typeof msg?.requestId==="string"?msg.requestId.slice(0,64):null);
     if(!authed){clearTimeout(timer);ws.close(1008,"Authentication failed");}
    }
   });
@@ -212,8 +214,9 @@ export function createStudioGatewayLab({
    clearTimeout(timer);
    const role=authenticated.get(ws);
    authenticated.delete(ws);
+   connections.delete(ws);
    if(role==="agent"&&agent===ws){
-    agent=null;agents.delete(ws);
+    agent=null;
     endLease("AGENT_DISCONNECTED");
     for(const client of allClients())send(client,{type:"gateway-studio-state",status:"agent-offline",labOnly:true});
    }else if(lease?.client===ws)endLease("OWNER_DISCONNECTED");
@@ -222,7 +225,7 @@ export function createStudioGatewayLab({
  });
  const close=()=>new Promise(resolveClose=>{
   clearInterval(ticker);
-  for(const socket of authenticated.keys())socket.terminate();
+  for(const socket of connections)socket.terminate();
   server.close(()=>resolveClose());
  });
  return {server,close,tick,stats:()=>({
