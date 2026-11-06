@@ -152,3 +152,35 @@ test("socket loss clears last snapshot so historical values cannot appear live",
  assert.equal(h.window.RAWStudioSim.interceptsControls(),false);
  assert.match(h.history(),/CONNECTION LOST/);
 });
+
+test("newer ACK wins if network delivers older ACK afterward",()=>{
+ const h=harness(),socket=h.connect();
+ h.move("ngbuscomp","L_threshold",-12);
+ h.move("ngbuscomp","L_threshold",-10);
+ const commands=socket.sent.filter(m=>m.type==="parameter-change");
+ assert.equal(commands.length,2);
+ const older=commands[0],newer=commands[1];
+ const result=(cmd,version)=>({type:"simulator-command-result",requestId:cmd.requestId,
+  sessionId:SESSION,leaseEpoch:1,sequence:cmd.sequence,deviceId:cmd.deviceId,
+  parameter:cmd.parameter,status:"simulated-applied",simulated:true,hardwareVerified:false,
+  stateVersion:version,readback:{value:cmd.value,source:"simulated-memory",hardwareVerified:false}});
+ socket.receive(result(newer,2));
+ socket.receive(result(older,1));
+ assert.match(h.comparison(),/requested: -10 \| SIM: -10 \| SIM CONFIRMED/);
+ assert.match(h.history(),/IGNORED/);
+});
+test("stale resync snapshot cannot overwrite newer confirmed memory",()=>{
+ const h=harness(),socket=h.connect();
+ h.move("ngbuscomp","L_threshold",-12);
+ const cmd=socket.sent.find(m=>m.type==="parameter-change");
+ socket.receive({type:"simulator-command-result",requestId:cmd.requestId,
+  sessionId:SESSION,leaseEpoch:1,sequence:cmd.sequence,deviceId:cmd.deviceId,
+  parameter:cmd.parameter,status:"simulated-applied",simulated:true,hardwareVerified:false,
+  stateVersion:3,readback:{value:-12,source:"simulated-memory",hardwareVerified:false}});
+ socket.receive({type:"simulator-snapshot",simulated:true,hardwareVerified:false,
+  leaseEpoch:1,stateVersion:2,devices:{
+   ngbuscomp:{online:true,source:"simulated-memory",values:{L_threshold:-8.5}}
+  }});
+ assert.match(h.comparison(),/requested: -12 \| SIM: -12 \| SIM CONFIRMED/);
+ assert.match(h.root.panel.querySelector("#rawSimReadback").textContent,/L_threshold=-12/);
+});
