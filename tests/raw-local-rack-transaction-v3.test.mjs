@@ -27,6 +27,7 @@ function harness(){
  });
  const snap=()=>JSON.stringify(sandbox.deviceStates);
  return {eq,bus,tube,archive,planner,live,tx,snap,
+  transactionFactory:w.RAWLocalRackTransactionV3.create,
   get sandbox(){return sandbox;},set sandbox(v){sandbox=v;},
   get writes(){return writeCount;},set enabled(x){enabled=x;}};
 }
@@ -79,33 +80,44 @@ test("guard blocks apply when host reports disallowed state",()=>{
  assert.throws(()=>h.tx.apply({confirmed:true}),e=>e.code==="NOT_LOCAL_TEST");
  assert.equal(h.writes,0);
 });
-test("writer failure is rolled back and no misleading confirmation is returned",()=>{
+test("writer failure after partial scratch change is rolled back to checkpoint",()=>{
  const h=harness(),target=h.live();
  h.bus.parameter("L","threshold",-12);h.sandbox=h.live();
- const original=h.snap();
- let calls=0;
- const tx=h.archive&&h.planner&&h.tx;
- // Validate planner state independently, while the scripted adapter rejects.
- const failTx=h.eq&&h.planner&&h.archive&&h.tx;
- assert.ok(failTx);
- const failWriter=h.eq&&h.archive&&h.planner&&h.live;
- const api=h.eq&&h.archive;
- assert.ok(failWriter&&api);
- let sandbox=h.sandbox;
- const second=h.tx; // prior instance is unused; construct a writer-failure instance.
- const faulty=h.eq&&h.bus&&h.tube&&h.archive&&h.planner;
- assert.ok(faulty&&second);
- const transaction=h.eq&&h.bus&&h.tube&&h.archive&&h.planner;
- assert.ok(transaction);
- const writer=h.eq;assert.ok(writer);
- const other=h.tx;
- assert.ok(other);
- const isolated=h.archive;
- const instance=h.tx;
- assert.ok(instance);
- // First writer rejects after mutation; second writer restores checkpoint.
- const runner=h.planner&&h.archive&&h.tx;
- assert.ok(runner);
+ const checkpoint=JSON.stringify(h.sandbox.deviceStates);
+ let memory=h.sandbox,calls=0;
+ const tx=h.planner&&h.archive&&h.eq&&h.bus&&h.tube&&h.tx;
+ assert.ok(tx);
+ const localTx=h.eq&&h.archive&&h.planner&&h.live;
+ assert.ok(localTx);
+ const engine=h.eq&&h.bus&&h.tube;
+ assert.ok(engine);
+ const newTx=h.archive&&h.planner;
+ assert.ok(newTx);
+ const factory=h.transactionFactory;
+ const broken=factory({
+  archive:h.archive,planner:h.planner,capture:()=>memory,
+  canMutate:()=>true,
+  restore:next=>{
+   calls++;
+   memory=h.archive.parse(JSON.stringify(next));
+   if(calls===1)throw new Error("Injected local writer failure");
+   return true;
+  }
+ });
+ broken.prepare(target);
+ assert.throws(()=>broken.apply({confirmed:true}),e=>e.code==="APPLY_ROLLED_BACK");
+ assert.equal(calls,2);
+ assert.equal(JSON.stringify(memory.deviceStates),checkpoint);
+});
+test("rollback failure is surfaced, never reported as successful apply",()=>{
+ const h=harness(),target=h.live();
+ h.bus.parameter("L","threshold",-12);h.sandbox=h.live();
+ const broken=h.transactionFactory({
+  archive:h.archive,planner:h.planner,capture:()=>h.sandbox,canMutate:()=>true,
+  restore:()=>false
+ });
+ broken.prepare(target);
+ assert.throws(()=>broken.apply({confirmed:true}),e=>e.code==="ROLLBACK_FAILED");
 });
 test("undo cannot overwrite later changed sandbox state",()=>{
  const h=harness(),target=h.live();
