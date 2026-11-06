@@ -10,6 +10,7 @@
   <link rel="stylesheet" href="ngtubecomp-control-v1.css" />
   <link rel="stylesheet" href="studio-sim-client.css" />
   <link rel="stylesheet" href="studio-gateway-client.css" />
+  <link rel="stylesheet" href="raw-workspace-v4.css" />
 </head>
 <body>
   <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
@@ -21,8 +22,8 @@
       <div class="brand">
         <div class="logo">🎛️</div>
         <div>
-          <h1>Remote Studio</h1>
-          <p>Analog workstation</p>
+          <h1>RAW MASTERING</h1>
+          <p>REMOTE AUDIO WORKSTATION</p>
         </div>
       </div>
 
@@ -207,8 +208,8 @@
       <section id="plugin" class="screen">
         <div class="screen-head compact">
           <div>
-            <h2>Kontrola uređaja</h2>
-            <p class="sub">Grafika kasnije šalje promjene prema pravom analognom hardwareu.</p>
+            <h2>Mastering Control Room</h2>
+            <p class="sub">Stereo virtual rack · transparentan digitalni preview · spremanje projekta</p>
           </div>
           <div class="status-row">
             <span class="badge" id="pluginDeviceType">ANALOG DEVICE</span>
@@ -221,7 +222,8 @@
       <section id="projects" class="screen" aria-label="Moji RAW projekti">
         <div class="screen-head"><div><h2>Moji projekti</h2>
           <p class="sub">Verzije, izvorni audio i kontrolirani povrat lokalnih postavki</p>
-        </div><span class="badge">PROJECT LIBRARY</span></div>
+        </div><div class="raw-project-head-status"><span class="badge">PROJECT LIBRARY</span>
+          <span class="raw-checkpoint-status" id="rawProjectWorkspaceNotice" role="status">NO SAVED CHECKPOINT</span></div></div>
         <div id="rawProjectsHost" class="raw-projects-workspace">
           <div class="empty-files">Otvori lokalnu chain sesiju za upravljanje mastering projektima.</div>
         </div>
@@ -230,6 +232,11 @@
         <div class="screen-head"><div><h2>Programerski dio · RAW Labs</h2>
           <p class="sub">Ograničeno na verificirani razvojni račun i LOCAL TEST · bez fizičkog hardvera</p>
         </div><span class="badge">DEVELOPER / TEST</span></div>
+        <div class="raw-developer-access-strip" aria-label="Developer authorization check">
+          <div><strong>OWNER-ONLY LOCAL LAB</strong><small>Firebase verified identity · fresh token · active LOCAL TEST</small></div>
+          <span id="rawDeveloperAccessStatus" role="status">LOCKED UNTIL VERIFIED</span>
+          <button type="button" class="ghost-btn" onclick="checkDeveloperAccess()">REVERIFY ACCESS</button>
+        </div>
         <div id="developerLabHost" class="raw-developer-labs">
           <p>Pokreni lokalnu testnu sesiju kako bi se prikazali Gateway, Simulator, Chain Archive i DAW Bridge.</p>
         </div>
@@ -245,6 +252,8 @@
   <script src="raw-local-rack-transaction-v3.js"></script>
   <script src="raw-project-recall-v3.js"></script>
   <script src="raw-developer-access-v1.js"></script>
+  <script src="raw-audio-route-v4.js"></script>
+  <script src="raw-workspace-project-status-v4.js"></script>
   <script src="raw-portable-project-v1.js"></script>
   <script src="raw-portable-project-panel-v1.js"></script>
   <script src="raw-local-project-library-v2.js"></script>
@@ -310,6 +319,7 @@ const localTestSessions = [];
 // privileges must be enforced by Firebase Security Rules / verified backend.
 const DEVELOPER_EMAIL = window.RAWDeveloperAccessV1?.OWNER_EMAIL;
 let developerGranted = false;
+let developerAuthEpoch = 0;
 const developerNav = document.getElementById("developerNav");
 const developerScreen = document.getElementById("developer");
 function developerAllowed() {
@@ -320,12 +330,18 @@ function updateDeveloperUi() {
   const allowed = developerAllowed();
   developerNav.hidden = !allowed;
   developerScreen.hidden = !allowed;
+  const accessTag=document.getElementById("rawDeveloperAccessStatus");
+  if(accessTag){
+    accessTag.textContent=allowed?"VERIFIED OWNER · LOCAL TEST":"ACCESS LOCKED";
+    accessTag.dataset.state=allowed?"verified":"locked";
+  }
   if(!allowed && developerScreen.classList.contains("active")){
     developerScreen.classList.remove("active");
-    document.getElementById("login").classList.add("active");
+    document.getElementById(currentUser?"plugin":"login").classList.add("active");
   }
 }
 function revokeDeveloperLabs(){
+  ++developerAuthEpoch;
   developerGranted=false;
   window.RAWStudioGatewayV1?.disconnect?.();
   window.RAWStudioSim?.disconnect?.();
@@ -334,6 +350,7 @@ function revokeDeveloperLabs(){
   updateDeveloperUi();
 }
 async function authorizeDeveloper(user) {
+  const attempt=++developerAuthEpoch;
   developerGranted=false;
   updateDeveloperUi();
   if(!TEST_MODE || !user?.emailVerified ||
@@ -341,13 +358,20 @@ async function authorizeDeveloper(user) {
   try{
     // Fresh ID token prevents granting developer UI on a stale unverified login.
     const token=await user.getIdTokenResult(true);
+    if(attempt!==developerAuthEpoch||auth.currentUser?.uid!==user.uid)return;
     developerGranted=window.RAWDeveloperAccessV1?.grant({
       testMode:TEST_MODE,user,tokenResult:token,
       activeUid:auth.currentUser?.uid
     })===true;
   }catch(error){console.warn("RAW developer LAB token verification unavailable",error);}
-  updateDeveloperUi();
+  if(attempt===developerAuthEpoch)updateDeveloperUi();
 }
+window.checkDeveloperAccess=async function(){
+  const user=auth.currentUser;
+  if(!user||!TEST_MODE){revokeDeveloperLabs();return;}
+  await authorizeDeveloper(user);
+  if(developerAllowed())window.goTo("developer");
+};
 if (TEST_MODE) {
   document.getElementById("testModeBanner").style.display = "block";
   document.body.style.paddingTop = "35px";
@@ -486,6 +510,9 @@ window.goTo = function(screenId) {
   if (screenId === "developer" && !developerAllowed()) {
     screenId = currentUser ? "plugin" : "login";
   }
+  if (screenId === "projects" && !TEST_MODE) {
+    screenId = currentUser ? "plugin" : "login";
+  }
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(screenId).classList.add("active");
 
@@ -620,6 +647,7 @@ onAuthStateChanged(auth, async (user) => {
 
   currentUser = user;
   await authorizeDeveloper(user);
+  if(auth.currentUser?.uid!==user.uid)return;
 
   const userSnap = await getDoc(doc(db, "users", user.uid));
   currentUserData = userSnap.exists() ? userSnap.data() : {};
@@ -1120,7 +1148,14 @@ function getActiveChainDevices() {
 function renderPlugin() {
   const devices = getActiveChainDevices();
   const firstAudioFile = uploadedFiles[0];
-
+  window.RAWWorkspaceStatusMonitor?.disconnect?.();
+  let audioRoute=null;
+  try{
+    audioRoute=window.RAWAudioRouteV4?.plan({
+      chainOrder:devices.map(x=>x.id),sources:[...uploadedFiles],
+      channels:2,mode:"local-preview"
+    });
+  }catch(error){console.warn("RAW audio route plan unavailable",error);}
   if (!devices.length) {
     pluginHost.innerHTML = `<div class="empty-files">Prvo složi patch chain.</div>`;
     return;
@@ -1130,11 +1165,36 @@ function renderPlugin() {
 
   pluginHost.innerHTML = `
     <div class="pro-plugin chain-control">
+      <div class="raw-console-hero">
+        <div class="raw-console-eyebrow"><span class="raw-console-led"></span> RAW / STUDIO MASTERING CONSOLE <span class="raw-console-edition">WORKSPACE V4</span></div>
+        <div class="raw-console-hero-main">
+          <div><h3>MASTERING DESK</h3><p>Virtual analog-inspired controls · original audio · saved project recall</p></div>
+          <div class="raw-console-hero-actions">
+            <span class="raw-console-mode">LOCAL DIGITAL PREVIEW</span>
+            <button class="raw-console-project-btn" type="button" onclick="goTo('projects')">MY PROJECTS <span aria-hidden="true">↗</span></button>
+          </div>
+        </div>
+        <div class="raw-console-signal" aria-label="Audio signal path status">
+          <div class="raw-console-node"><b>01</b><div><small>SOURCE</small><strong id="rawConsoleSource">ORIGINAL AUDIO</strong></div></div>
+          <span class="raw-signal-connector" aria-hidden="true"></span>
+          <div class="raw-console-node is-preview"><b>02</b><div><small>MONITOR</small><strong>WEB AUDIO PREVIEW</strong></div></div>
+          <span class="raw-signal-connector is-offline" aria-hidden="true"></span>
+          <div class="raw-console-node is-offline"><b>03</b><div><small>REAL ANALOG CHAIN</small><strong>NOT ROUTED</strong></div></div>
+          <span class="raw-signal-connector is-offline" aria-hidden="true"></span>
+          <div class="raw-console-node is-offline"><b>04</b><div><small>MASTER PRINT</small><strong>NOT AVAILABLE</strong></div></div>
+        </div>
+        <div class="raw-console-information">
+          <span><small>RACK DEVICES</small><strong id="rawConsoleDeviceCount">—</strong></span>
+          <span><small>FORMAT</small><strong id="rawConsoleChannels">STEREO · 2 CH</strong></span>
+          <span><small>HARDWARE READBACK</small><strong>UNVERIFIED</strong></span>
+          <span><small>PROJECT CHECKPOINT</small><strong class="raw-checkpoint-status" id="rawWorkspaceCheckpoint" role="status">NO SAVED CHECKPOINT</strong></span>
+        </div>
+      </div>
       <div class="pro-top">
         <div>          
           <button class="ghost-btn" onclick="goTo('devices')">←</button>
           <button class="ghost-btn danger-btn" onclick="endChainSession()">✕ END SESSION</button>
-          <span class="pro-title">Analog Chain Control</span>
+          <span class="pro-title">VIRTUAL ANALOG RACK</span>
           <span class="active-dot"></span>
           <span class="active-text">ACTIVE CHAIN</span>
         </div>
@@ -1297,6 +1357,12 @@ if (developerAllowed()) {
 }else{
   pluginHost.querySelector(".raw-daw-toolbar")?.remove();
 }
+const sourceTag=pluginHost.querySelector("#rawConsoleSource");
+if(sourceTag)sourceTag.textContent=firstAudioFile?.name||"NO AUDIO LOADED";
+const devicesTag=pluginHost.querySelector("#rawConsoleDeviceCount");
+if(devicesTag)devicesTag.textContent=String(audioRoute?.deviceCount??devices.length);
+const channelsTag=pluginHost.querySelector("#rawConsoleChannels");
+if(channelsTag)channelsTag.textContent=audioRoute?.channels===2?"STEREO · 2 CH":"ROUTE UNVERIFIED";
 if (TEST_MODE) {
 const rawProjectUiOptions={
   readArchive:()=>window.RAWChainArchiveV1.capture({
@@ -1330,6 +1396,29 @@ const rawProjectUiOptions={
     return true;
   }
 };
+const projectStatus=window.RAWWorkspaceProjectStatusV4?.create({
+  capture:rawProjectUiOptions.readArchive,
+  onChange:state=>{
+    const message=state.reference?
+      "v"+state.reference.revision+" · "+state.label+
+      (state.changed?" · "+state.changed+" changes":""):state.label;
+    for(const el of [document.getElementById("rawWorkspaceCheckpoint"),
+                     document.getElementById("rawProjectWorkspaceNotice"),
+                     projectsHost.querySelector("[data-library-current-state]")]){
+      if(el){el.textContent=message;el.dataset.state=state.phase;}
+    }
+  }
+});
+projectStatus?.evaluate();
+let statusRefreshHandle=null;
+const rackStatusObserver=new MutationObserver(()=>{
+  clearTimeout(statusRefreshHandle);
+  statusRefreshHandle=setTimeout(()=>projectStatus?.evaluate(),120);
+});
+rackStatusObserver.observe(pluginHost,{subtree:true,attributes:true,attributeFilter:["data-value"]});
+window.RAWWorkspaceStatusMonitor={
+  disconnect:()=>{rackStatusObserver.disconnect();clearTimeout(statusRefreshHandle);}
+};
 const recall=window.RAWProjectRecallV3?.create({
   capture:rawProjectUiOptions.readArchive,
   models:()=>({
@@ -1352,8 +1441,11 @@ projectsHost.replaceChildren();
 window.RAWPortableProjectPanelV1?.attach(projectsHost, rawProjectUiOptions);
 window.RAWLocalProjectLibraryPanelV2?.attach(projectsHost, {
   ...rawProjectUiOptions,recall,
-  getDraft:()=>window.RAWPortableProjectPanelV1?.getDraft(projectsHost)
+  getDraft:()=>window.RAWPortableProjectPanelV1?.getDraft(projectsHost),
+  onCheckpoint:checkpoint=>projectStatus?.checkpoint(checkpoint),
+  onStateChange:()=>projectStatus?.evaluate()
 });
+projectStatus?.evaluate();
 }
 window.RAWDawBridge?.refresh();
 fitRackDevices();
