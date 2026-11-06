@@ -109,7 +109,7 @@ test("different epoch snapshot is not accepted",()=>{
  const wrong={type:"simulator-snapshot",simulated:true,hardwareVerified:false,
   leaseEpoch:41,stateVersion:100,devices:{ngbuscomp:{source:"simulated-memory",values:{L_threshold:18}}}};
  assert.equal(r.t.snapshot(wrong),false);
- assert.equal(r.entry().confirmed,null);
+ assert.equal(r.t.rows().length,0);
 });
 test("device offline and connection lost are visible without simulated confirmation",()=>{
  const r=rig();
