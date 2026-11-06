@@ -154,7 +154,10 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
       pts.push((i===0?"M":"L")+(i*5).toFixed(1)+" "+((15-Math.min(15,Math.max(-15,db)))/30*248).toFixed(1));
     }
     const path=root.querySelector("#bmEqCurve");
-    if(path)path.setAttribute("d",pts.join(" "));
+    // V4 owns the curve after it is attached. The legacy V2 graph used to
+    // overwrite the V4 response on every knob mutation, causing flicker and
+    // stale curve positions while dragging. Keep V2 as fallback only.
+    if(path && root.dataset.bm4Attached!=="1")path.setAttribute("d",pts.join(" "));
     for(let n=1;n<=4;n++){
       const band=bands[n-1];
       const tile=root.querySelector('.bm2-tile[data-filter="eq'+n+'"]');
