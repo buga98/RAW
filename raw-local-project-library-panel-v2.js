@@ -3,7 +3,7 @@
  */
 (function(global){
 "use strict";
-function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSources}={}){
+function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSources,recall}={}){
  if(!host||!global.document||!global.RAWLocalProjectLibraryV2||
    typeof readArchive!=="function"||typeof getSources!=="function")return;
  if(host.querySelector(".raw-library-panel"))return;
@@ -26,6 +26,9 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
   '<div class="raw-library-actions">'+
   '<button type="button" data-library="open">OPEN / VERIFY (READ ONLY)</button>'+
   '<button type="button" data-library="compare">COMPARE SAVED RACK</button>'+
+  '<button type="button" data-library="preview-restore">PREVIEW RESTORE · LOCAL</button>'+
+  '<button type="button" data-library="apply-restore">RESTORE SAVED RACK · LOCAL</button>'+
+  '<button type="button" data-library="undo-restore">UNDO RESTORE</button>'+
   '<button type="button" data-library="rack-json">↓ EXPORT RACK JSON</button>'+
   '<button type="button" data-library="stage">STAGE SOURCES · LOCAL TEST</button>'+
   '<button type="button" data-library="download">↓ DOWNLOAD .RAWPROJ</button>'+
@@ -48,7 +51,7 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
   el.value=String(value);el.textContent=String(label);select.appendChild(el);
  };
  const chosen=()=>({projectId:proj.value,revision:Number(version.value)});
- const resetOpened=()=>{opened=null;};
+ const resetOpened=()=>{opened=null;recall?.clear?.();};
  async function populateVersions(projectId,preferred=null){
   resetOpened();clearOptions(version);
   if(!projectId){option(version,"","Select a project");return;}
@@ -124,6 +127,7 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
   const {projectId,revision}=chosen();
   if(!projectId||!revision)throw new Error("Choose a project and revision first");
   const result=await library.openVersion(projectId,revision);
+  recall?.clear?.();
   opened=result;
   const m=result.manifest;
   detail("VERIFIED LOCAL PROJECT · "+m.projectName+" · v"+revision+
@@ -146,6 +150,40 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
   detail("READ-ONLY LIBRARY RACK COMPARE · "+plan.summary.changed+" DIFFERENCES\n"+
    planner.summarize(plan,32)+"\n\nNO LIVE CONTROLS CHANGED");
   status("Saved v"+revision+" rack compared against active UI · read-only");
+ }));
+ one('[data-library="preview-restore"]').addEventListener("click",()=>run(async()=>{
+  const {projectId,revision}=chosen();
+  if(!opened||opened.record.projectId!==projectId||opened.record.revision!==revision)
+   throw new Error("Click OPEN / VERIFY for this version first");
+  if(!recall?.prepare)throw new Error("Local rack recall is unavailable");
+  const plan=recall.prepare(opened);
+  detail("PROJECT RECALL V3 · PREVIEW · "+plan.summary.changed+" DIFFERENCES\n"+
+   plan.changes.slice(0,32).map(x=>x.path+"  "+JSON.stringify(x.from)+" → "+JSON.stringify(x.to)).join("\n")+
+   "\n\nPREVIEW ONLY · NO CONTROLS OR HARDWARE CHANGED");
+  status("RECALL PREVIEW READY · v"+revision+" · local only · confirm before restore");
+ }));
+ one('[data-library="apply-restore"]').addEventListener("click",()=>run(async()=>{
+  const {projectId,revision}=chosen();
+  if(!recall?.apply)throw new Error("Local rack recall is unavailable");
+  if(typeof global.confirm!=="function"||!global.confirm(
+   "RESTORE the saved v"+revision+" rack settings to LOCAL TEST controls? " +
+   "All Gateway, Simulator and DAW connections MUST be disconnected. " +
+   "No physical hardware will be controlled. You can UNDO until the next preview."
+  )){status("Local recall cancelled; rack unchanged");return;}
+  const result=recall.apply({confirmed:true,projectId,revision});
+  detail("RESTORED SAVED RACK · "+result.changed+
+   " local model differences · UI refreshed\nNo remote or hardware commands sent\nUNDO RESTORE is available.");
+  status("LOCAL RESTORE VERIFIED · saved rack applied to virtual controls only · NO HARDWARE");
+ }));
+ one('[data-library="undo-restore"]').addEventListener("click",()=>run(async()=>{
+  if(!recall?.undo)throw new Error("Local rack recall is unavailable");
+  if(typeof global.confirm!=="function"||!global.confirm(
+   "UNDO the last LOCAL rack restore? This will only change virtual controls."
+  )){status("Restore undo cancelled");return;}
+  const result=recall.undo({confirmed:true});
+  detail("RESTORE UNDONE · "+result.changed+
+   " changes reversed\nPrevious local control settings restored\nNO HARDWARE OR NETWORK.");
+  status("UNDO VERIFIED · previous LOCAL rack snapshot restored");
  }));
  one('[data-library="rack-json"]').addEventListener("click",()=>run(async()=>{
   const {projectId,revision}=chosen();
