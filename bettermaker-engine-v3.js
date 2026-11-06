@@ -103,6 +103,20 @@
     root.querySelector(".bm2-title")?.append(readout);
     const meterLabels=root.querySelectorAll(".bm2-meters small");
     meterLabels.forEach(el=>{el.title="Local audio preview: summed L+R analyser (not separate real channel meters).";});
+    // Manual: short tap on the central A/B tile switches snapshots.
+    // Holding it copies the current slot to the other. Local preview only.
+    let abHoldTimer=null,abHoldUsed=false;
+    const abButton=root.querySelector(".bm2-ab-btn");
+    abButton?.addEventListener("pointerdown",()=>{
+      abHoldUsed=false;
+      abHoldTimer=setTimeout(()=>{
+        model.copyAB();abHoldUsed=true;render();
+      },700);
+    });
+    const stopAB=()=>{if(abHoldTimer!==null)clearTimeout(abHoldTimer);abHoldTimer=null;};
+    abButton?.addEventListener("pointerup",stopAB);
+    abButton?.addEventListener("pointercancel",stopAB);
+    abButton?.addEventListener("pointerleave",stopAB);
     const curveRoot=root.querySelector(".bm2-plot");
     const spectrum=document.createElement("canvas");
     spectrum.className="bm3-spectrum";
@@ -224,7 +238,12 @@
         target.classList.toggle("active",model.filterEnabled[model.selected]);
       }
       if(target.dataset.param==="abState"){
-        model.switchAB(target.dataset.value);
+        if(target===abButton){
+          if(abHoldUsed){abHoldUsed=false;render();return;}
+          model.switchAB(model.slot==="A"?"B":"A");
+        }else{
+          model.switchAB(target.dataset.value);
+        }
         syncKnobs();
       }else if(target.dataset.param==="copyAtoB"){
         model.copyAB();
