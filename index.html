@@ -1413,13 +1413,20 @@ const projectStatus=window.RAWWorkspaceProjectStatusV4?.create({
 });
 projectStatus?.evaluate();
 let statusRefreshHandle=null;
-const rackStatusObserver=new MutationObserver(()=>{
+const queueProjectStatusRefresh=()=>{
   clearTimeout(statusRefreshHandle);
   statusRefreshHandle=setTimeout(()=>projectStatus?.evaluate(),120);
-});
+};
+const rackStatusObserver=new MutationObserver(queueProjectStatusRefresh);
 rackStatusObserver.observe(pluginHost,{subtree:true,attributes:true,attributeFilter:["data-value"]});
+pluginHost.addEventListener("click",queueProjectStatusRefresh);
+pluginHost.addEventListener("change",queueProjectStatusRefresh);
 window.RAWWorkspaceStatusMonitor={
-  disconnect:()=>{rackStatusObserver.disconnect();clearTimeout(statusRefreshHandle);}
+  disconnect:()=>{
+    rackStatusObserver.disconnect();clearTimeout(statusRefreshHandle);
+    pluginHost.removeEventListener("click",queueProjectStatusRefresh);
+    pluginHost.removeEventListener("change",queueProjectStatusRefresh);
+  }
 };
 const recall=window.RAWProjectRecallV3?.create({
   capture:rawProjectUiOptions.readArchive,
