@@ -88,8 +88,9 @@ export class OutputDeliveryContract{
   if(granted!==true)denied("NOT_AUTHORIZED","Server-side permission check failed");
   const raw=randomBytes(32).toString("base64url");
   const tokenHash=digest(new TextEncoder().encode(raw));
-  this.grants.set(tokenHash,{jobId,requesterId,expiresAt:this.now()+expiresInMs});
-  return {token:raw,expiresAt:this.now()+expiresInMs,oneTime:true};
+  const expiresAt=this.now()+expiresInMs;
+  this.grants.set(tokenHash,{jobId,requesterId,expiresAt});
+  return {token:raw,expiresAt,oneTime:true};
  }
  redeemGrant({jobId,requesterId,token}={}){
   if(!text(requesterId)||!text(jobId)||typeof token!=="string"||
