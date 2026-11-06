@@ -18,7 +18,8 @@ Ne pokretati Gateway pri testiranju Project Recall. Ne spojiti stvarne uređaje.
 2. Control Room prikazuje MASTERING DESK, originalni file, tri virtualna uređaja, STEREO · 2 CH.
 3. Signalni put pokazuje WEB AUDIO PREVIEW i zasebno REAL ANALOG CHAIN = NOT ROUTED i MASTER PRINT = NOT AVAILABLE. Niti jedna kontrola ne smije tvrditi da postoji stvarni hardware ACK.
 4. AUDIO REGION ima waveform, reprodukciju, transport i ispis isječka izvornog audija (nije master).
-5. Promjena rack-size (70/80/90/100%) ne smije pokvariti položaj/čitanje P1/P2/P3.
+5. Dok glazba svira, MONITOR LEVEL pokazuje INPUT/OUTPUT RMS iz lokalnog Web Audio; kad se audio zaustavi ili učita drugi izvor, ne smije ostati lažno stara razina. To **nisu** fizički analogni metri.
+6. Promjena rack-size (70/80/90/100%) ne smije pokvariti položaj/čitanje P1/P2/P3.
 
 ## B. Projekti i sigurni povrat
 
