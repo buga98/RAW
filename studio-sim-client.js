@@ -44,7 +44,8 @@ function draw(){
 function resetTimers(){
  if(heartbeat!==null){clearInterval(heartbeat);heartbeat=null;}
  if(sendTimer!==null){clearTimeout(sendTimer);sendTimer=null;}
- queue.clear();pending.clear();
+ queue.clear();for(const item of pending.values())clearTimeout(item.timeout);
+ pending.clear();
 }
 function disconnect(){
  resetTimers();
@@ -91,10 +92,12 @@ function connect(){
    if(Object.hasOwn(online,m.deviceId))online[m.deviceId]=!!m.online;
    add(label(m.deviceId,"")+(m.online?" RECONNECTED":" DISCONNECTED")+" (simulated)");
   }else if(m.type==="simulator-command-result"){
+   if(pending.has(m.requestId))clearTimeout(pending.get(m.requestId).timeout);
    pending.delete(m.requestId);
    add("SIM READBACK: "+label(m.deviceId,m.parameter)+" = "+m.readback?.value+
       (m.duplicate?" (duplicate not applied)":"")+" · memory only");
   }else if(m.type==="studio-sim-error"){
+   if(m.requestId&&pending.has(m.requestId))clearTimeout(pending.get(m.requestId).timeout);
    if(m.requestId)pending.delete(m.requestId);
    add("REJECTED "+(m.requestId||"")+": "+(m.code||"ERROR")+" · "+(m.message||""));
   }else if(m.type==="studio-sim-expired"){
@@ -113,18 +116,23 @@ function flush(){
  sendTimer=null;
  if(!active||!owned||!epoch||!ws||ws.readyState!==WebSocket.OPEN){queue.clear();return;}
  if(global.RAWStudioSimSession?.()!==sessionId){disconnect();return;}
- for(const [key,change] of [...queue].slice(0,8)){
+ for(const [key,change] of [...queue].slice(0,5)){
   queue.delete(key);
   const [deviceId,parameter]=key.split(":");
   if(online[deviceId]===false){add("DEVICE OFFLINE · "+label(deviceId,parameter)+" is only a local preview");continue;}
   const requestId="simv2-"+(++nextId),issuedAt=Date.now();
   const payload={type:"parameter-change",sessionId,leaseEpoch:epoch,requestId,sequence:++seq,
    issuedAt,expiresAt:issuedAt+2000,deviceId,parameter,value:change};
-  pending.set(requestId,{deviceId,parameter,value:change,issuedAt});
-  send(payload);
+  const timeout=setTimeout(()=>{
+   if(!pending.has(requestId))return;
+   pending.delete(requestId);
+   add("TIMED OUT "+label(deviceId,parameter)+" · NO SIMULATED READBACK");
+  },3200);
+  pending.set(requestId,{deviceId,parameter,value:change,issuedAt,timeout});
+  if(!send(payload)){clearTimeout(timeout);pending.delete(requestId);add("NOT SENT · simulator disconnected");}
   say("PENDING "+label(deviceId,parameter)+" = "+change+" (awaiting simulated readback)");
  }
- if(queue.size)sendTimer=setTimeout(flush,100);
+ if(queue.size)sendTimer=setTimeout(flush,165);
 }
 function acceptKnob(knob){
  if(!active||!owned)return;
@@ -133,7 +141,7 @@ function acceptKnob(knob){
  const value=Number(knob.dataset.value);
  if(!Number.isFinite(value))return;
  queue.set(device+":"+key,value); // last-write-wins only within the preview buffer
- if(sendTimer===null)sendTimer=setTimeout(flush,95);
+ if(sendTimer===null)sendTimer=setTimeout(flush,165);
 }
 function watchControls(){
  observer?.disconnect();
