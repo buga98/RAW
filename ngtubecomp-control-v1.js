@@ -161,6 +161,10 @@ function attach(root){
   save();render();
  },true);
  render();
+ global.RAWNgTubeCompV1LocalRefresh=()=>{
+  if(!root.isConnected)return false;
+  save();render();return true;
+ };
  return model;
 }
 global.RAWNgTubeCompV1={Model,SPEC,attach};
