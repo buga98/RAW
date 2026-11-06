@@ -11,7 +11,7 @@ const manifest=JSON.parse(readFileSync(new URL("../package.json",import.meta.url
 test("UI agent is only attached to LOCAL TEST Control Room, with no new production sockets",()=>{
  assert.doesNotThrow(()=>new vm.Script(client));
  assert.match(client,/get\("testMode"\)==="1"/);
- assert.match(client,/if\(!TEST\|\|!container\)return/);
+ assert.match(client,/if\(!TEST\|\|!container\|\|!controlsRoot\)return/);
  assert.match(client,/CONNECT \+ CLAIM SIM/);
  assert.match(client,/simulated-memory/);
  assert.match(html,/studio-sim-client\.js/);
