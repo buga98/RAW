@@ -11,6 +11,7 @@ const renderer=readFileSync(new URL("../index.html",import.meta.url),"utf8");
 
 function boot({testMode=true,platform="win32",files=true}={}){
  let options,window,ipc,launched=null;
+ const ipcHandlers={};
  class FakeWindow{
   constructor(opts){
    options=opts;window=this;
@@ -26,7 +27,7 @@ function boot({testMode=true,platform="win32",files=true}={}){
   whenReady(){return Promise.resolve();},
   on(){},setAppUserModelId(){},quit(){}
  };
- const ipcMain={handle(name,fn){ipc={name,fn}}};
+ const ipcMain={handle(name,fn){ipc={name,fn};ipcHandlers[name]=fn;}};
  const spawn=(exe,args,opts)=>{
   launched={exe,args,opts};
   const child=new EventEmitter();child.unref=()=>{};
@@ -45,7 +46,7 @@ function boot({testMode=true,platform="win32",files=true}={}){
   process:{env:{RAW_TEST_MODE:testMode?"1":"0"},platform},URL
  });
  return {get options(){return options;},get window(){return window;},
-  get ipc(){return ipc;},get launched(){return launched;}};
+  get ipc(){return ipc;},get runtime(){return ipcHandlers["raw-runtime-info"];},get launched(){return launched;}};
 }
 test("renderer uses context isolation + sandbox and no direct Node integration",async()=>{
  const app=boot();await Promise.resolve();
@@ -68,8 +69,9 @@ test("preload exposes one restricted IPC operation, never require or filesystem"
   }
  });
  assert.deepEqual(Object.keys(exposure),["RAWNative"]);
- assert.deepEqual(Object.keys(exposure.RAWNative),["openPluginSession"]);
+ assert.deepEqual(Object.keys(exposure.RAWNative),["openPluginSession","getRuntimeInfo"]);
  assert.equal(exposure.RAWNative.openPluginSession(),"open-plugin-session");
+ assert.equal(exposure.RAWNative.getRuntimeInfo(),"raw-runtime-info");
 });
 test("test mode prevents launching native studio software",async()=>{
  const app=boot({testMode:true});await Promise.resolve();
@@ -97,4 +99,18 @@ test("Windows-only fixed native launcher fails closed when program or project mi
  const app=boot({testMode:false,files:false});await Promise.resolve();
  assert.equal((await app.ipc.fn({sender:app.window.webContents})).code,"REAPER_OR_PROJECT_NOT_FOUND");
  assert.equal(app.launched,null);
+});
+
+test("testMode cannot be enabled by a forged URL query",async()=>{
+ const app=boot({testMode:false});await Promise.resolve();
+ const reported=app.runtime({sender:app.window.webContents});
+ assert.equal(reported.testMode,false);
+ assert.equal(reported.localApp,true);
+ assert.match(renderer,/const TEST_MODE = \(await window\.RAWNative\?\.getRuntimeInfo\?\.\(\)\)\?\.testMode === true/);
+ assert.doesNotMatch(renderer,/const TEST_MODE = new URLSearchParams/);
+});
+test("testMode is available only from the trusted Electron main process",async()=>{
+ const app=boot({testMode:true});await Promise.resolve();
+ assert.equal(app.runtime({sender:app.window.webContents}).testMode,true);
+ assert.equal(app.runtime({sender:{getURL:()=> "https://evil.example"}}).testMode,false);
 });
