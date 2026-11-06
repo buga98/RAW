@@ -50,5 +50,5 @@ test("server uses loopback only, explicit command allowance and test-only lease"
 test("safe launch and check commands only use dedicated test modules",()=>{
  assert.equal(manifest.scripts["studio:agent:sim"],"node studio-sim-agent.mjs");
  assert.equal(manifest.scripts["studio:agent:check"],
-  "node --test tests/studio-device-simulator.test.mjs tests/studio-sim-agent.test.mjs");
+  "node --test tests/studio-device-simulator.test.mjs tests/studio-sim-agent.test.mjs tests/studio-sim-client-contract.test.mjs");
 });
