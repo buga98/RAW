@@ -71,8 +71,9 @@ test("expired, future-dated, and excessive TTL commands are fail-closed",()=>{
  assert.throws(()=>f.send({expiresAt:f.clock.time}),{code:"EXPIRED"});
  assert.throws(()=>f.send({issuedAt:f.clock.time+2000,expiresAt:f.clock.time+3000}),{code:"EXPIRED"});
  assert.throws(()=>f.send({expiresAt:f.clock.time+10000}),{code:"EXPIRED"});
+ const oldCommand=f.command({requestId:"old"});
  f.clock.time+=2000;
- assert.throws(()=>f.send(),{code:"EXPIRED"});
+ assert.throws(()=>f.simulator.apply(oldCommand,{owner:f.owner,enabledDevices:f.enabled}),{code:"EXPIRED"});
 });
 test("only enabled rack devices receive simulator commands",()=>{
  const f=fixture();
