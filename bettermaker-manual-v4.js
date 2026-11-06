@@ -186,6 +186,21 @@ function attach(root, model, onPreviewApply, onGraphParamChange){
          const cut=Number(v.lpfFreq)||18000;
          db+=10*Math.log10(1/(1+Math.pow(f/Math.max(cut,1),4)));
        }
+       if(opts.filters.passive){
+         // Reference only: smooth Pultec-style broad responses.
+         // These are NOT the proprietary analog transfer functions.
+         const lo=Number(v.passiveLoFreq)||20;
+         const hi=Number(v.passiveHiFreq)||5000;
+         const hiCut=Number(v.passiveHiCutFreq)||20000;
+         const bw=Math.max(0.4,Number(v.passiveHiBw)||5);
+         const loShelf=1/(1+Math.exp(Math.log(f/lo)*3));
+         const hiDist=Math.log(f/hi)*Math.max(.25,2/(bw+1));
+         const hiRise=1/(1+Math.exp(-Math.log(f/hiCut)*3));
+         db+=(Number(v.passiveLoBoost)||0)*loShelf*.85;
+         db-=(Number(v.passiveLoCut)||0)*loShelf*.65;
+         db+=(Number(v.passiveHiBoost)||0)*Math.exp(-hiDist*hiDist/2)*.65;
+         db-=(Number(v.passiveHiCut)||0)*hiRise*.65;
+       }
      }
      const y=(15-clamp(db,-15,15))/30*248;
      coords.push((i?"L":"M")+(4*i).toFixed(2)+" "+y.toFixed(2));
