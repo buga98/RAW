@@ -10,6 +10,7 @@ on:
       - feature/local-audio-print-and-chain-archive-v1
       - feature/chain-recall-planner-v2
       - feature/local-rack-transaction-v3
+      - feature/portable-mastering-project-v1
   workflow_dispatch:
 
 permissions:
