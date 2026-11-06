@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Remote Audio Workstation</title>
   <link rel="stylesheet" href="style.css" />
+  <link rel="stylesheet" href="bettermaker-v2.css" />
 </head>
 <body>
   <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
@@ -211,6 +212,7 @@
 
   <script src="audio-diagnostics.js"></script>
   <script src="daw-bridge-client.js"></script>
+  <script src="bettermaker-v2.js"></script>
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import {
@@ -1146,6 +1148,7 @@ attachChainSwitches();
 attachNgBusButtons();
 attachNgTubeButtons();
 attachBettermakerButtons();
+window.RAWBettermakerV2?.attach();
 window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
@@ -1870,6 +1873,10 @@ function renderNgBusCompHardware(device, index) {
   `;
 }
 function renderBettermakerHardware(device, index) {
+  return window.RAWBettermakerV2.render(device, index, bmMiniKnob);
+}
+// Preserved only as a reference for safe rollback; never used by v2.
+function renderBettermakerHardwareLegacy(device, index) {
   return `
     <div class="rack-fit" data-rack-fit>
       <div class="bettermaker-hardware rack-scaled" data-design-width="1380" data-max-scale="1.22" style="--accent:#4fd1ff">
