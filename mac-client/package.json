@@ -24,7 +24,8 @@
       "icon.png",
       "bettermaker-v2.css",
       "bettermaker-v2.js",
-      "bettermaker-engine-v3.js"
+      "bettermaker-engine-v3.js",
+      "bettermaker-manual-v4.js"
     ],
     "directories": {
       "output": "dist"
