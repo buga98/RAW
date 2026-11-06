@@ -350,6 +350,10 @@
       global.requestAnimationFrame(update);
     };
     render();global.requestAnimationFrame(update);
+    global.RAWBettermakerEngineV3LocalRefresh=()=>{
+      if(!root.isConnected)return false;
+      syncKnobs();render();return true;
+    };
     return model;
   }
 
