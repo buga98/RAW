@@ -18,7 +18,7 @@
     "studio:sim:check": "node --test tests/studio-device-simulator.test.mjs",
     "studio:sim:demo": "node scripts/studio-simulator-demo.mjs",
     "studio:agent:sim": "node studio-sim-agent.mjs",
-    "studio:agent:check": "node --test tests/studio-device-simulator.test.mjs tests/studio-sim-agent.test.mjs"
+    "studio:agent:check": "node --test tests/studio-device-simulator.test.mjs tests/studio-sim-agent.test.mjs tests/studio-sim-client-contract.test.mjs"
   },
   "keywords": [],
   "author": "",
