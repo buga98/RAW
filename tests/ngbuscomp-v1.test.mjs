@@ -74,6 +74,14 @@ test("export/import round-trip and bad mode validation",()=>{
  assert.equal(safe.state.mode,"dual");
 });
 
+test("stereo plug-in bypass affects both ngBusComp channels",()=>{
+ const m=new Model();
+ m.toggle("L","bypass",true);
+ assert.equal(m.state.channels.R.bypass,true);
+ m.toggle("R","bypass",false);
+ assert.equal(m.state.channels.L.bypass,false);
+});
+
 test("WesAudio meter readouts do not fake signal levels from knob movement",()=>{
  assert.doesNotMatch(html,/updateNgBusMeters\(knob\.dataset\.id, sendValue\)/);
  assert.doesNotMatch(html,/updateNgTubeMeters\(knob\.dataset\.id, sendValue\)/);
