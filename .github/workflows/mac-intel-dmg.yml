@@ -1,7 +1,7 @@
-name: Build RAW Mac Intel DMG (Bettermaker V2)
+name: Build RAW Mac Intel DMG (Bettermaker V3)
 on:
   push:
-    branches: [feature/bettermaker-v2]
+    branches: [feature/bettermaker-v3-interactive]
   workflow_dispatch:
 permissions:
   contents: read
@@ -16,7 +16,7 @@ jobs:
         run: |
           set -euo pipefail
           cp mac-client-main.cjs mac-client/main.cjs
-          cp index.html style.css audio-diagnostics.js daw-bridge-client.js bettermaker-v2.js bettermaker-v2.css icon.png mac-client/
+          cp index.html style.css audio-diagnostics.js daw-bridge-client.js bettermaker-v2.js bettermaker-v2.css bettermaker-engine-v3.js icon.png mac-client/
           node -e "const p=require('./mac-client/package.json'); if(p.main!=='main.cjs'||p.devDependencies.easymidi) process.exit(1)"
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -41,7 +41,7 @@ jobs:
       - name: Upload installable DMG
         uses: actions/upload-artifact@v4
         with:
-          name: RAW-Mac-Intel-DMG-Bettermaker-V2
+          name: RAW-Mac-Intel-DMG-Bettermaker-V3
           path: mac-client/dist/*.dmg
           if-no-files-found: error
           retention-days: 30
