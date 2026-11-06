@@ -22,6 +22,18 @@
   function displayDb(db) {
     return db == null ? "— dBFS" : db < -90 ? "−∞ dBFS" : db.toFixed(1) + " dBFS";
   }
+  function updateDeskMeters(beforeDb,afterDb){
+    for(const [prefix,db] of [["rawConsoleInput",beforeDb],["rawConsoleOutput",afterDb]]){
+      const label=document.getElementById(prefix+"Rms");
+      const bar=document.getElementById(prefix+"Bar");
+      if(label)label.textContent=displayDb(db);
+      if(bar){
+        const level=db==null||!Number.isFinite(db)?0:
+          Math.max(0,Math.min(100,(db+60)/60*100));
+        bar.style.width=level.toFixed(1)+"%";
+      }
+    }
+  }
   function drawSpectrum(canvas, before, after, sampleRate) {
     if (!canvas) return;
     const width = Math.max(300, canvas.clientWidth || 500);
@@ -71,6 +83,7 @@
     last = now;
     const beforeDb = rmsDb(input);
     const afterDb = rmsDb(output);
+    updateDeskMeters(beforeDb,afterDb);
     const beforeLabel = document.getElementById("diagInput");
     const afterLabel = document.getElementById("diagOutput");
     const deltaLabel = document.getElementById("diagDelta");
@@ -181,6 +194,8 @@
     input = null;
     output = null;
     currentEngine = null;
+    if(frame){cancelAnimationFrame(frame);frame=0;last=0;}
+    updateDeskMeters(null,null);
   }
 
   window.RAWAudioDiagnostics = { attach, detach, runOfflineTest, measureCurrentEq };
