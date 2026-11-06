@@ -8,7 +8,7 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
   const grid=`<svg class="bm2-grid-svg" viewBox="0 0 600 248" preserveAspectRatio="none" aria-hidden="true"><g stroke="#3169b1" stroke-width="0.8" opacity=".9">${Array.from({length:13},(_,i)=>`<line x1="${i*50}" y1="0" x2="${i*50}" y2="248"></line>`).join("")}${Array.from({length:7},(_,i)=>`<line x1="0" y1="${i*41.3}" x2="600" y2="${i*41.3}"></line>`).join("")}</g><path id="bmEqCurve" d="M0 105 C110 104 117 145 190 147 S300 95 395 101 S510 109 600 137" stroke="#51ed19" stroke-width="3.2" fill="none" stroke-linecap="round"/></svg>`;
   return `<div class="rack-fit" data-rack-fit>
   <div class="bettermaker-hardware bm2-hardware rack-scaled" data-design-width="1380" data-max-scale="1.22" style="--accent:#4fd1ff">
-    <div class="bm2-title"><div><small>MODULE ${index+1} · BETTERMAKER MASTERING EQUALIZER</small><strong>Mastering Equalizer <em>— hardware front panel v2</em></strong></div><span>ORIGINAL CONTROL LAYOUT · TEST MODE</span></div>
+    <div class="bm2-title"><div><small>MODULE ${index+1} · BETTERMAKER MASTERING EQUALIZER</small><strong>Mastering Equalizer <em>— hardware reference v4</em></strong></div><span>MANUAL-BASED CONTROLS · LOCAL TEST</span></div>
     <div class="bm2-metal-frame">
       <div class="bm2-screw tl">✣</div><div class="bm2-screw bl">✣</div><div class="bm2-screw tr">✣</div><div class="bm2-screw br">✣</div>
       <div class="bm2-left-bay">
