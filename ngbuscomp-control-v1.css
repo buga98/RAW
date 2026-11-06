@@ -1,0 +1,5 @@
+/* WesAudio ngBusComp prototype labeling. Hardware parity needs physical verification. */
+.ngbus-reference-label{margin-left:auto;padding:5px 9px;border:1px solid rgba(255,185,99,.45);border-radius:5px;background:rgba(25,20,14,.75);font:700 10px/1.25 Arial,sans-serif;letter-spacing:.3px;color:#f5c98c;max-width:340px;text-align:center}
+.ngbus-link-note{font:700 10px Arial,sans-serif;color:#9cbdcb;display:flex;align-items:center;justify-content:center;letter-spacing:.3px}
+.ngbus-hardware .ng-btn.active,.ngbus-hardware .ng-square.active{box-shadow:inset 0 0 0 1px #7fe1ac,0 0 12px #25ba7770!important}
+.ngbus-hardware .ng-btn{cursor:pointer}
