@@ -39,6 +39,10 @@ function createWindow(){
   });
   win.loadFile("index.html",TEST_MODE?{query:{testMode:"1"}}:undefined);
 }
+ipcMain.handle("raw-runtime-info",event=>({
+  testMode:TEST_MODE&&isLocalAppUrl(event.sender.getURL()),
+  localApp:isLocalAppUrl(event.sender.getURL())
+}));
 ipcMain.handle("open-plugin-session",async event=>{
   // Fixed command only. No arbitrary user-supplied binary, arguments, paths or shell.
   const owner=BrowserWindow.fromWebContents(event.sender);
