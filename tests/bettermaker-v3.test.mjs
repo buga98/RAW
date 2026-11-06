@@ -79,3 +79,17 @@ test("No new network or fake hardware connection in v3 UI engine",()=>{
   assert.match(source,/onParamChange\(knob,/);
   assert.match(ui,/const RACK_SIZE_OPTIONS = \[70, 80, 90, 100\]/);
 });
+
+test("MEQ local preview can save, recall and delete 399 named preset slots",()=>{
+  const {StudioEQ}=createModel();
+  const state=new StudioEQ();
+  state.set("eq4Gain",7.5);
+  assert.equal(state.savePreset(399,"Final master"),true);
+  assert.equal(state.savePreset(400,"invalid"),false);
+  state.set("eq4Gain",0);
+  assert.equal(state.loadPreset(399),true);
+  assert.equal(state.values.eq4Gain,7.5);
+  assert.equal(state.unsaved,false);
+  assert.equal(state.deletePreset(399),true);
+  assert.equal(state.loadPreset(399),false);
+});
