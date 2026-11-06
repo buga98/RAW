@@ -27,7 +27,8 @@
     "studio:gateway:check": "node --test tests/studio-gateway-lab-v1.test.mjs tests/studio-gateway-client-v1.test.mjs tests/studio-gateway-client-behavior-v1.test.mjs",
     "security:electron:check": "node --test tests/electron-preload-security-v1.test.mjs",
     "studio:gateway:ui-lab": "node scripts/studio-gateway-ui-lab.mjs",
-    "studio:release:preflight": "npm run security:electron:check && npm run studio:gateway:check && npm run studio:agent:check && npm run test:smoke"
+    "studio:release:preflight": "npm run security:electron:check && npm run studio:gateway:check && npm run studio:agent:check && npm run test:smoke && npm run studio:local-assets:check",
+    "studio:local-assets:check": "node --test tests/raw-local-wav-export-v1.test.mjs tests/raw-chain-archive-v1.test.mjs"
   },
   "keywords": [],
   "author": "",
