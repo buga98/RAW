@@ -136,7 +136,7 @@
     readout.className="bm3-state";
     root.querySelector(".bm2-title")?.append(readout);
     const meterLabels=root.querySelectorAll(".bm2-meters small");
-    meterLabels.forEach(el=>{el.title="Local audio preview: summed L+R analyser (not separate real channel meters).";});
+    meterLabels.forEach(el=>{el.title="Local preview: separate LEFT/RIGHT Web Audio analyser channels. NOT hardware levels.";});
     // Manual: short tap on the central A/B tile switches snapshots.
     // Holding it copies the current slot to the other. Local preview only.
     let abHoldTimer=null,abHoldUsed=false;
@@ -164,18 +164,29 @@
     };
     let active=false;
     let tick=0;
-    const levelLed=(group,db)=>{
-      const items=[...group.querySelectorAll(".bm2-leds i")];
-      const ratio=db===null?0:Math.min(1,Math.max(0,(db+60)/60));
-      const num=Math.round(ratio*items.length);
-      items.forEach((led,i)=>led.style.opacity=i>=items.length-num?".96":".12");
-      group.querySelectorAll(".bm2-meter").forEach((ch,i)=>ch.title="DEMO: summed stereo "+(db===null?"—":db.toFixed(1)+" dBFS")+" (not independent L/R)");
+    const levelLed=(group,levels)=>{
+      [...group.querySelectorAll(".bm2-meter")].forEach((channel,i)=>{
+        const db=levels?.[i]??null;
+        const items=[...channel.querySelectorAll(".bm2-leds i")];
+        const ratio=db===null?0:Math.min(1,Math.max(0,(db+60)/60));
+        const num=Math.round(ratio*items.length);
+        items.forEach((led,n)=>led.style.opacity=n>=items.length-num?".96":".12");
+        channel.title="LOCAL "+(i===0?"LEFT":"RIGHT")+" DEMO: "+(db===null?"NO SIGNAL":db.toFixed(1)+" dBFS")+". Not real hardware level.";
+      });
     };
     function render(){
       readout.textContent=model.slot+" · "+model.mode.toUpperCase()+" · "+model.screen+" · "+(model.unsaved?"UNSAVED":"DEMO");
       root.querySelector(".bm2-unsaved").textContent=model.unsaved?"UNSAVED":"PRESET";
       root.querySelectorAll('[data-param="abState"]').forEach(b=>b.classList.toggle("active",b.dataset.value===model.slot));
-      root.querySelector(".bm2-ab-btn")?.replaceChildren(document.createTextNode(model.slot));
+      if(abButton){
+        abButton.dataset.value=model.slot;
+        const other=model.slot==="A"?"B":"A";
+        abButton.textContent=model.slot;
+        const hint=document.createElement("small");
+        hint.textContent="HOLD "+model.slot+" → "+other;
+        abButton.append(hint);
+        abButton.classList.add("active");
+      }
       const modeButton=root.querySelector(".bm2-mode-btn");
       if(modeButton)modeButton.textContent=model.mode==="ms"?"M/S":model.mode==="dualMono"?"DUAL MONO":"STEREO";
       const screenButton=root.querySelector(".bm2-chart-toggle");
@@ -328,11 +339,11 @@
       if(!root.isConnected){observer.disconnect();return;}
       const metering=audioProvider?.();
       active=!!(metering?.input&&metering?.output&&metering?.running);
-      const input=active?dbfsFromAnalyser(metering.input,model.meterMode):null;
-      const output=active?dbfsFromAnalyser(metering.output,model.meterMode):null;
+      const levels=channels=>active&&channels?.length===2
+        ? channels.map(node=>dbfsFromAnalyser(node,model.meterMode)) : [null,null];
       const groups=root.querySelectorAll(".bm2-meters");
-      if(groups[0])levelLed(groups[0],input);
-      if(groups[1])levelLed(groups[1],output);
+      if(groups[0])levelLed(groups[0],levels(metering?.inputChannels));
+      if(groups[1])levelLed(groups[1],levels(metering?.outputChannels));
       if(model.screen==="RTA"&&active)drawSpectrum(metering.output);
       if(++tick%10===0)render();
       global.requestAnimationFrame(update);
