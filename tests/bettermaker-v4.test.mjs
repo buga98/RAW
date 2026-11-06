@@ -112,3 +112,10 @@ test("Search & Destroy follows documented 2 second hold rather than instantaneou
  assert.match(v4,/onGraphParamChange\(knob,/);
  assert.match(v4,/event\.stopImmediatePropagation\(\)/);
 });
+
+test("Non-stereo touchscreen exposes true channel labels plus focus state",()=>{
+ assert.match(v4,/bm4-focus-controls/);
+ assert.match(v4,/MID":"SIDE"/);
+ assert.match(v4,/LEFT":"RIGHT"/);
+ assert.match(v4,/manual\.selectChannel\(target\)/);
+});
