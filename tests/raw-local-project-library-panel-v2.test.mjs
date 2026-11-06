@@ -7,6 +7,7 @@ const script=readFileSync(new URL("../raw-local-project-library-panel-v2.js",imp
 function fixture(){
  const records=[], versions=new Map();
  let allowed=true,confirmed=true,staged=0,downloaded=0,rackDownloaded=0;
+ let prepared=0,applied=0,undone=0;
  const library={
   MAX_REVISIONS:8,MAX_PROJECTS:30,
   async list(){return [...records];},
@@ -69,7 +70,17 @@ function fixture(){
   getSources:()=>[{name:"Source.wav"}],
   getDraft:()=>({projectName:"A Session",notes:"Original",history:[{}]}),
   canStageSources:()=>allowed,
-  stageSources:async x=>{staged++;return true;}
+  stageSources:async x=>{staged++;return true;},
+  recall:{
+   clear(){},
+   prepare(){prepared++;return {summary:{changed:2},changes:[
+    {path:"deviceStates.ngbuscomp.threshold",from:-6,to:-12}
+   ]};},
+   apply({confirmed}){if(!confirmed)throw Error("no confirmation");applied++;
+    return {changed:2};},
+   undo({confirmed}){if(!confirmed)throw Error("no confirmation");undone++;
+    return {changed:2};}
+  }
  });
  const find=s=>host.panel.querySelector(s);
  const act=s=>find('[data-library="'+s+'"]').click();
@@ -77,7 +88,8 @@ function fixture(){
  return {window,library,host,records,versions,find,act,flush,
   set allowed(v){allowed=v;},set confirmed(v){confirmed=v;},
   get staged(){return staged;},get downloaded(){return downloaded;},
-  get rackDownloaded(){return rackDownloaded;}};
+  get rackDownloaded(){return rackDownloaded;},
+  get prepared(){return prepared;},get applied(){return applied;},get undone(){return undone;}};
 }
 test("saving a new local project exposes a selectable revision",async()=>{
  const h=fixture();await h.flush();
@@ -149,4 +161,31 @@ test("read-only compare and extracted rack JSON never change current controls",a
  await h.act("rack-json");
  assert.equal(h.rackDownloaded,1);
  assert.equal(h.staged,0);
+});
+
+test("saved version recall requires verified OPEN before preview and user confirmation before apply",async()=>{
+ const h=fixture();await h.flush();
+ await h.act("new");
+ await h.act("preview-restore");
+ assert.equal(h.prepared,0);
+ assert.match(h.find(".raw-library-status").textContent,/LIBRARY ERROR/);
+ await h.act("open");
+ await h.act("preview-restore");
+ assert.equal(h.prepared,1);
+ assert.match(h.find(".raw-library-detail").textContent,/PREVIEW ONLY/);
+ h.confirmed=false;await h.act("apply-restore");
+ assert.equal(h.applied,0);
+ h.confirmed=true;await h.act("apply-restore");
+ assert.equal(h.applied,1);
+ assert.match(h.find(".raw-library-status").textContent,/LOCAL RESTORE VERIFIED/);
+});
+test("one-step local restore undo requires explicit confirmation",async()=>{
+ const h=fixture();await h.flush();
+ await h.act("new");await h.act("open");await h.act("preview-restore");
+ await h.act("apply-restore");
+ h.confirmed=false;await h.act("undo-restore");
+ assert.equal(h.undone,0);
+ h.confirmed=true;await h.act("undo-restore");
+ assert.equal(h.undone,1);
+ assert.match(h.find(".raw-library-status").textContent,/UNDO VERIFIED/);
 });
