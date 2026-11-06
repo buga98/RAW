@@ -267,7 +267,12 @@ function attach(root, model, onPreviewApply){
  const nativeRestore=model.restore.bind(model);
  model.restore=(saved)=>{
   if(manual.locked)return false;
-  const ok=nativeRestore(saved);
+  // V3 restore internally invokes this.switchAB; suppress the wrapper just for
+  // the atomic restore so the old active bank does not overwrite saved preset data.
+  const wrappedSwitch=model.switchAB;
+  model.switchAB=nativeSwitchAB;
+  let ok=false;
+  try {ok=nativeRestore(saved);} finally {model.switchAB=wrappedSwitch;}
   if(ok){
    manual.bankChannels={
      A:{A:deep(model.slots.A),B:deep(model.slots.A)},
