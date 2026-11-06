@@ -11,6 +11,7 @@ on:
       - feature/chain-recall-planner-v2
       - feature/local-rack-transaction-v3
       - feature/portable-mastering-project-v1
+      - feature/local-project-library-v2
   workflow_dispatch:
 
 permissions:
