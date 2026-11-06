@@ -129,3 +129,19 @@
   vector-effect: non-scaling-stroke;
 }
 .bm2-hardware .bm3-rta-on .bm2-grid-svg #bmEqCurve { opacity: 0 !important; }
+
+/* MEQ V4 — reference manual filter option overlays (2020 manual pp. 11–16). */
+.bm4-overlay{position:absolute;z-index:12;inset:7px 7px 25px;padding:13px;color:#edf7ff;background:linear-gradient(150deg,#091e38,#030915);border:2px solid #397fc7;border-radius:5px;box-shadow:0 8px 24px #000b;overflow-y:auto}
+.bm4-overlay[hidden]{display:none!important}
+.bm4-title{display:flex;justify-content:space-between;align-items:center;gap:8px;padding-bottom:10px;border-bottom:1px solid #335b88}
+.bm4-title strong{font-size:17px;letter-spacing:.6px}
+.bm4-title button{font:700 12px Arial;color:#eaf4ff;padding:7px 11px;background:#27558b;border:1px solid #528bc8;border-radius:4px}
+.bm4-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:18px 8px}
+.bm4-controls button,.bm4-menu-additions button{border:1px solid #4175ac;border-radius:4px;min-height:42px;padding:9px 5px;font:700 12px Arial;color:#ecf5ff;background:linear-gradient(#316ab6,#10366d);cursor:pointer}
+.bm4-controls button.is-active{background:linear-gradient(#f1583c,#b01810);border-color:#e86851}
+.bm4-note{font-size:10px;color:#9bbbd1;text-align:center;margin-top:6px}
+.bm4-menu-additions{padding-top:9px;margin-top:8px;border-top:1px solid #42678d;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.bm4-menu-label{grid-column:1/-1;text-align:center;color:#a9ddf5;font-size:10px;letter-spacing:1px;font-weight:800}
+.bm4-menu-additions button{font-size:10px;min-height:33px;padding:5px 2px}
+.bm4-bypassed{filter:grayscale(1) brightness(.5)!important}
+.bm4-locked .bm4-overlay:before{content:"LOCAL LOCK";position:absolute;right:9px;top:8px;z-index:1;font-size:9px;color:#ffba7e}
