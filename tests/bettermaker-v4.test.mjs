@@ -4,9 +4,18 @@ import { readFileSync } from "node:fs";
 import vm from "node:vm";
 
 const v3=readFileSync(new URL("../bettermaker-engine-v3.js",import.meta.url),"utf8");
+const v2=readFileSync(new URL("../bettermaker-v2.js",import.meta.url),"utf8");
 const v4=readFileSync(new URL("../bettermaker-manual-v4.js",import.meta.url),"utf8");
 const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
 const css=readFileSync(new URL("../bettermaker-v2.css",import.meta.url),"utf8");
+
+test("V4 exclusively owns the EQ curve during drag, preserving V2 fallback",()=>{
+ // Both modules can still update readout labels, but must not fight over #bmEqCurve.
+ assert.match(v2,/root\.dataset\.bm4Attached!=="1"/);
+ assert.equal((v2.match(/path\.setAttribute\("d"/g)||[]).length,1);
+ assert.equal((v4.match(/path\.setAttribute\("d"/g)||[]).length,1);
+ assert.match(v4,/root\.dataset\.bm4Attached="1"/);
+});
 
 function fixture(){
  const window={};
