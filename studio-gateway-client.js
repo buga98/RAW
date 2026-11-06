@@ -78,7 +78,7 @@ function connect(){
  sessionId=session;sequence=0;nextRequest=0;active=true;ready=false;leaseEpoch=null;
  clearPending("NEW TEST CONNECTION");tracker.reset({sessionId});
  const token=secret;
- if(input)input.value=""; // no session/localStorage persistence of credentials
+ if(input)input.value=""; // Clear token input immediately after reading into transient memory.
  try{socket=new WebSocket(WS_URL);}catch(e){active=false;log("Gateway unavailable: "+e.message);return;}
  const ws=socket;
  label="Opening loopback Gateway 127.0.0.1:7076";draw();
