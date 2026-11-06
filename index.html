@@ -6,6 +6,7 @@
   <title>Remote Audio Workstation</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="bettermaker-v2.css" />
+  <link rel="stylesheet" href="ngbuscomp-control-v1.css" />
 </head>
 <body>
   <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
@@ -215,6 +216,7 @@
   <script src="bettermaker-v2.js"></script>
   <script src="bettermaker-engine-v3.js"></script>
   <script src="bettermaker-manual-v4.js"></script>
+  <script src="ngbuscomp-control-v1.js"></script>
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import {
@@ -355,6 +357,13 @@ function stopHeartbeat() {
   }
 }
 function sendControlMessage(message) {
+  // No approved GCon/hardware transport for either WesAudio device yet.
+  // Keep prototype changes LOCAL even if a studio socket is open.
+  if (message?.type === "parameter-change" &&
+      (message.deviceId === "ngbuscomp" || message.deviceId === "ngtubecomp")) {
+    console.info("LOCAL-ONLY WesAudio preview; hardware command intentionally not sent:", message);
+    return;
+  }
   if (TEST_MODE) {
     console.info("TEST CONTROL:", message);
     window.RAWDawBridge?.send(message); // explicit loopback bridge opt-in; no Firebase writes
@@ -1148,6 +1157,7 @@ function renderPlugin() {
 attachKnobs();
 attachChainSwitches();
 attachNgBusButtons();
+window.RAWNgBusCompV1?.attach(document.querySelector(".ngbus-hardware"));
 attachNgTubeButtons();
 attachBettermakerButtons();
 window.RAWBettermakerV2?.attach();
@@ -2522,8 +2532,8 @@ function renderNgBusCenter() {
       </div>
 
       <div class="ng-preset-grid two">
-        <button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="parameterLinkLM" data-value="toggle">L/M</button>
-        <button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="parameterLinkRS" data-value="toggle">R/S</button>
+        <button class="ng-square ng-btn" data-device-id="ngbuscomp" data-param="parameterLink" data-value="toggle">LINK L/R</button>
+        <span class="ngbus-link-note">RELATIVE LINK</span>
       </div>
 
       <div class="ng-center-section">
