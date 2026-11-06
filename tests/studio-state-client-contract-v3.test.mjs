@@ -13,7 +13,7 @@ test("State Tracker is loaded before client; remains test-only",()=>{
  const j=html.indexOf('src="studio-sim-client.js"');
  assert.ok(i>0&&j>i);
  assert.match(client,/const tracker=new global\.RAWStudioStateV3\.Tracker\(\)/);
- assert.match(client,/if\(!TEST\|\|!container\)return/);
+ assert.match(client,/if\(!TEST\|\|!container\|\|!controlsRoot\)return/);
  assert.match(client,/get\("testMode"\)==="1"/);
 });
 test("CLIENT shows requested value separately from SIMULATED readback",()=>{
