@@ -3635,3 +3635,22 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
 .raw-library-detail{margin:0;padding:11px;max-height:160px;overflow:auto;white-space:pre-wrap;
  overflow-wrap:anywhere;border:1px solid #365a70;border-radius:7px;
  background:#071825;color:#bed9e5;font:11px/1.6 ui-monospace,Consolas,monospace}
+
+/* RAW workspace split V3: primary mastering surface + project browser + owner LAB. */
+.nav .tab[hidden],.screen[hidden]{display:none!important}
+.raw-projects-workspace,.raw-developer-labs{display:flex;flex-direction:column;gap:14px;min-width:0;padding:5px 0 30px}
+.raw-projects-workspace>.raw-library-panel,
+.raw-projects-workspace>.raw-project-panel,
+.raw-developer-labs>.raw-gateway-panel,
+.raw-developer-labs>.raw-sim-panel,
+.raw-developer-labs>.raw-chain-archive-panel{width:100%;max-width:100%;margin:0;flex-shrink:0}
+.raw-developer-labs>.raw-daw-toolbar{width:100%;margin:0 0 4px;flex-shrink:0}
+.raw-projects-workspace>.raw-library-panel{order:0}
+.raw-projects-workspace>.raw-project-panel{order:1}
+.raw-library-actions button[data-library="preview-restore"]{background:#153b61;border-color:#4d7caa}
+.raw-library-actions button[data-library="apply-restore"]{background:#164c42;border-color:#4b9b82}
+.raw-library-actions button[data-library="undo-restore"]{background:#453148;border-color:#946e9b}
+@media(max-width:900px){
+ .raw-projects-workspace,.raw-developer-labs{padding-bottom:65px}
+ .raw-library-pickers{flex-direction:column}
+}
