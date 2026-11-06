@@ -52,6 +52,20 @@ test("diagnostics and Gateway remain in LAB; local rack preserves navigation",()
  assert.match(html,/if \(screenId === "plugin" && !pluginHost\.querySelector\("\.chain-control"\)\) renderPlugin\(\)/);
  assert.match(html,/if \(TEST_MODE\) \{/);
 });
+test("audio diagnostics controls and meters are mounted only in the developer screen",()=>{
+ assert.match(html,/id="rawDiagnosticsToggle"/);
+ assert.match(html,/developerLabHost\.querySelector\("#rawDiagnosticsDetails"\)/);
+ assert.match(html,/if\(diag\)\{diag\.hidden=true;developerLabHost\.append\(diag\);\}/);
+ assert.match(html,/window\.toggleRawDiagnostics = function\(\) \{\s*if\(!developerAllowed\(\)\)return/);
+ assert.match(css,/#developer #rawDiagnosticsDetails/);
+ assert.doesNotMatch(html,/\$\{developerAllowed\(\) \? '<button[^']*rawDiagnosticsToggle/);
+});
+test("unsaved project rack cannot be dismissed by accidental local session end/logout",()=>{
+ assert.match(html,/RAWWorkspaceActiveProjectStatus\?\.getStatus\?\.\(\)\?\.dirty===true/);
+ assert.match(html,/Imaš nespremljene promjene na virtualnom racku/);
+ assert.match(html,/Imaš NESPREMLJENE rack postavke/);
+ assert.match(html,/Već imaš aktivnu LOCAL TEST sesiju/);
+});
 test("new stylesheet/assets load before app module",()=>{
  const module=html.indexOf('<script type="module">');
  for(const name of ["raw-audio-route-v4.js","raw-workspace-project-status-v4.js"]){
