@@ -133,3 +133,19 @@ test("public snapshots of rows cannot mutate internal tracked values",()=>{
  const rows=r.t.rows();rows[0].desired=999;
  assert.equal(r.entry().desired,-12);
 });
+
+test("offline snapshot cannot convert a disconnected device back to SIM CONFIRMED",()=>{
+ const r=rig(),p=r.payload("one",1,-12);
+ r.t.desire("ngbuscomp","L_threshold",-12);
+ r.t.sent(p);
+ r.t.acknowledge(r.response(p,-12,1));
+ assert.equal(r.entry().state,"SIM CONFIRMED");
+ const snap={type:"simulator-snapshot",simulated:true,hardwareVerified:false,
+  leaseEpoch:42,stateVersion:2,devices:{
+   ngbuscomp:{online:false,source:"simulated-memory",values:{L_threshold:-12}}
+  }};
+ assert.equal(r.t.snapshot(snap),true);
+ assert.equal(r.entry().confirmed,-12);
+ assert.equal(r.entry().state,"DEVICE OFFLINE");
+ assert.match(r.entry().note,/disconnected device/);
+});
