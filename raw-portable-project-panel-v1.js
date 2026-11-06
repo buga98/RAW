@@ -27,6 +27,11 @@ function attach(host,{readArchive,getSources,canStageSources,stageSources}={}){
   '<div class="raw-project-status" role="status">No project loaded. Original audio is included on export; no hardware or processed master is included.</div>'+
   '<pre class="raw-project-detail" aria-live="polite">Source audio stays on this machine until you explicitly export or stage a package.</pre>';
  host.prepend(section);
+ section.getRAWPortableDraft=()=>({
+  projectName:section.querySelector("#rawProjectName")?.value||"RAW Mastering Project",
+  notes:section.querySelector("#rawProjectNotes")?.value||"",
+  history:history.map(h=>({when:h.when,label:h.label,archive:h.archive}))
+ });
  const find=s=>section.querySelector(s);
  const setStatus=message=>{find(".raw-project-status").textContent=message;};
  const detail=message=>{find(".raw-project-detail").textContent=message;};
@@ -131,5 +136,8 @@ function attach(host,{readArchive,getSources,canStageSources,stageSources}={}){
   finally{lock(false);}
  });
 }
-global.RAWPortableProjectPanelV1={attach};
+global.RAWPortableProjectPanelV1={
+ attach,
+ getDraft:host=>host?.querySelector(".raw-project-panel")?.getRAWPortableDraft?.()||null
+};
 })(typeof window!=="undefined"?window:globalThis);
