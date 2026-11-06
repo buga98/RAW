@@ -113,10 +113,17 @@ function connect(){
    if(!m.online)tracker.markOffline(m.deviceId);
    add(label(m.deviceId,"")+(m.online?" RECONNECTED":" DISCONNECTED")+" (simulated)");
   }else if(m.type==="simulator-command-result"){
+   const result=tracker.acknowledge(m);
+   // An invalid or mismatched receipt must NOT cancel a legitimate pending timer.
+   if(!result.accepted){
+    if(result.settled&&pending.has(m.requestId)){
+     clearTimeout(pending.get(m.requestId).timeout);pending.delete(m.requestId);
+    }
+    add("IGNORED "+m.requestId+": "+result.reason+" (stale or invalid reply)");
+    return;
+   }
    if(pending.has(m.requestId))clearTimeout(pending.get(m.requestId).timeout);
    pending.delete(m.requestId);
-   const result=tracker.acknowledge(m);
-   if(!result.accepted){add("IGNORED "+m.requestId+": "+result.reason+" (stale or invalid reply)");return;}
    if(simSnapshot?.devices?.[m.deviceId]?.values&&
       m.stateVersion>=simSnapshot.stateVersion&&m.readback?.source==="simulated-memory"){
     simSnapshot.devices[m.deviceId].values[m.parameter]=m.readback.value;
