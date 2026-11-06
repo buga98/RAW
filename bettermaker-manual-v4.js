@@ -515,7 +515,12 @@ function attach(root, model, onPreviewApply, onGraphParamChange){
  // Safe visual sync only. No real hardware plugin endpoints are assumed.
  const watch=new MutationObserver(()=>refresh());
  root.querySelectorAll(".bm2-parameter-area .knob[data-id]").forEach(k=>watch.observe(k,{attributes:true,attributeFilter:["data-value"]}));
- refresh();return manual;
+ refresh();
+ global.RAWBettermakerManualV4LocalRefresh=()=>{
+  if(!root.isConnected)return false;
+  refresh();return true;
+ };
+ return manual;
 }
 global.RAWBettermakerManualV4={ManualMEQ,attach};
 })(window);
