@@ -12,7 +12,8 @@ const sources=[
 ];
 function fixture(){
  const ctx={window:{crypto:webcrypto,File,Blob},TextEncoder,TextDecoder,
-  Blob,File,Uint8Array,DataView,Date,JSON};
+  Blob,File,Uint8Array,DataView,Date};
+ // Keep the VM's native JSON intrinsic; injecting host JSON changes object prototypes.
  vm.createContext(ctx);
  for(const src of sources)vm.runInContext(
   readFileSync(new URL("../"+src,import.meta.url),"utf8"),ctx);
