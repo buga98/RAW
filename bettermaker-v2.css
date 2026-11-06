@@ -116,3 +116,16 @@
 .bm3-preset-controls button{font-size:10px;padding:6px 3px;background:#1b5790;color:#f6fbff;border:1px solid #5a9dd9;border-radius:4px}
 .bm3-preset-controls #bm3PresetStatus{grid-column:1/-1;font-size:9px;color:#d9a979}
 .bm2-plot{touch-action:none}
+
+/* BUGFIX: legacy #bmEqCurve used stroke:url(#bmCurveGlow), a gradient defined only in the retired V1 SVG.
+   V2/V3 dynamically replaces the path but does NOT carry that SVG gradient, making the curve invisible.
+   Explicit scoped color keeps the 0 dB baseline visible and the path interactive in V3. */
+.bm2-hardware .bm2-grid-svg #bmEqCurve {
+  fill: none !important;
+  stroke: #62ef26 !important;
+  stroke-width: 3.5px !important;
+  opacity: 1;
+  filter: drop-shadow(0 0 3px rgba(90,255,30,.58));
+  vector-effect: non-scaling-stroke;
+}
+.bm2-hardware .bm3-rta-on .bm2-grid-svg #bmEqCurve { opacity: 0 !important; }
