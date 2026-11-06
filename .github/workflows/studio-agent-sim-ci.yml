@@ -5,6 +5,7 @@ on:
     branches:
       - feature/studio-agent-simulator-v2
       - feature/studio-state-reconciliation-v3
+      - feature/studio-gateway-v1-outbound-agent
   workflow_dispatch:
 
 permissions:
