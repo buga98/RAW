@@ -7,6 +7,7 @@ on:
       - feature/studio-state-reconciliation-v3
       - feature/studio-gateway-v1-outbound-agent
       - feature/electron-security-preload-v1
+      - feature/local-audio-print-and-chain-archive-v1
   workflow_dispatch:
 
 permissions:
@@ -34,5 +35,7 @@ jobs:
         run: npm run studio:gateway:demo
       - name: Electron preload sandbox and IPC security
         run: npm run security:electron:check
+      - name: Local WAV output and chain archive regression tests
+        run: npm run studio:local-assets:check
       - name: Existing RAW smoke regression tests
         run: npm run test:smoke
