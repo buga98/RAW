@@ -93,3 +93,9 @@ test("MEQ local preview can save, recall and delete 399 named preset slots",()=>
   assert.equal(state.deletePreset(399),true);
   assert.equal(state.loadPreset(399),false);
 });
+
+test("EQ curve has valid SVG stroke without a removed V1 gradient dependency",()=>{
+  assert.match(css,/\.bm2-hardware \.bm2-grid-svg #bmEqCurve/);
+  assert.match(css,/stroke:\s*#62ef26\s*!important/);
+  assert.match(css,/\.bm3-rta-on \.bm2-grid-svg #bmEqCurve\s*\{\s*opacity:\s*0\s*!important/);
+});
