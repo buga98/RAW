@@ -495,7 +495,10 @@ window.goTo = function(screenId) {
 
   if ((screenId === "projects" || screenId === "developer") &&
       activeSessionId && !projectsHost.querySelector(".raw-library-panel")) renderPlugin();
-  if (screenId === "plugin") renderPlugin();
+  // Navigating back must NOT recreate the virtual rack: a fresh model would
+  // silently erase a just-applied Project Recall (e.g. EQ1 160 Hz -> 132 Hz).
+  // New sessions/chain edits invoke renderPlugin() explicitly as before.
+  if (screenId === "plugin" && !pluginHost.querySelector(".chain-control")) renderPlugin();
   if (screenId === "sessions") renderSessions();
 };
 
