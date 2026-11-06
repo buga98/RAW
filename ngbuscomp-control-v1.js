@@ -57,7 +57,7 @@ class Model{
   const value=!!on;
   s.channels[target][key]=value;
   const other=target==="L"?"R":"L";
-  if(s.mode==="stereo"||(s.mode==="ms"&&key==="iron")||s.parameterLink){
+  if(s.mode==="stereo"||(s.mode==="ms"&&key==="iron")||s.parameterLink||key==="bypass"){
    s.channels[other][key]=value;
   }
   return true;
