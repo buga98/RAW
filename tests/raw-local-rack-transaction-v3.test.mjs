@@ -7,7 +7,8 @@ const files=["bettermaker-engine-v3.js","bettermaker-manual-v4.js",
  "ngbuscomp-control-v1.js","ngtubecomp-control-v1.js","raw-chain-archive-v1.js",
  "raw-chain-recall-planner-v2.js","raw-local-rack-transaction-v3.js"];
 function harness(){
- const ctx={window:{},TextEncoder,Uint8Array,Date,JSON};vm.createContext(ctx);
+ const ctx={window:{},TextEncoder,Uint8Array,Date};// Keep the VM's native JSON intrinsic; injecting host JSON changes object prototypes.
+ vm.createContext(ctx);
  for(const file of files)vm.runInContext(readFileSync(new URL("../"+file,import.meta.url),"utf8"),ctx,{filename:file});
  const w=ctx.window;
  const eq=new w.RAWBettermakerEngineV3.StudioEQ(),man=new w.RAWBettermakerManualV4.ManualMEQ(eq);
