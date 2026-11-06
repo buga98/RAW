@@ -49,6 +49,17 @@ test("server uses loopback only, explicit command allowance and test-only lease"
 });
 test("safe launch and check commands only use dedicated test modules",()=>{
  assert.equal(manifest.scripts["studio:agent:sim"],"node studio-sim-agent.mjs");
- assert.equal(manifest.scripts["studio:agent:check"],
-  "node --test tests/studio-device-simulator.test.mjs tests/studio-sim-agent.test.mjs tests/studio-sim-client-contract.test.mjs");
+ const parts=manifest.scripts["studio:agent:check"].trim().split(/\s+/);
+ assert.deepEqual(parts.slice(0,2),["node","--test"]);
+ const expected=[
+  "studio-device-simulator.test.mjs",
+  "studio-sim-agent.test.mjs",
+  "studio-sim-client-contract.test.mjs",
+  "studio-state-reconciliation-v3.test.mjs",
+  "studio-state-client-contract-v3.test.mjs",
+  "studio-sim-client-behavior-v3.test.mjs",
+  "studio-sim-audit.test.mjs"
+ ].map(file=>"tests/"+file);
+ assert.deepEqual(parts.slice(2),expected,
+  "Agent check must include every approved simulator, readback, reconciliation and audit test");
 });
