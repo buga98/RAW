@@ -14,7 +14,7 @@ const NAMES={bettermaker_eq:"Bettermaker MEQ",ngbuscomp:"ngBusComp",ngtubecomp:"
 let ws=null,active=false,owned=false,epoch=null,seq=0,nextId=0,sessionId=null;
 let root=null,panel=null,observer=null,heartbeat=null,sendTimer=null;
 let queue=new Map(),online={bettermaker_eq:true,ngbuscomp:true,ngtubecomp:true};
-let recent=[],last="LOCAL PREVIEW ONLY",pending=new Map();
+let recent=[],last="LOCAL PREVIEW ONLY",pending=new Map(),simSnapshot=null;
 const label=(id,key)=>NAMES[id]+" · "+key;
 const add=(message)=>{
  recent.unshift(new Date().toLocaleTimeString()+"  "+message);
@@ -38,6 +38,11 @@ function draw(){
  });
  const history=panel.querySelector("#rawSimHistory");
  if(history)history.textContent=recent.join("\n")||"Connect to run simulated command tests.";
+ const readback=panel.querySelector("#rawSimReadback");
+ if(readback)readback.textContent=simSnapshot?
+   Object.entries(simSnapshot.devices).map(([id,v])=>NAMES[id]+(v.online?"":" [OFFLINE]")+": "+
+      Object.entries(v.values||{}).map(([key,n])=>key+"="+n).join(" · ")).join("\n"):
+   "No simulated readback snapshot yet.";
  const count=panel.querySelector("#rawSimPending");
  if(count)count.textContent=String(pending.size);
 }
@@ -49,7 +54,7 @@ function resetTimers(){
 }
 function disconnect(){
  resetTimers();
- const prior=ws;ws=null;active=false;owned=false;epoch=null;seq=0;
+ const prior=ws;ws=null;active=false;owned=false;epoch=null;seq=0;simSnapshot=null;
  if(prior){try{if(prior.readyState===WebSocket.OPEN)prior.send(JSON.stringify({type:"studio-sim-release"}));prior.close();}catch{}}
  say("Disconnected; controls remain LOCAL PREVIEW, not remotely confirmed");
 }
@@ -86,6 +91,7 @@ function connect(){
    if(m.status==="occupied"){owned=false;say("Studio simulator occupied by another local client");}
    else if(owned&&m.owner===false){owned=false;resetTimers();add("Simulator lease no longer owned; commands stopped");}
   }else if(m.type==="simulator-snapshot"){
+   simSnapshot=m;
    for(const [id,v] of Object.entries(m.devices||{}))if(Object.hasOwn(online,id))online[id]=!!v.online;
    draw();
   }else if(m.type==="simulator-device-state"){
@@ -94,6 +100,8 @@ function connect(){
   }else if(m.type==="simulator-command-result"){
    if(pending.has(m.requestId))clearTimeout(pending.get(m.requestId).timeout);
    pending.delete(m.requestId);
+   if(simSnapshot?.devices?.[m.deviceId]?.values&&m.readback?.source==="simulated-memory")
+    simSnapshot.devices[m.deviceId].values[m.parameter]=m.readback.value;
    add("SIM READBACK: "+label(m.deviceId,m.parameter)+" = "+m.readback?.value+
       (m.duplicate?" (duplicate not applied)":"")+" · memory only");
   }else if(m.type==="studio-sim-error"){
@@ -161,14 +169,15 @@ function attach(container){
  if(!panel){
   panel=document.createElement("section");panel.className="raw-sim-panel";
   panel.innerHTML='<div class="raw-sim-head"><div><strong>STUDIO AGENT · SIMULATOR V2</strong><small>ISOLATED LOCAL TEST · NO REAL STUDIO / HARDWARE / BILLING</small></div><span id="rawSimStatus">OFFLINE</span></div>'+
-   '<div class="raw-sim-toolbar"><button type="button" id="rawSimConnect">CONNECT + CLAIM SIM</button>'+
+   '<div class="raw-sim-toolbar"><button type="button" id="rawSimConnect">CONNECT + CLAIM SIM</button><button type="button" id="rawSimResync">RESYNC READBACK</button>'+
    '<span>UNCONFIRMED <b id="rawSimPending">0</b></span><span id="rawSimInfo" role="status"></span></div>'+
    '<div class="raw-sim-devices"><button data-sim-device="bettermaker_eq">DISCONNECT Bettermaker MEQ</button>'+
    '<button data-sim-device="ngbuscomp">DISCONNECT ngBusComp</button>'+
    '<button data-sim-device="ngtubecomp">DISCONNECT ngTubeComp</button></div>'+
-   '<pre id="rawSimHistory" aria-live="polite"></pre>';
+   '<pre id="rawSimReadback">No simulated readback snapshot yet.</pre><pre id="rawSimHistory" aria-live="polite"></pre>';
   container.prepend(panel);
   panel.querySelector("#rawSimConnect").addEventListener("click",connect);
+  panel.querySelector("#rawSimResync").addEventListener("click",()=>{if(owned)send({type:"studio-sim-snapshot"});});
   panel.querySelectorAll("[data-sim-device]").forEach(button=>button.addEventListener("click",()=>{
    const id=button.dataset.simDevice;
    if(owned)send({type:"studio-sim-device-online",deviceId:id,online:!online[id]});
