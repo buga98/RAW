@@ -2431,7 +2431,7 @@ function renderNgBusChannel(title, side) {
         ${ngContinuousKnob(side, "mix", "MIX", 0, 100, 100, 1, "DRY", "WET", "%")}
         ${ngSteppedKnob(side, "attack", "ATTACK", NGBUSCOMP.attack, 5)}
         ${ngSteppedKnob(side, "release", "RELEASE", NGBUSCOMP.release, 2)}
-        ${ngContinuousKnob(side, "thd", "THD", 0, 8, 0, 0.1, "0%", "8%", "%")}
+        ${ngContinuousKnob(side, "thd", "THD", 0, 100, 0, 1, "0%", "100%", "%")}
         ${ngSteppedKnob(side, "sidechain", "SIDECHAIN", NGBUSCOMP.sidechain, 0)}
         ${ngButton(side, "iron", "IRON")}
         ${ngContinuousKnob(side, "ironPad", "IRON PAD", 0, 15, 0, 1, "0 dB", "-15 dB", "dB")}
