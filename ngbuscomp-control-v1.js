@@ -185,6 +185,10 @@ function attach(root){
   save();render();
  },true);
  render();
+ global.RAWNgBusCompV1LocalRefresh=()=>{
+  if(!root.isConnected)return false;
+  save();render();return true;
+ };
  return model;
 }
 global.RAWNgBusCompV1={Model,SPEC,attach};
