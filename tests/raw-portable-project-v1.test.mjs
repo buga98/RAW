@@ -10,7 +10,8 @@ const scripts=["raw-chain-archive-v1.js","raw-portable-project-v1.js",
  "ngbuscomp-control-v1.js","ngtubecomp-control-v1.js"];
 function fixture(){
  const context={window:{crypto:webcrypto,File,Blob},TextEncoder,TextDecoder,
-  Blob,File,Uint8Array,DataView,Date,JSON};
+  Blob,File,Uint8Array,DataView,Date};
+ // Keep the VM's native JSON intrinsic; injecting host JSON changes object prototypes.
  vm.createContext(context);
  for(const name of scripts)
   vm.runInContext(readFileSync(new URL("../"+name,import.meta.url),"utf8"),context);
