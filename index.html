@@ -2947,9 +2947,9 @@ if (isStepped) {
     controlEl.querySelector(".knob-value").textContent = displayValue;
   }
 
-  updateNgBusMeters(knob.dataset.id, sendValue);
+  // WesAudio meters reflect real input/output/GR, NOT knob position.
+  // No valid metering source exists before studio interface/hardware integration.
   updateNgBusDisplay(knob.dataset.id, displayValue);
-  updateNgTubeMeters(knob.dataset.id, sendValue);
   updateNgTubeDisplay(knob.dataset.id, displayValue);
   updateBettermakerDisplay(knob.dataset.id, displayValue);
   applyDemoAudioParam(knob.dataset.deviceId || selectedDevice?.id, knob.dataset.id, sendValue);
