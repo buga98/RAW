@@ -185,5 +185,6 @@ function attach(container){
  }
  watchControls();draw();
 }
+if(TEST)global.addEventListener("beforeunload",disconnect);
 global.RAWStudioSim={attach,disconnect,interceptsControls:()=>TEST&&active};
 })(window);
