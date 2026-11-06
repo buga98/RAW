@@ -42,7 +42,13 @@ export function createStudioGatewayLab({
  const send=(ws,msg)=>{if(ws&&ws.readyState===1)ws.send(JSON.stringify(msg));};
  const error=(ws,code,requestId=null)=>send(ws,{type:"gateway-error",code,requestId,labOnly:true,hardwareVerified:false});
  const allClients=()=>[...authenticated].filter(([,r])=>r==="client").map(([ws])=>ws);
- const idle=()=>!lease;
+ function rejectPending(p,code){
+  pending.delete(p.requestId);
+  const outcome={type:"gateway-error",code,requestId:p.requestId,labOnly:true,hardwareVerified:false};
+  const previous=receipts.get(p.requestId);
+  if(previous)previous.final=outcome;
+  send(p.client,outcome);
+ }
  function cancelPending(code){
   for(const p of pending.values())error(p.client,code,p.requestId);
   pending.clear();
@@ -60,10 +66,7 @@ export function createStudioGatewayLab({
  function tick(){
   if(lease&&now()>=lease.expiresAt)endLease("LEASE_EXPIRED");
   for(const [id,p] of pending){
-   if(p.expiresAt<=now()){
-    pending.delete(id);
-    error(p.client,"ACK_TIMEOUT",id);
-   }
+   if(p.expiresAt<=now())rejectPending(p,"ACK_TIMEOUT");
   }
  }
  const ticker=setInterval(tick,200);ticker.unref?.();
@@ -161,8 +164,7 @@ export function createStudioGatewayLab({
   if(msg.type==="gateway-agent-error"){
    const p=pending.get(msg.requestId);
    if(!p||!lease||p.leaseEpoch!==lease.epoch||msg.leaseEpoch!==p.leaseEpoch)return;
-   pending.delete(p.requestId);
-   error(p.client,typeof msg.code==="string"?msg.code.slice(0,60):"AGENT_REJECTED",p.requestId);
+   rejectPending(p,typeof msg.code==="string"?msg.code.slice(0,60):"AGENT_REJECTED");
    return;
   }
   if(msg.type!=="gateway-agent-result")return;
@@ -179,7 +181,7 @@ export function createStudioGatewayLab({
      !Number.isSafeInteger(result.stateVersion)||result.stateVersion<0||
      typeof result.readback.value!=="number"||
      !validValue(result.readback.value,SIM_DEVICE_PARAMETERS[p.deviceId][p.parameter])){
-   pending.delete(p.requestId);error(p.client,"UNTRUSTED_READBACK",p.requestId);return;
+   rejectPending(p,"UNTRUSTED_READBACK");return;
   }
   pending.delete(p.requestId);
   const out={type:"gateway-command-result",requestId:p.requestId,
