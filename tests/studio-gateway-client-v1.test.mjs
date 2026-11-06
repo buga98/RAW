@@ -15,7 +15,8 @@ test("Gateway console is strictly TEST mode and only uses localhost",()=>{
  assert.match(client,/ws:\/\/127\.0\.0\.1:7076/);
  assert.match(html,/studio-gateway-client\.js/);
  assert.match(html,/studio-gateway-client\.css/);
- assert.match(html,/RAWStudioGatewayV1\?\.attach\(pluginHost\)/);
+ assert.match(html,/RAWStudioGatewayV1\?\.attach\(developerLabHost,pluginHost\)/);
+ assert.match(html,/if \(developerAllowed\(\)\)/);
  assert.match(html,/RAWStudioGatewayV1\?\.interceptsControls\(\)/);
 });
 test("Credential never persisted, hardcoded, or exported through UI",()=>{
