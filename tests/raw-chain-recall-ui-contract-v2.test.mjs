@@ -21,7 +21,7 @@ test("preview UI contains no APPLY button or direct commands",()=>{
  assert.match(archive,/CLEAR PREVIEW/);
  assert.match(archive,/NO LIVE KNOBS, DAW, HARDWARE OR BILLING CHANGED/);
  assert.match(archive,/lastImported=imported;lastPlan=null/);
- assert.match(archive,/NO APPLY is available/);
+ assert.match(archive,/NO LIVE DEVICE APPLY is available/);
  assert.doesNotMatch(planner,/new WebSocket|fetch\(|sendControlMessage|\.localStorage|ipcRenderer|easymidi|runTransaction/);
  assert.doesNotMatch(archive,/sendControlMessage|window\.RAWDawBridge\.send/);
  assert.doesNotThrow(()=>new vm.Script(planner));
