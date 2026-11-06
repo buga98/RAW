@@ -41,6 +41,7 @@ export class StudioDeviceSimulator {
   this.lastSequence=0;
   this.replies=new Map();
   this.commandCount=0;
+  this.stateVersion=0; // monotonic simulator memory revision across leases
  }
  beginLease(owner){
   if(!owner)reject("INVALID_OWNER","Invalid studio owner");
@@ -59,12 +60,12 @@ export class StudioDeviceSimulator {
   if(!this.owns(owner))reject("NOT_OWNER","Studio not claimed by this connection");
   if(!Object.hasOwn(this.online,deviceId))reject("UNKNOWN_DEVICE","Unknown simulator device");
   if(typeof on!=="boolean")reject("INVALID_STATE","online must be boolean");
-  this.online[deviceId]=on;
-  return {type:"simulator-device-state",deviceId,online:on,simulated:true};
+  if(this.online[deviceId]!==on){this.online[deviceId]=on;this.stateVersion++;}
+  return {type:"simulator-device-state",deviceId,online:on,simulated:true,stateVersion:this.stateVersion};
  }
  snapshot(){
   return {type:"simulator-snapshot",simulated:true,hardwareVerified:false,
-   leaseEpoch:this.leaseEpoch,leased:this.owner!==null,
+   leaseEpoch:this.leaseEpoch,leased:this.owner!==null,stateVersion:this.stateVersion,
    devices:Object.fromEntries(Object.keys(this.values).map(id=>
     [id,{online:this.online[id],values:copy(this.values[id]),source:"simulated-memory"}]))};
  }
@@ -103,11 +104,12 @@ export class StudioDeviceSimulator {
   this.lastSequence=sequence;
   if(!this.online[deviceId])reject("DEVICE_OFFLINE","Simulated device disconnected");
   this.values[deviceId][parameter]=value;
+  this.stateVersion++;
   this.commandCount++;
   const response={
    type:"simulator-command-result",requestId,sequence,sessionId,deviceId,parameter,
    status:"simulated-applied",simulated:true,hardwareVerified:false,
-   applied:true,duplicate:false,leaseEpoch:this.leaseEpoch,
+   applied:true,duplicate:false,leaseEpoch:this.leaseEpoch,stateVersion:this.stateVersion,
    readback:{value:this.values[deviceId][parameter],source:"simulated-memory",hardwareVerified:false}
   };
   this.replies.set(requestId,{signature,response:copy(response)});
