@@ -14,7 +14,7 @@ test("archive and recall scripts load before RAW Control Room module",()=>{
  const plannerIndex=html.indexOf('src="raw-chain-recall-planner-v2.js"');
  const moduleIndex=html.indexOf('<script type="module">');
  assert.ok(archiveIndex>=0&&plannerIndex>archiveIndex&&moduleIndex>plannerIndex);
- assert.match(html,/RAWChainArchiveV1\?\.attach\(pluginHost/);
+ assert.match(html,/RAWChainArchiveV1\?\.attach\(developerLabHost/);
 });
 test("preview UI contains no APPLY button or direct commands",()=>{
  assert.match(archive,/PREVIEW RECALL \(DRY RUN\)/);
