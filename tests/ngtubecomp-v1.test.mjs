@@ -56,3 +56,9 @@ test("A/B/C reference memories are independently recalled and exported",()=>{
  const restored=new Model(m.export());assert.equal(restored.preset,"C");
  assert.equal(restored.state.L.threshold,-8);
 });
+
+test("WesAudio meter readouts do not fake signal levels from knob movement",()=>{
+ assert.doesNotMatch(html,/updateNgBusMeters\(knob\.dataset\.id, sendValue\)/);
+ assert.doesNotMatch(html,/updateNgTubeMeters\(knob\.dataset\.id, sendValue\)/);
+});
+
