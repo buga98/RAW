@@ -332,3 +332,9 @@ body {
  .raw-meter-caption{grid-column:auto}
 }
 .raw-console-project-btn:disabled{opacity:.4;cursor:not-allowed}
+
+@media(max-width:750px){
+ .app{grid-template-columns:minmax(0,1fr)}
+ .sidebar.glass{padding:13px}
+ .main.glass{min-height:0}
+}
