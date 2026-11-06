@@ -22,11 +22,17 @@ function fixture(){
  return {eq,manual,bus,tube,capture,status,updates};
 }
 const id="123e4567-e89b-42d3-a456-426614174000";
-test("new local rack starts as unsaved without claiming a saved project",()=>{
+test("untouched local rack starts as new without claiming it was saved",()=>{
  const h=fixture(),current=h.status.evaluate();
- assert.equal(current.phase,"unsaved");
- assert.equal(current.dirty,true);
+ assert.equal(current.phase,"new");
+ assert.equal(current.dirty,false);
+ assert.equal(current.changed,0);
  assert.equal(current.reference,null);
+ h.eq.set("eq1Gain",5);
+ const dirty=h.status.evaluate();
+ assert.equal(dirty.phase,"unsaved");
+ assert.equal(dirty.dirty,true);
+ assert.ok(dirty.changed>0);
 });
 test("confirmed save creates a checkpoint that matches identical virtual rack",()=>{
  const h=fixture(),rack=h.capture();
