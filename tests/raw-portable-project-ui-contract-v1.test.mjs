@@ -13,7 +13,8 @@ test("portable project scripts load before main RAW module and remain TEST_MODE-
  const panelPos=html.indexOf('src="raw-portable-project-panel-v1.js"');
  const modulePos=html.indexOf('<script type="module">');
  assert.ok(codecPos>=0&&panelPos>codecPos&&modulePos>panelPos);
- assert.match(html,/if \(TEST_MODE\) window\.RAWPortableProjectPanelV1\?\.attach\(pluginHost/);
+ assert.match(html,/if \(TEST_MODE\) \{/);
+ assert.match(html,/RAWPortableProjectPanelV1\?\.attach\(projectsHost, rawProjectUiOptions\)/);
 });
 test("stage action does not create or end session or upload to production",()=>{
  assert.match(html,/canStageSources:\(\)=>TEST_MODE===true&&!!activeSessionId/);
