@@ -6,7 +6,7 @@ import vm from "node:vm";
 const script=readFileSync(new URL("../raw-local-project-library-panel-v2.js",import.meta.url),"utf8");
 function fixture(){
  const records=[], versions=new Map();
- let allowed=true,confirmed=true,staged=0,downloaded=0;
+ let allowed=true,confirmed=true,staged=0,downloaded=0,rackDownloaded=0;
  const library={
   MAX_REVISIONS:8,MAX_PROJECTS:30,
   async list(){return [...records];},
@@ -58,6 +58,9 @@ function fixture(){
   RAWLocalProjectLibraryV2:{create:()=>library},
   RAWPortableProjectV1:{downloadName:()=>"archive.rawproj",
    download:()=>{downloaded++;}},
+  RAWChainArchiveV1:{parse:x=>JSON.parse(x),download:()=>{rackDownloaded++;return "rack.json";}},
+  RAWChainRecallPlannerV2:{createPlan:()=>({summary:{changed:1}}),
+    summarize:()=>"deviceStates.ngbuscomp threshold 5 → -12"},
   confirm:()=>confirmed
  };
  vm.runInNewContext(script,{window,console});
@@ -73,7 +76,8 @@ function fixture(){
  const flush=async()=>new Promise(r=>setImmediate(r));
  return {window,library,host,records,versions,find,act,flush,
   set allowed(v){allowed=v;},set confirmed(v){confirmed=v;},
-  get staged(){return staged;},get downloaded(){return downloaded;}};
+  get staged(){return staged;},get downloaded(){return downloaded;},
+  get rackDownloaded(){return rackDownloaded;}};
 }
 test("saving a new local project exposes a selectable revision",async()=>{
  const h=fixture();await h.flush();
@@ -133,4 +137,16 @@ test("new project browser performs no remote studio requests or direct control w
  assert.match(script,/textContent=String\(label\)/);
  assert.match(script,/Source staging|STAGE SOURCES/);
  assert.match(script,/PERMANENTLY DELETE LOCAL PROJECT/);
+});
+
+test("read-only compare and extracted rack JSON never change current controls",async()=>{
+ const h=fixture();await h.flush();
+ await h.act("new");await h.act("open");
+ await h.act("compare");
+ assert.match(h.find(".raw-library-detail").textContent,/READ-ONLY LIBRARY RACK COMPARE/);
+ assert.match(h.find(".raw-library-status").textContent,/read-only/);
+ assert.equal(h.staged,0);
+ await h.act("rack-json");
+ assert.equal(h.rackDownloaded,1);
+ assert.equal(h.staged,0);
 });
