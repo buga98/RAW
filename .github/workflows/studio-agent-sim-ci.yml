@@ -1,0 +1,29 @@
+name: RAW Studio Simulator V2 tests
+
+on:
+  push:
+    branches:
+      - feature/studio-agent-simulator-v2
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  simulated-studio-protocol:
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install without native build scripts or Electron download
+        run: npm ci --ignore-scripts --no-audit --no-fund
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - name: Simulator unit and two-client WebSocket tests
+        run: npm run studio:agent:check
+      - name: Existing RAW smoke regression tests
+        run: npm run test:smoke
