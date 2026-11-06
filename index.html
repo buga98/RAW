@@ -1392,6 +1392,8 @@ const rawProjectUiOptions={
     await simulateUpload(); // in TEST_MODE: local message only, never HTTP upload
     const pill=pluginHost.querySelector("#rawAudioDock .file-pill");
     if(pill)pill.textContent="♫ "+uploadedFiles[0].name;
+    const routeSource=pluginHost.querySelector("#rawConsoleSource");
+    if(routeSource)routeSource.textContent=uploadedFiles[0].name;
     initWaveform(uploadedFiles[0]); // rebind audio, keep existing rack control models
     return true;
   }
