@@ -73,3 +73,9 @@ test("export/import round-trip and bad mode validation",()=>{
  const safe=new Model(corrupted);safe.selectBank(1);
  assert.equal(safe.state.mode,"dual");
 });
+
+test("WesAudio meter readouts do not fake signal levels from knob movement",()=>{
+ assert.doesNotMatch(html,/updateNgBusMeters\(knob\.dataset\.id, sendValue\)/);
+ assert.doesNotMatch(html,/updateNgTubeMeters\(knob\.dataset\.id, sendValue\)/);
+});
+
