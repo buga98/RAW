@@ -3,7 +3,7 @@
  */
 (function(global){
 "use strict";
-function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSources,recall}={}){
+function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSources,recall,onCheckpoint,onStateChange}={}){
  if(!host||!global.document||!global.RAWLocalProjectLibraryV2||
    typeof readArchive!=="function"||typeof getSources!=="function")return;
  if(host.querySelector(".raw-library-panel"))return;
@@ -15,6 +15,11 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
  panel.innerHTML=
   '<div class="raw-library-heading"><strong>MY RAW PROJECTS · LOCAL LIBRARY V2</strong>'+
   '<span>STORED ONLY ON THIS PC · ORIGINAL AUDIO INCLUDED</span></div>'+
+  '<div class="raw-library-help" role="note"><div><b>01</b><span>Spremi projekt / verziju</span></div>'+
+  '<div><b>02</b><span>Odaberi i verificiraj</span></div>'+
+  '<div><b>03</b><span>Pregledaj → Restore / Undo</span></div></div>'+
+  '<div class="raw-library-context"><span>ACTIVE RACK</span><strong data-library-current-state>NO SAVED CHECKPOINT</strong>'+
+  '<small>Kontrole su lokalne; stvarni analogni master nije dostupan.</small></div>'+
   '<div class="raw-library-actions">'+
   '<button type="button" data-library="new">+ SAVE NEW PROJECT</button>'+
   '<button type="button" data-library="version">+ SAVE NEW VERSION</button>'+
@@ -39,6 +44,7 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
  const one=s=>panel.querySelector(s);
  const proj=one("[data-library-project]"),version=one("[data-library-version]");
  const status=s=>{one(".raw-library-status").textContent=s;};
+ const safeCallback=(fn,payload)=>{if(typeof fn==="function")try{fn(payload);}catch(e){console.warn("RAW project UI checkpoint observer failed",e);}};
  const detail=s=>{one(".raw-library-detail").textContent=s;};
  const setBusy=value=>{
   busy=!!value;panel.querySelectorAll("button").forEach(button=>{button.disabled=busy;});
@@ -93,15 +99,19 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
    rack:readArchive(),sources:getSources()};
  };
  one('[data-library="new"]').addEventListener("click",()=>run(async()=>{
-  const result=await library.saveCurrent(makeDraft());
+  const draft=makeDraft();
+  const result=await library.saveCurrent(draft);
   await refresh({preferredId:result.record.id,preferredRevision:1});
+  safeCallback(onCheckpoint,{projectId:result.record.id,revision:1,kind:"saved",rack:draft.rack});
   status("SAVED NEW PROJECT · v1 · embedded original audio verified and stored locally");
  }));
  one('[data-library="version"]').addEventListener("click",()=>run(async()=>{
   const {projectId}=chosen();
   if(!projectId)throw new Error("Choose an existing project first");
-  const result=await library.saveCurrent({...makeDraft(),projectId});
+  const draft={...makeDraft(),projectId};
+  const result=await library.saveCurrent(draft);
   await refresh({preferredId:result.record.id,preferredRevision:result.record.latestRevision});
+  safeCallback(onCheckpoint,{projectId:result.record.id,revision:result.record.latestRevision,kind:"saved",rack:draft.rack});
   status("NEW REVISION SAVED · v"+result.record.latestRevision+" (previous versions kept)");
  }));
  one("[data-library-file]").addEventListener("change",async event=>{
@@ -171,6 +181,7 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
    "No physical hardware will be controlled. You can UNDO until the next preview."
   )){status("Local recall cancelled; rack unchanged");return;}
   const result=recall.apply({confirmed:true,projectId,revision});
+  safeCallback(onCheckpoint,{projectId,revision,kind:"restored",rack:opened?.manifest?.rack});
   detail("RESTORED SAVED RACK · "+result.changed+
    " local model differences · UI refreshed\nNo remote or hardware commands sent\nUNDO RESTORE is available.");
   status("LOCAL RESTORE VERIFIED · saved rack applied to virtual controls only · NO HARDWARE");
@@ -181,6 +192,7 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
    "UNDO the last LOCAL rack restore? This will only change virtual controls."
   )){status("Restore undo cancelled");return;}
   const result=recall.undo({confirmed:true});
+  safeCallback(onStateChange);
   detail("RESTORE UNDONE · "+result.changed+
    " changes reversed\nPrevious local control settings restored\nNO HARDWARE OR NETWORK.");
   status("UNDO VERIFIED · previous LOCAL rack snapshot restored");
