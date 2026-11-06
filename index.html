@@ -1289,6 +1289,7 @@ if (developerAllowed()) {
   window.RAWStudioGatewayV1?.attach(developerLabHost,pluginHost);
   window.RAWChainArchiveV1?.attach(developerLabHost, () => window.RAWDeveloperRackModels?.());
   const dawToolbar=pluginHost.querySelector(".raw-daw-toolbar");
+  developerLabHost.querySelector(".raw-daw-toolbar")?.remove();
   if(dawToolbar)developerLabHost.prepend(dawToolbar);
 }else{
   pluginHost.querySelector(".raw-daw-toolbar")?.remove();
