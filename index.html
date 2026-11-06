@@ -51,6 +51,14 @@
   <span class="nav-icon">📁</span>
   <span class="nav-text">Sessions</span>
 </button>
+<button class="tab" data-screen="projects">
+  <span class="nav-icon">📂</span>
+  <span class="nav-text">Moji projekti</span>
+</button>
+<button class="tab" data-screen="developer" id="developerNav" hidden>
+  <span class="nav-icon">🛠</span>
+  <span class="nav-text">Programerski dio</span>
+</button>
       </div>
 <div class="user-panel" id="userPanel" style="display:none;">
   <div>
@@ -210,6 +218,22 @@
 
         <div id="pluginHost"></div>
       </section>
+      <section id="projects" class="screen" aria-label="Moji RAW projekti">
+        <div class="screen-head"><div><h2>Moji projekti</h2>
+          <p class="sub">Verzije, izvorni audio i kontrolirani povrat lokalnih postavki</p>
+        </div><span class="badge">PROJECT LIBRARY</span></div>
+        <div id="rawProjectsHost" class="raw-projects-workspace">
+          <div class="empty-files">Otvori lokalnu chain sesiju za upravljanje mastering projektima.</div>
+        </div>
+      </section>
+      <section id="developer" class="screen" aria-label="Programerski dio RAW-a" hidden>
+        <div class="screen-head"><div><h2>Programerski dio · RAW Labs</h2>
+          <p class="sub">Ograničeno na verificirani razvojni račun i LOCAL TEST · bez fizičkog hardvera</p>
+        </div><span class="badge">DEVELOPER / TEST</span></div>
+        <div id="developerLabHost" class="raw-developer-labs">
+          <p>Pokreni lokalnu testnu sesiju kako bi se prikazali Gateway, Simulator, Chain Archive i DAW Bridge.</p>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -219,6 +243,7 @@
   <script src="raw-chain-archive-v1.js"></script>
   <script src="raw-chain-recall-planner-v2.js"></script>
   <script src="raw-local-rack-transaction-v3.js"></script>
+  <script src="raw-project-recall-v3.js"></script>
   <script src="raw-portable-project-v1.js"></script>
   <script src="raw-portable-project-panel-v1.js"></script>
   <script src="raw-local-project-library-v2.js"></script>
@@ -280,6 +305,47 @@ const auth = getAuth(appFirebase);
 // Local testing never writes sessions, uploads, hardware state, or credits.
 const TEST_MODE = (await window.RAWNative?.getRuntimeInfo?.())?.testMode === true;
 const localTestSessions = [];
+// Developer LAB is not a production permission boundary. Server-controlled
+// privileges must be enforced by Firebase Security Rules / verified backend.
+const DEVELOPER_EMAIL = "luka.buga@gmail.com";
+let developerGranted = false;
+const developerNav = document.getElementById("developerNav");
+const developerScreen = document.getElementById("developer");
+function developerAllowed() {
+  return TEST_MODE && developerGranted && currentUser?.emailVerified === true &&
+    String(currentUser?.email||"").trim().toLowerCase() === DEVELOPER_EMAIL;
+}
+function updateDeveloperUi() {
+  const allowed = developerAllowed();
+  developerNav.hidden = !allowed;
+  developerScreen.hidden = !allowed;
+  if(!allowed && developerScreen.classList.contains("active")){
+    developerScreen.classList.remove("active");
+    document.getElementById("login").classList.add("active");
+  }
+}
+function revokeDeveloperLabs(){
+  developerGranted=false;
+  window.RAWStudioGatewayV1?.disconnect?.();
+  window.RAWStudioSim?.disconnect?.();
+  window.RAWDawBridge?.disconnect?.();
+  document.getElementById("developerLabHost")?.replaceChildren();
+  updateDeveloperUi();
+}
+async function authorizeDeveloper(user) {
+  developerGranted=false;
+  updateDeveloperUi();
+  if(!TEST_MODE || !user?.emailVerified ||
+    String(user.email||"").trim().toLowerCase()!==DEVELOPER_EMAIL)return;
+  try{
+    // Fresh ID token prevents granting developer UI on a stale unverified login.
+    const token=await user.getIdTokenResult(true);
+    developerGranted=auth.currentUser?.uid===user.uid &&
+      token?.claims?.email_verified===true &&
+      String(token.claims.email||"").trim().toLowerCase()===DEVELOPER_EMAIL;
+  }catch(error){console.warn("RAW developer LAB token verification unavailable",error);}
+  updateDeveloperUi();
+}
 if (TEST_MODE) {
   document.getElementById("testModeBanner").style.display = "block";
   document.body.style.paddingTop = "35px";
@@ -310,6 +376,8 @@ const fileCounter = document.getElementById("fileCounter");
 const deviceGrid = document.getElementById("deviceGrid");
 const chainSlot = null;
 const pluginHost = document.getElementById("pluginHost");
+const projectsHost = document.getElementById("rawProjectsHost");
+const developerLabHost = document.getElementById("developerLabHost");
 let controlSocket = null;
 window.RAWBridgeTestSessionId = () => TEST_MODE ? activeSessionId : null;
 window.RAWStudioSimSession = () => TEST_MODE ? activeSessionId : null;
@@ -411,8 +479,11 @@ connectControlSocket();
 /* NAV */
 window.goTo = function(screenId) {
   if (!currentUser && screenId !== "login") {
-  screenId = "login";
-}
+    screenId = "login";
+  }
+  if (screenId === "developer" && !developerAllowed()) {
+    screenId = currentUser ? "plugin" : "login";
+  }
   document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
   document.getElementById(screenId).classList.add("active");
 
@@ -515,6 +586,7 @@ window.logoutUser = async function() {
     stopBillingTimer();
     stopHeartbeat();
 
+    revokeDeveloperLabs();
     await signOut(auth);
 
     currentUser = null;
@@ -532,6 +604,7 @@ onAuthStateChanged(auth, async (user) => {
   authReady = true;
 
   if (!user || !user.emailVerified) {
+    revokeDeveloperLabs();
     currentUser = null;
     currentUserData = null;
     window.goTo("login");
@@ -539,6 +612,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   currentUser = user;
+  await authorizeDeveloper(user);
 
   const userSnap = await getDoc(doc(db, "users", user.uid));
   currentUserData = userSnap.exists() ? userSnap.data() : {};
@@ -1111,7 +1185,7 @@ function renderPlugin() {
           <div class="audio-dock-actions">
             <select id="rawLocalExportBits" class="raw-local-export-select" title="PCM WAV bit depth" aria-label="Local WAV bit depth"><option value="24">24-bit WAV</option><option value="16">16-bit WAV</option></select>
             <button class="ghost-btn raw-local-export-button" type="button" id="rawLocalExportButton" onclick="downloadLocalSourceRegionWav()" title="Downloads only the local source audio region, NOT an analog-processed master">↓ EXPORT SOURCE WAV</button>
-            <button class="ghost-btn" type="button" onclick="toggleRawDiagnostics()" id="rawDiagnosticsToggle" aria-expanded="false">📊 DIAGNOSTICS</button>
+${developerAllowed() ? '<button class="ghost-btn" type="button" onclick="toggleRawDiagnostics()" id="rawDiagnosticsToggle" aria-expanded="false">📊 DIAGNOSTICS</button>' : ''}
             <button class="ghost-btn" type="button" onclick="toggleRawAudioDock()" id="rawDockToggle" aria-expanded="true">− MINIMIZE</button>
             <button class="ghost-btn" onclick="goTo('upload')">CHANGE FILE</button>
           </div>
@@ -1196,15 +1270,23 @@ const rawBm3Model = window.RAWBettermakerEngineV3?.attach(document.querySelector
   running: !!demoAudioEngine && demoAudioCtx?.state === "running" && !!demoMediaElement && !demoMediaElement.paused
 }), (knob, value) => setKnobValue(knob, value), (parameter, value) => applyDemoAudioParam("bettermaker_eq", parameter, value));
 window.RAWBettermakerManualV4?.attach(document.querySelector(".bm2-hardware"), rawBm3Model, (parameter,value)=>applyDemoAudioParam("bettermaker_eq",parameter,value), (knob,value)=>setKnobValue(knob,value));
-window.RAWStudioSim?.attach(pluginHost);
-window.RAWStudioGatewayV1?.attach(pluginHost); // visible only in TEST_MODE, not the production UI
-window.RAWChainArchiveV1?.attach(pluginHost, () => ({
-  chainOrder:[...chainDevices],
-  meq:rawBm3Model||null,
-  manual:window.RAWMEQManualModel||null,
-  bus:window.RAWNgBusCompV1Model||null,
-  tube:window.RAWNgTubeCompV1Model||null
-}));
+if (developerAllowed()) {
+  // Keep the knob observer on the mastering surface but render LAB panels in
+  // the private developer screen. Never attach these transports for other users.
+  window.RAWStudioSim?.attach(developerLabHost,pluginHost);
+  window.RAWStudioGatewayV1?.attach(developerLabHost,pluginHost);
+  window.RAWChainArchiveV1?.attach(developerLabHost, () => ({
+    chainOrder:[...chainDevices],
+    meq:rawBm3Model||null,
+    manual:window.RAWMEQManualModel||null,
+    bus:window.RAWNgBusCompV1Model||null,
+    tube:window.RAWNgTubeCompV1Model||null
+  }));
+  const dawToolbar=pluginHost.querySelector(".raw-daw-toolbar");
+  if(dawToolbar)developerLabHost.prepend(dawToolbar);
+}else{
+  pluginHost.querySelector(".raw-daw-toolbar")?.remove();
+}
 if (TEST_MODE) {
 const rawProjectUiOptions={
   readArchive:()=>window.RAWChainArchiveV1.capture({
@@ -1238,10 +1320,29 @@ const rawProjectUiOptions={
     return true;
   }
 };
-window.RAWPortableProjectPanelV1?.attach(pluginHost, rawProjectUiOptions);
-window.RAWLocalProjectLibraryPanelV2?.attach(pluginHost, {
-  ...rawProjectUiOptions,
-  getDraft:()=>window.RAWPortableProjectPanelV1?.getDraft(pluginHost)
+const recall=window.RAWProjectRecallV3?.create({
+  capture:rawProjectUiOptions.readArchive,
+  models:()=>({
+    meq:rawBm3Model,manual:window.RAWMEQManualModel,
+    bus:window.RAWNgBusCompV1Model,tube:window.RAWNgTubeCompV1Model
+  }),
+  canRestore:()=>TEST_MODE===true&&!!activeSessionId&&
+    !window.RAWStudioGatewayV1?.interceptsControls?.()&&
+    !window.RAWStudioSim?.interceptsControls?.()&&
+    !window.RAWDawBridge?.isActive?.(),
+  refresh:()=>{
+    if(rawBm3Model && window.RAWBettermakerEngineV3LocalRefresh?.()!==true)return false;
+    if(window.RAWMEQManualModel && window.RAWBettermakerManualV4LocalRefresh?.()!==true)return false;
+    if(window.RAWNgBusCompV1Model && window.RAWNgBusCompV1LocalRefresh?.()!==true)return false;
+    if(window.RAWNgTubeCompV1Model && window.RAWNgTubeCompV1LocalRefresh?.()!==true)return false;
+    return true;
+  }
+});
+projectsHost.replaceChildren();
+window.RAWPortableProjectPanelV1?.attach(projectsHost, rawProjectUiOptions);
+window.RAWLocalProjectLibraryPanelV2?.attach(projectsHost, {
+  ...rawProjectUiOptions,recall,
+  getDraft:()=>window.RAWPortableProjectPanelV1?.getDraft(projectsHost)
 });
 }
 window.RAWDawBridge?.refresh();
