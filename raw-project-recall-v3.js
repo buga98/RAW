@@ -52,7 +52,8 @@ function create({
   if(!verified?.verifiedSourceDigests||verified.hardwareApplied!==false||
     verified.manifest?.provenance?.masterIncluded!==false||
     !verified.manifest.rack||!verified.record?.projectId||
-    !Number.isSafeInteger(verified.record.revision))
+    !Number.isSafeInteger(verified.record.revision)||verified.record.revision<1||
+    verified.record.revision>8)
    reject("UNVERIFIED_PROJECT","OPEN / VERIFY the saved version before preparing a local recall");
   const plan=tx.prepare(verified.manifest.rack);
   selection={projectId:verified.record.projectId,revision:verified.record.revision};
