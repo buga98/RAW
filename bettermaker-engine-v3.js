@@ -36,6 +36,7 @@
       this.meterMode = "peak";
       this.unsaved = false;
       this.focus = false;
+      this.presets = {};
     }
     get values(){return this.slots[this.slot];}
     set(key, value) {
@@ -52,6 +53,18 @@
     copyAB(target=this.slot==="A"?"B":"A"){this.slots[target]=clone(this.values);this.unsaved=true;}
     setMode(mode){if(["stereo","ms","dualMono"].includes(mode))this.mode=mode;}
     reset(){this.slots[this.slot]=fresh();this.unsaved=true;}
+    savePreset(number,name){
+      const n=Number(number);
+      if(!Number.isInteger(n)||n<1||n>399)return false;
+      this.presets[n]={name:String(name||"PRESET "+n).trim().slice(0,40),data:this.snapshot()};
+      this.unsaved=false;return true;
+    }
+    loadPreset(number){
+      const item=this.presets[Number(number)];
+      if(!item||!this.restore(item.data))return false;
+      this.unsaved=false;return true;
+    }
+    deletePreset(number){const n=Number(number);if(!this.presets[n])return false;delete this.presets[n];return true;}
     snapshot(){return clone({A:this.slots.A,B:this.slots.B,slot:this.slot,mode:this.mode,selected:this.selected,enabled:this.enabled,filterEnabled:this.filterEnabled,screen:this.screen,meterMode:this.meterMode,unsaved:this.unsaved});}
     restore(saved){
       if(!saved||!saved.A||!saved.B)return false;
@@ -88,6 +101,23 @@
     if(!root||root.dataset.bm3Attached==="yes")return null;
     root.dataset.bm3Attached="yes";
     const model=new StudioEQ();
+    // Local presets are intentionally NOT manufacturer memory or cloud data.
+    // User explicitly saves; simple bounded JSON prevents oversized storage.
+    const presetStoreKey="raw-bettermaker-v3-preview-presets";
+    try {
+      const saved=JSON.parse(global.localStorage?.getItem(presetStoreKey)||"{}");
+      if(saved&&typeof saved==="object"&&!Array.isArray(saved)){
+        for(const [num,item] of Object.entries(saved)){
+          if(Number.isInteger(Number(num))&&Number(num)>=1&&Number(num)<=399&&item?.data&&typeof item.name==="string"){
+            model.presets[num]=item;
+          }
+        }
+      }
+    } catch {}
+    const persistPresets=()=>{
+      try {global.localStorage?.setItem(presetStoreKey,JSON.stringify(model.presets));}
+      catch(err){console.warn("RAW local preset storage unavailable",err?.message);}
+    };
     const toolbar=root.querySelector(".bm2-feedback");
     const dataLabel=document.createElement("span");
     dataLabel.className="bm3-data-label";
@@ -98,6 +128,10 @@
     v3Panel.hidden=true;
     v3Panel.innerHTML='<div class="bm3-mode-title">MEQ LOCAL CONTROL · DEMO ONLY</div><div class="bm3-mode-choices"><button data-bm3-mode="stereo">STEREO</button><button data-bm3-mode="ms">M/S</button><button data-bm3-mode="dualMono">DUAL MONO</button><button data-bm3-screen="EQ">EQ CURVE</button><button data-bm3-screen="RTA">RTA</button><button data-bm3-action="close">CLOSE</button></div><div class="bm3-mode-footnote">This panel changes the RAW preview state only. No hardware-mode commands are sent.</div>';
     root.querySelector(".bm2-screen")?.append(v3Panel);
+    const presetControl=document.createElement("div");
+    presetControl.className="bm3-preset-controls";
+    presetControl.innerHTML='<label>LOCAL PRESET # <input id="bm3PresetNumber" type="number" min="1" max="399" value="1"></label><label>NAME <input id="bm3PresetName" maxlength="40" value="MASTER 1"></label><button data-bm3-preset-action="save">SAVE</button><button data-bm3-preset-action="load">LOAD</button><button data-bm3-preset-action="delete">DELETE</button><span id="bm3PresetStatus">Only this computer · NOT hardware memory</span>';
+    v3Panel.append(presetControl);
     const readout=document.createElement("span");
     readout.className="bm3-state";
     root.querySelector(".bm2-title")?.append(readout);
@@ -219,6 +253,20 @@
     root.addEventListener("click",event=>{
       const target=event.target.closest("button");
       if(!target||!root.contains(target))return;
+      if(target.matches("[data-bm3-preset-action]")){
+        const num=Number(root.querySelector("#bm3PresetNumber")?.value||1);
+        const name=root.querySelector("#bm3PresetName")?.value||"";
+        const action=target.dataset.bm3PresetAction;
+        let ok=false;
+        if(action==="save")ok=model.savePreset(num,name);
+        if(action==="load"){ok=model.loadPreset(num);if(ok)syncKnobs();}
+        if(action==="delete")ok=model.deletePreset(num);
+        if(ok&&(action==="save"||action==="delete"))persistPresets();
+        root.querySelector("#bm3PresetStatus").textContent=ok?
+          ("LOCAL "+action.toUpperCase()+" #"+num+" · NOT HARDWARE"):
+          "Invalid / empty local preset slot";
+        render();return;
+      }
       if(target.matches("[data-bm3-mode]")){
         model.setMode(target.dataset.bm3Mode);render();return;
       }
