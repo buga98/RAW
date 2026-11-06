@@ -7,7 +7,7 @@
 const MODES=["dual","stereo","ms"], SLOTS=["A","B","C"], SIDES=["L","R"];
 const SPEC=Object.freeze({
  threshold:{min:-20,max:20,step:.5}, mix:{min:0,max:100,step:1},
- makeup:{min:0,max:20,step:.25}, thd:{min:0,max:8,step:.1},
+ makeup:{min:0,max:20,step:.25}, thd:{min:0,max:100,step:1},
  ironPad:{min:0,max:15,step:1},
  attack:{values:["0.1 ms","0.3 ms","1 ms","3 ms","5 ms","10 ms","15 ms","30 ms"]},
  release:{values:["0.05 s","0.1 s","0.3 s","0.5 s","0.6 s","0.9 s","1.2 s","AUTO"]},
