@@ -84,7 +84,7 @@
     return level>0?Math.max(-90,Math.min(0,20*Math.log10(level))):-90;
   };
 
-  function attach(root, audioProvider){
+  function attach(root, audioProvider, onParamChange){
     if(!root||root.dataset.bm3Attached==="yes")return null;
     root.dataset.bm3Attached="yes";
     const model=new StudioEQ();
@@ -154,6 +154,38 @@
         });
       }
     }
+    // Drag the virtual touchscreen EQ plot: coordinates reflect the visual display.
+    // We reuse the original validated knob callback, so the only existing MIDI route
+    // remains EQ1 Gain CC21 and only when the studio lease is held.
+    const plot=root.querySelector(".bm2-plot");
+    let graphDragging=false;
+    const graphChange=event=>{
+      if(!plot||typeof onParamChange!=="function")return;
+      const band=model.selected;
+      if(!["eq1","eq2","eq3","eq4"].includes(band))return;
+      const rect=plot.getBoundingClientRect();
+      const x=Math.max(0,Math.min(1,(event.clientX-rect.left)/rect.width));
+      const y=Math.max(0,Math.min(1,(event.clientY-rect.top)/rect.height));
+      const freq=Math.round(10*Math.pow(5000,x));
+      const fKey=band+"Freq",gKey=band+"Gain";
+      const update=(key,v)=>{
+        const range=PARAMS[key];
+        const knob=root.querySelector('.bm2-parameter-area .knob[data-id="'+key+'"]');
+        if(!knob||!range)return;
+        const step=Number(knob.dataset.step)||1;
+        const bounded=Math.max(range[0],Math.min(range[1],v));
+        onParamChange(knob,Math.round(bounded/step)*step);
+      };
+      update(fKey,freq);update(gKey,15-30*y);
+    };
+    plot?.addEventListener("pointerdown",event=>{
+      if(event.target.closest("button")||event.button!==0)return;
+      graphDragging=true;plot.setPointerCapture?.(event.pointerId);graphChange(event);
+    });
+    plot?.addEventListener("pointermove",event=>{if(graphDragging)graphChange(event);});
+    const stopGraph=()=>{graphDragging=false;};
+    plot?.addEventListener("pointerup",stopGraph);
+    plot?.addEventListener("pointercancel",stopGraph);
     // Device/DAW forwarding remains in existing index.html handlers.
     // This listener ONLY mirrors the locally modified parameter values.
     const observer=new MutationObserver(records=>{
@@ -183,6 +215,10 @@
          (target.dataset.filter==="menu")){v3Panel.hidden=!v3Panel.hidden;render();return;}
       if(target.dataset.filter&&target.dataset.filter!=="menu"){
         model.select(target.dataset.filter);
+      }
+      if(target.dataset.param==="filterEnabled"){
+        model.filterEnabled[model.selected]=!model.filterEnabled[model.selected];
+        target.classList.toggle("active",model.filterEnabled[model.selected]);
       }
       if(target.dataset.param==="abState"){
         model.switchAB(target.dataset.value);
