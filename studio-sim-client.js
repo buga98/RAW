@@ -110,11 +110,11 @@ function connect(){
    send({type:"studio-sim-snapshot"});
   }else if(m.type==="studio-sim-state"){
    if(m.status==="occupied"){
-    owned=false;simSnapshot=null;tracker.disconnect("OCCUPIED");
+    owned=false;simSnapshot=null;auditEntries=[];tracker.disconnect("OCCUPIED");
     say("Studio simulator occupied by another local client");
    }
    else if(owned&&m.owner===false){
-    owned=false;simSnapshot=null;resetTimers();tracker.disconnect("LEASE LOST");
+    owned=false;simSnapshot=null;auditEntries=[];resetTimers();tracker.disconnect("LEASE LOST");
     add("Simulator lease no longer owned; commands stopped");
    }
   }else if(m.type==="studio-sim-audit-result"){
@@ -156,14 +156,14 @@ function connect(){
    if(m.requestId)tracker.reject(m.requestId,m.code||"REJECTED");
    add("REJECTED "+(m.requestId||"")+": "+(m.code||"ERROR")+" · "+(m.message||""));
   }else if(m.type==="studio-sim-expired"){
-   owned=false;simSnapshot=null;resetTimers();tracker.disconnect("TEST LEASE EXPIRED");
+   owned=false;simSnapshot=null;auditEntries=[];resetTimers();tracker.disconnect("TEST LEASE EXPIRED");
    add("TEST LEASE EXPIRED · changes not forwarded");
   }
  };
  socket.onerror=()=>{if(ws===socket)say("Simulator not available: run npm run studio:agent:sim");};
  socket.onclose=()=>{
   if(ws!==socket)return;
-  ws=null;active=false;owned=false;epoch=null;simSnapshot=null;resetTimers();tracker.disconnect("CONNECTION LOST");
+  ws=null;active=false;owned=false;epoch=null;simSnapshot=null;auditEntries=[];resetTimers();tracker.disconnect("CONNECTION LOST");
   add("SIMULATOR CONNECTION LOST · LOCAL PREVIEW ONLY (not acknowledged)");
  };
  draw();
