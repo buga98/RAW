@@ -3610,3 +3610,28 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
  margin:6px 0 0;padding:10px;background:#071923;border:1px solid #31505b;
  border-radius:8px;color:#b4dadf;font:11px/1.6 ui-monospace,Consolas,monospace}
 @media(max-width:680px){.raw-project-head{align-items:flex-start}.raw-project-fields label{flex-basis:100%}}
+
+/* RAW Project Library V2: device-local metadata, source packages, bounded versions. */
+.raw-library-panel{margin:0 0 14px;padding:15px 16px;border:1px solid #4c7c8e;
+ border-radius:12px;background:linear-gradient(130deg,#0e283c,#0c192a);color:#e0edf7;
+ font:12px Arial,sans-serif}
+.raw-library-heading{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.raw-library-heading strong{font-size:13px;letter-spacing:.6px}
+.raw-library-heading span{font-size:10px;font-weight:700;color:#a7c6d0}
+.raw-library-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:12px 0}
+.raw-library-actions button,.raw-library-file{display:inline-flex;align-items:center;justify-content:center;
+ min-height:35px;box-sizing:border-box;padding:9px 12px;cursor:pointer;border:1px solid #558d9d;
+ border-radius:7px;color:#dbf8ff;background:#164358;font:700 11px Arial,sans-serif}
+.raw-library-actions button:hover,.raw-library-file:hover{background:#235d73}
+.raw-library-actions button[data-library="delete"]{border-color:#8b6574;background:#3a2538}
+.raw-library-actions button[data-library="stage"]{border-color:#4d8780;background:#174843}
+.raw-library-actions button:disabled{opacity:.5;cursor:progress}
+.raw-library-pickers{display:flex;gap:10px;flex-wrap:wrap}
+.raw-library-pickers label{display:flex;flex:1;min-width:200px;flex-direction:column;
+ gap:6px;font-size:10px;font-weight:700;color:#c0d6e3}
+.raw-library-pickers select{width:100%;padding:9px 10px;border:1px solid #4f728c;
+ border-radius:7px;background:#071728;color:#e0f2ff;font:12px Arial}
+.raw-library-status{padding:9px 0;font:600 11px/1.5 Arial,sans-serif;color:#b7edd9}
+.raw-library-detail{margin:0;padding:11px;max-height:160px;overflow:auto;white-space:pre-wrap;
+ overflow-wrap:anywhere;border:1px solid #365a70;border-radius:7px;
+ background:#071825;color:#bed9e5;font:11px/1.6 ui-monospace,Consolas,monospace}
