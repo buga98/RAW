@@ -78,7 +78,10 @@ export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
      send(ws,simulator.snapshot());
      broadcast();return;
     }
-    if(msg.type==="studio-sim-release"){release(ws);send(ws,{type:"studio-sim-released",simulated:true});return;}
+    if(msg.type==="studio-sim-release"){
+     if(!simulator.owns(ws))throw Object.assign(new Error("Not the current owner"),{code:"NOT_OWNER"});
+     release(ws);send(ws,{type:"studio-sim-released",simulated:true});return;
+    }
     if(msg.type==="studio-sim-ping"){
      if(!simulator.owns(ws))throw Object.assign(new Error("Studio not owned"),{code:"NOT_OWNER"});
      if(msg.sessionId!==sessionId)throw Object.assign(new Error("Session mismatch"),{code:"SESSION_MISMATCH"});
