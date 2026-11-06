@@ -14,7 +14,9 @@
     "bridge:check": "node scripts/bridge-selftest.mjs",
     "studio:lab:dry": "node studio-lab-bridge.mjs",
     "studio:lab:midi": "node studio-lab-bridge.mjs --midi",
-    "studio:lab:check": "node scripts/studio-lab-selftest.mjs"
+    "studio:lab:check": "node scripts/studio-lab-selftest.mjs",
+    "studio:sim:check": "node --test tests/studio-device-simulator.test.mjs",
+    "studio:sim:demo": "node scripts/studio-simulator-demo.mjs"
   },
   "keywords": [],
   "author": "",
