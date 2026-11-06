@@ -218,9 +218,10 @@ function watchControls(){
  });
  if(root)observer.observe(root,{subtree:true,attributes:true,attributeFilter:["data-value"]});
 }
-function attach(container){
- if(!TEST||!container)return;
- root=container;
+function attach(container,controlsRoot=container){
+ if(!TEST||!container||!controlsRoot)return;
+ // Panel may live in Developer LAB; only observe actual mastering knobs.
+ root=controlsRoot;
  // renderPlugin replaces its DOM; preserve the client connection and rebind observers.
  if(panel&&!panel.isConnected)panel=null;
  if(!panel){
