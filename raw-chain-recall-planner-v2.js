@@ -132,7 +132,11 @@ function createPlan(target,current,{maxChanges=MAX_CHANGES}={}){
 function isStillCurrent(plan,current){
  if(plan?.kind!==kind||plan.version!==VERSION||!plan.baseline)return false;
  const A=global.RAWChainArchiveV1;
- try{return canonical(A.parse(JSON.stringify(current)))===canonical(plan.baseline);}
+ try{
+  const live=A.parse(JSON.stringify(current));
+  return canonical({order:live.chainOrder,states:live.deviceStates})===
+    canonical({order:plan.baseline.chainOrder,states:plan.baseline.deviceStates});
+ }
  catch{return false;}
 }
 function summarize(plan,limit=30){
