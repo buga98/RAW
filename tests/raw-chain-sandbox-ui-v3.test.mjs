@@ -10,7 +10,8 @@ const sources=[
  "raw-local-rack-transaction-v3.js"
 ];
 function fixture(){
- const ctx={window:{},TextEncoder,Uint8Array,Date,JSON};vm.createContext(ctx);
+ const ctx={window:{},TextEncoder,Uint8Array,Date};// Keep the VM's native JSON intrinsic; injecting host JSON changes object prototypes.
+ vm.createContext(ctx);
  for(const path of sources)
   vm.runInContext(readFileSync(new URL("../"+path,import.meta.url),"utf8"),ctx);
  const w=ctx.window;
