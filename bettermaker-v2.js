@@ -102,6 +102,39 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
     document.getElementById("bm2ScreenHelp").textContent=`${id.toUpperCase()} · P1 FREQ · P2 GAIN · P3 Q`;
   };
   root.querySelectorAll(".bm2-tile").forEach(button=>button.addEventListener("click",()=>select(button.dataset.filter)));
+  // Visual preview of the active EQ parameter response (approximate bell curves).
+  // Not a measurement of the analog device; physical audio verification comes later.
+  const drawCurve=()=>{
+    const value=(id,fallback)=>Number(root.querySelector('.bm2-parameter-area .knob[data-id="'+id+'"]')?.dataset.value??fallback);
+    const bands=[1,2,3,4].map(n=>({
+      gain:value('eq'+n+'Gain',0),
+      freq:value('eq'+n+'Freq',[132,537,2890,5450][n-1]),
+      q:Math.max(0.2,value('eq'+n+'Q',1.5))
+    }));
+    const pts=[];
+    for(let i=0;i<=120;i++){
+      const f=10*Math.pow(5000,i/120);
+      const log=Math.log(f);
+      let db=0;
+      for(const b of bands){
+        const distance=(log-Math.log(Math.max(1,b.freq)))*b.q/1.25;
+        db+=b.gain*Math.exp(-0.5*distance*distance);
+      }
+      // 15 dB to -15 dB across the response graph.
+      pts.push((i===0?"M":"L")+(i*5).toFixed(1)+" "+((15-Math.min(15,Math.max(-15,db)))/30*248).toFixed(1));
+    }
+    const path=root.querySelector("#bmEqCurve");
+    if(path)path.setAttribute("d",pts.join(" "));
+    for(let n=1;n<=4;n++){
+      const band=bands[n-1];
+      const tile=root.querySelector('.bm2-tile[data-filter="eq'+n+'"]');
+      if(tile){
+        tile.querySelector("span").textContent=fmt(band.freq,"Hz");
+        tile.querySelector("small").textContent=fmt(band.gain,"dB")+" · Q "+band.q.toFixed(1);
+      }
+    }
+  };
+  drawCurve();
   // The original bridge mapping remains intact; no new USB/DAW routes are introduced.
   // Link duplicate on-screen/advanced values so the visible readouts stay consistent.
   const observer=new MutationObserver(records=>{
@@ -118,6 +151,7 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
         if(read)read.textContent=fmt(v,k.dataset.unit);
       });
     }
+    drawCurve();
   });
   root.querySelectorAll(".knob[data-id]").forEach(k=>observer.observe(k,{attributes:true,attributeFilter:["data-value"]}));
   root.querySelectorAll(".bm2-engage").forEach(btn=>btn.addEventListener("click",()=>{btn.setAttribute("aria-pressed",String(btn.classList.contains("active")));}));
