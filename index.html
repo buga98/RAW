@@ -310,6 +310,7 @@ window.RAWStudioSimSession = () => TEST_MODE ? activeSessionId : null;
 let waveSurfer = null;
 let regionsPlugin = null;
 let currentRegion = null;
+let waveformObjectUrl = null;
 let authReady = false;
 let isBillingRunning = false;
 let spentThisSession = 0;
@@ -2717,6 +2718,11 @@ function initWaveform(file) {
     waveSurfer.destroy();
     waveSurfer = null;
   }
+  currentRegion = null;
+  if (waveformObjectUrl) {
+    URL.revokeObjectURL(waveformObjectUrl);
+    waveformObjectUrl = null;
+  }
 
   if (!file) return;
 
@@ -2740,8 +2746,8 @@ function initWaveform(file) {
     ]
   });
 
-  const url = URL.createObjectURL(file);
-  waveSurfer.load(url);
+  waveformObjectUrl = URL.createObjectURL(file);
+  waveSurfer.load(waveformObjectUrl);
 
   waveSurfer.on("ready", () => {
     initDemoAudioEngine();
