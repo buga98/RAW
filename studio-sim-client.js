@@ -176,6 +176,7 @@ function acceptKnob(knob){
  if(!Number.isFinite(value))return;
  if(active&&global.RAWStudioSimSession?.()!==sessionId){disconnect();return;}
  tracker.desire(device,key,value);
+ if(online[device]===false)tracker.markOffline(device);
  if(!active||!owned||online[device]===false){draw();return;}
  queue.set(device+":"+key,value); // last-write-wins only within the preview buffer
  if(sendTimer===null)sendTimer=setTimeout(flush,165);
