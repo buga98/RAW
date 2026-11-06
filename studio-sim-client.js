@@ -15,6 +15,7 @@ let ws=null,active=false,owned=false,epoch=null,seq=0,nextId=0,sessionId=null;
 let root=null,panel=null,observer=null,heartbeat=null,sendTimer=null;
 let queue=new Map(),online={bettermaker_eq:true,ngbuscomp:true,ngtubecomp:true};
 let recent=[],last="LOCAL PREVIEW ONLY",pending=new Map(),simSnapshot=null;
+const tracker=new global.RAWStudioStateV3.Tracker();
 const label=(id,key)=>NAMES[id]+" · "+key;
 const add=(message)=>{
  recent.unshift(new Date().toLocaleTimeString()+"  "+message);
@@ -43,6 +44,15 @@ function draw(){
    Object.entries(simSnapshot.devices).map(([id,v])=>NAMES[id]+(v.online?"":" [OFFLINE]")+": "+
       Object.entries(v.values||{}).map(([key,n])=>key+"="+n).join(" · ")).join("\n"):
    "No simulated readback snapshot yet.";
+ const compared=panel.querySelector("#rawSimCompared");
+ if(compared){
+  const rows=tracker.rows();
+  compared.textContent=rows.length
+   ?rows.map(v=>NAMES[v.deviceId]+" · "+v.parameter+" | requested: "+
+     (v.desired===null?"—":v.desired)+" | SIM: "+
+     (v.confirmed===null?"—":v.confirmed)+" | "+v.state).join("\n")
+   :"No device state has been requested or read back.";
+ }
  const count=panel.querySelector("#rawSimPending");
  if(count)count.textContent=String(pending.size);
 }
@@ -55,6 +65,7 @@ function resetTimers(){
 function disconnect(){
  resetTimers();
  const prior=ws;ws=null;active=false;owned=false;epoch=null;seq=0;simSnapshot=null;
+ tracker.disconnect("USER DISCONNECTED");
  if(prior){try{if(prior.readyState===WebSocket.OPEN)prior.send(JSON.stringify({type:"studio-sim-release"}));prior.close();}catch{}}
  say("Disconnected; controls remain LOCAL PREVIEW, not remotely confirmed");
 }
@@ -67,6 +78,7 @@ function connect(){
  }
  global.RAWDawBridge?.disconnect(); // avoid running the legacy CC21 bridge alongside simulator
  sessionId=source;active=true;owned=false;epoch=null;seq=0;resetTimers();
+ tracker.reset({sessionId});
  say("Connecting to isolated localhost simulator");
  let socket;
  try{socket=new WebSocket(URL);}catch(e){active=false;add("Connection refused: "+e.message);return;}
@@ -81,6 +93,7 @@ function connect(){
   let m;try{m=JSON.parse(event.data);}catch{return;}
   if(m.type==="studio-sim-claimed"){
    owned=true;epoch=m.leaseEpoch;seq=0;
+   tracker.reset({sessionId,leaseEpoch:epoch});
    heartbeat=setInterval(()=>{
     if(!owned||global.RAWStudioSimSession?.()!==sessionId){disconnect();return;}
     send({type:"studio-sim-ping",sessionId});
@@ -88,34 +101,43 @@ function connect(){
    add("CLAIMED test lease #"+epoch+" · all values are simulated");
    send({type:"studio-sim-snapshot"});
   }else if(m.type==="studio-sim-state"){
-   if(m.status==="occupied"){owned=false;say("Studio simulator occupied by another local client");}
-   else if(owned&&m.owner===false){owned=false;resetTimers();add("Simulator lease no longer owned; commands stopped");}
+   if(m.status==="occupied"){owned=false;tracker.disconnect("OCCUPIED");say("Studio simulator occupied by another local client");}
+   else if(owned&&m.owner===false){owned=false;resetTimers();tracker.disconnect("LEASE LOST");add("Simulator lease no longer owned; commands stopped");}
   }else if(m.type==="simulator-snapshot"){
+   if(!tracker.snapshot(m))return; // Ignore stale or mismatched lease snapshots.
    simSnapshot=m;
    for(const [id,v] of Object.entries(m.devices||{}))if(Object.hasOwn(online,id))online[id]=!!v.online;
    draw();
   }else if(m.type==="simulator-device-state"){
    if(Object.hasOwn(online,m.deviceId))online[m.deviceId]=!!m.online;
+   if(!m.online)tracker.markOffline(m.deviceId);
    add(label(m.deviceId,"")+(m.online?" RECONNECTED":" DISCONNECTED")+" (simulated)");
   }else if(m.type==="simulator-command-result"){
    if(pending.has(m.requestId))clearTimeout(pending.get(m.requestId).timeout);
    pending.delete(m.requestId);
-   if(simSnapshot?.devices?.[m.deviceId]?.values&&m.readback?.source==="simulated-memory")
+   const result=tracker.acknowledge(m);
+   if(!result.accepted){add("IGNORED "+m.requestId+": "+result.reason+" (stale or invalid reply)");return;}
+   if(simSnapshot?.devices?.[m.deviceId]?.values&&
+      m.stateVersion>=simSnapshot.stateVersion&&m.readback?.source==="simulated-memory"){
     simSnapshot.devices[m.deviceId].values[m.parameter]=m.readback.value;
+    simSnapshot.stateVersion=m.stateVersion;
+   }
    add("SIM READBACK: "+label(m.deviceId,m.parameter)+" = "+m.readback?.value+
       (m.duplicate?" (duplicate not applied)":"")+" · memory only");
   }else if(m.type==="studio-sim-error"){
    if(m.requestId&&pending.has(m.requestId))clearTimeout(pending.get(m.requestId).timeout);
    if(m.requestId)pending.delete(m.requestId);
+   if(m.requestId)tracker.reject(m.requestId,m.code||"REJECTED");
    add("REJECTED "+(m.requestId||"")+": "+(m.code||"ERROR")+" · "+(m.message||""));
   }else if(m.type==="studio-sim-expired"){
-   owned=false;resetTimers();add("TEST LEASE EXPIRED · changes not forwarded");
+   owned=false;resetTimers();tracker.disconnect("TEST LEASE EXPIRED");
+   add("TEST LEASE EXPIRED · changes not forwarded");
   }
  };
  socket.onerror=()=>{if(ws===socket)say("Simulator not available: run npm run studio:agent:sim");};
  socket.onclose=()=>{
   if(ws!==socket)return;
-  ws=null;active=false;owned=false;epoch=null;resetTimers();
+  ws=null;active=false;owned=false;epoch=null;resetTimers();tracker.disconnect("CONNECTION LOST");
   add("SIMULATOR CONNECTION LOST · LOCAL PREVIEW ONLY (not acknowledged)");
  };
  draw();
@@ -134,22 +156,30 @@ function flush(){
   const timeout=setTimeout(()=>{
    if(!pending.has(requestId))return;
    pending.delete(requestId);
+   tracker.reject(requestId,"TIMEOUT");
    add("TIMED OUT "+label(deviceId,parameter)+" · NO SIMULATED READBACK");
   },3200);
   pending.set(requestId,{deviceId,parameter,value:change,issuedAt,timeout});
-  if(!send(payload)){clearTimeout(timeout);pending.delete(requestId);add("NOT SENT · simulator disconnected");}
+  tracker.sent(payload);
+  if(!send(payload)){
+   clearTimeout(timeout);pending.delete(requestId);tracker.reject(requestId,"NOT SENT");
+   add("NOT SENT · simulator disconnected");
+  }
   say("PENDING "+label(deviceId,parameter)+" = "+change+" (awaiting simulated readback)");
  }
  if(queue.size)sendTimer=setTimeout(flush,165);
 }
 function acceptKnob(knob){
- if(!active||!owned)return;
  const device=knob.dataset.deviceId,key=knob.dataset.id;
  if(!Object.hasOwn(KEYS,device)||!KEYS[device].has(key))return;
  const value=Number(knob.dataset.value);
  if(!Number.isFinite(value))return;
+ if(active&&global.RAWStudioSimSession?.()!==sessionId){disconnect();return;}
+ tracker.desire(device,key,value);
+ if(!active||!owned||online[device]===false){draw();return;}
  queue.set(device+":"+key,value); // last-write-wins only within the preview buffer
  if(sendTimer===null)sendTimer=setTimeout(flush,165);
+ draw();
 }
 function watchControls(){
  observer?.disconnect();
@@ -174,6 +204,8 @@ function attach(container){
    '<div class="raw-sim-devices"><button data-sim-device="bettermaker_eq">DISCONNECT Bettermaker MEQ</button>'+
    '<button data-sim-device="ngbuscomp">DISCONNECT ngBusComp</button>'+
    '<button data-sim-device="ngtubecomp">DISCONNECT ngTubeComp</button></div>'+
+   '<div class="raw-sim-compare-title">REQUESTED VS SIMULATED READBACK (not physical)</div>'+
+   '<pre id="rawSimCompared">No device state has been requested or read back.</pre>'+
    '<pre id="rawSimReadback">No simulated readback snapshot yet.</pre><pre id="rawSimHistory" aria-live="polite"></pre>';
   container.prepend(panel);
   panel.querySelector("#rawSimConnect").addEventListener("click",connect);
