@@ -1153,6 +1153,8 @@ window.RAWBettermakerV2?.attach();
 window.RAWBettermakerEngineV3?.attach(document.querySelector(".bm2-hardware"), () => ({
   input: demoAudioEngine?.inputMeter || null,
   output: demoAudioEngine?.outputMeter || null,
+  inputChannels: [demoAudioEngine?.inputL, demoAudioEngine?.inputR],
+  outputChannels: [demoAudioEngine?.outputL, demoAudioEngine?.outputR],
   sampleRate: demoAudioCtx?.sampleRate || 44100,
   running: !!demoAudioEngine && demoAudioCtx?.state === "running" && !!demoMediaElement && !demoMediaElement.paused
 }), (knob, value) => setKnobValue(knob, value), (parameter, value) => applyDemoAudioParam("bettermaker_eq", parameter, value));
@@ -1579,6 +1581,25 @@ function initDemoAudioEngine() {
   const outputMeter = demoAudioCtx.createAnalyser();
   inputMeter.fftSize = outputMeter.fftSize = 2048;
   inputMeter.smoothingTimeConstant = outputMeter.smoothingTimeConstant = 0.8;
+  // Parallel read-only stereo analysers for the LOCAL preview only.
+  // A zero-gain monitoring sink ensures the analyser paths stay active while
+  // the original DAW/audio chain and its audible output remain unchanged.
+  const inputSplitter = demoAudioCtx.createChannelSplitter(2);
+  const outputSplitter = demoAudioCtx.createChannelSplitter(2);
+  const inputL = demoAudioCtx.createAnalyser();
+  const inputR = demoAudioCtx.createAnalyser();
+  const outputL = demoAudioCtx.createAnalyser();
+  const outputR = demoAudioCtx.createAnalyser();
+  [inputL,inputR,outputL,outputR].forEach(node=>{node.fftSize=1024;node.smoothingTimeConstant=.7;});
+  const silentTap = demoAudioCtx.createGain();
+  silentTap.gain.value=0;
+  demoMediaSource.connect(inputSplitter);
+  inputSplitter.connect(inputL,0);inputSplitter.connect(inputR,1);
+  outputMeter.connect(outputSplitter);
+  outputSplitter.connect(outputL,0);outputSplitter.connect(outputR,1);
+  [inputL,inputR,outputL,outputR].forEach(node=>node.connect(silentTap));
+  silentTap.connect(demoAudioCtx.destination);
+
 
   demoMediaSource.connect(inputMeter);
   inputMeter.connect(dryGain);
@@ -1608,6 +1629,7 @@ function initDemoAudioEngine() {
     wetGain,
     inputMeter,
     outputMeter,
+    inputL,inputR,outputL,outputR,
     engaged: true
   };
 
