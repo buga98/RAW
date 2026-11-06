@@ -44,5 +44,5 @@ test("full local asset test suite includes new recall and zero-mutation tests",(
  assert.match(pkg.scripts["studio:local-assets:check"],/tests\/raw-chain-recall-planner-v2\.test\.mjs/);
  assert.match(pkg.scripts["studio:local-assets:check"],/tests\/raw-chain-archive-ui-v2\.test\.mjs/);
  assert.equal(pkg.scripts["studio:chain:recall:check"],
-  "node --test tests/raw-chain-recall-planner-v2.test.mjs tests/raw-chain-archive-ui-v2.test.mjs");
+  "node --test tests/raw-chain-recall-planner-v2.test.mjs tests/raw-chain-archive-ui-v2.test.mjs tests/raw-chain-recall-ui-contract-v2.test.mjs");
 });
