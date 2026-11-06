@@ -14,7 +14,7 @@ const NAMES={bettermaker_eq:"Bettermaker MEQ",ngbuscomp:"ngBusComp",ngtubecomp:"
 let ws=null,active=false,owned=false,epoch=null,seq=0,nextId=0,sessionId=null;
 let root=null,panel=null,observer=null,heartbeat=null,sendTimer=null;
 let queue=new Map(),online={bettermaker_eq:true,ngbuscomp:true,ngtubecomp:true};
-let recent=[],last="LOCAL PREVIEW ONLY",pending=new Map(),simSnapshot=null;
+let recent=[],last="LOCAL PREVIEW ONLY",pending=new Map(),simSnapshot=null,auditEntries=[];
 const tracker=new global.RAWStudioStateV3.Tracker();
 const label=(id,key)=>NAMES[id]+" · "+key;
 const add=(message)=>{
@@ -53,6 +53,14 @@ function draw(){
      (v.confirmed===null?"—":v.confirmed)+" | "+v.state).join("\n")
    :"No device state has been requested or read back.";
  }
+ const auditView=panel.querySelector("#rawSimAudit");
+ if(auditView)auditView.textContent=auditEntries.length
+  ?auditEntries.map(x=>"#"+x.n+" "+x.type+" · "+
+    (x.deviceId||"studio")+(x.parameter?" / "+x.parameter:"")+
+    (x.status?" · "+x.status:"")).join("\n")
+  :"Owner can request an in-memory TEST audit; it is not a production log.";
+ const auditButton=panel.querySelector("#rawSimAuditButton");
+ if(auditButton)auditButton.disabled=!owned;
  const count=panel.querySelector("#rawSimPending");
  if(count)count.textContent=String(pending.size);
 }
@@ -64,7 +72,7 @@ function resetTimers(){
 }
 function disconnect(){
  resetTimers();
- const prior=ws;ws=null;active=false;owned=false;epoch=null;seq=0;simSnapshot=null;
+ const prior=ws;ws=null;active=false;owned=false;epoch=null;seq=0;simSnapshot=null;auditEntries=[];
  tracker.disconnect("USER DISCONNECTED");
  if(prior){try{if(prior.readyState===WebSocket.OPEN)prior.send(JSON.stringify({type:"studio-sim-release"}));prior.close();}catch{}}
  say("Disconnected; controls remain LOCAL PREVIEW, not remotely confirmed");
@@ -77,7 +85,7 @@ function connect(){
   add("Start a LOCAL TEST session before connecting simulator");return;
  }
  global.RAWDawBridge?.disconnect(); // avoid running the legacy CC21 bridge alongside simulator
- sessionId=source;active=true;owned=false;epoch=null;seq=0;resetTimers();
+ sessionId=source;active=true;owned=false;epoch=null;seq=0;resetTimers();auditEntries=[];
  tracker.reset({sessionId});
  say("Connecting to isolated localhost simulator");
  let socket;
@@ -109,6 +117,11 @@ function connect(){
     owned=false;simSnapshot=null;resetTimers();tracker.disconnect("LEASE LOST");
     add("Simulator lease no longer owned; commands stopped");
    }
+  }else if(m.type==="studio-sim-audit-result"){
+   if(m.simulated!==true||m.hardwareVerified!==false||m.leaseEpoch!==epoch||
+      !Array.isArray(m.entries))return;
+   auditEntries=m.entries.slice(-30);
+   add("AUDIT: loaded "+auditEntries.length+" local simulator events");
   }else if(m.type==="simulator-snapshot"){
    if(!tracker.snapshot(m))return; // Ignore stale or mismatched lease snapshots.
    simSnapshot=m;
@@ -213,17 +226,20 @@ function attach(container){
  if(!panel){
   panel=document.createElement("section");panel.className="raw-sim-panel";
   panel.innerHTML='<div class="raw-sim-head"><div><strong>STUDIO AGENT · SIMULATOR V2</strong><small>ISOLATED LOCAL TEST · NO REAL STUDIO / HARDWARE / BILLING</small></div><span id="rawSimStatus">OFFLINE</span></div>'+
-   '<div class="raw-sim-toolbar"><button type="button" id="rawSimConnect">CONNECT + CLAIM SIM</button><button type="button" id="rawSimResync">RESYNC READBACK</button>'+
+   '<div class="raw-sim-toolbar"><button type="button" id="rawSimConnect">CONNECT + CLAIM SIM</button><button type="button" id="rawSimResync">RESYNC READBACK</button><button type="button" id="rawSimAuditButton">SHOW AGENT AUDIT</button>'+
    '<span>UNCONFIRMED <b id="rawSimPending">0</b></span><span id="rawSimInfo" role="status"></span></div>'+
    '<div class="raw-sim-devices"><button data-sim-device="bettermaker_eq">DISCONNECT Bettermaker MEQ</button>'+
    '<button data-sim-device="ngbuscomp">DISCONNECT ngBusComp</button>'+
    '<button data-sim-device="ngtubecomp">DISCONNECT ngTubeComp</button></div>'+
    '<div class="raw-sim-compare-title">REQUESTED VS SIMULATED READBACK (not physical)</div>'+
    '<pre id="rawSimCompared">No device state has been requested or read back.</pre>'+
-   '<pre id="rawSimReadback">No simulated readback snapshot yet.</pre><pre id="rawSimHistory" aria-live="polite"></pre>';
+   '<pre id="rawSimReadback">No simulated readback snapshot yet.</pre>'+
+   '<pre id="rawSimAudit">No local simulator audit loaded.</pre>'+
+   '<pre id="rawSimHistory" aria-live="polite"></pre>';
   container.prepend(panel);
   panel.querySelector("#rawSimConnect").addEventListener("click",connect);
   panel.querySelector("#rawSimResync").addEventListener("click",()=>{if(owned)send({type:"studio-sim-snapshot"});});
+  panel.querySelector("#rawSimAuditButton").addEventListener("click",()=>{if(owned)send({type:"studio-sim-audit"});});
   panel.querySelectorAll("[data-sim-device]").forEach(button=>button.addEventListener("click",()=>{
    const id=button.dataset.simDevice;
    if(owned)send({type:"studio-sim-device-online",deviceId:id,online:!online[id]});
