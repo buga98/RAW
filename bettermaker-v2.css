@@ -1,0 +1,69 @@
+
+/* RAW Bettermaker Mastering Equalizer V2 — self-drawn hardware face, 1380px base width.
+   Keep all knobs within .rack-scaled: existing 70/80/90/100% fit logic remains authoritative. */
+.bm2-hardware{width:1380px!important;max-width:none!important;min-width:1380px;box-sizing:border-box!important;background:linear-gradient(180deg,#102534,#061018)!important;border:1px solid #276071!important;border-radius:22px!important;padding:17px 20px 13px!important;color:#e7eff9;font-family:Arial,Helvetica,sans-serif!important;box-shadow:0 22px 46px #0009!important;}
+.bm2-hardware *{box-sizing:border-box}
+.bm2-title{display:flex;justify-content:space-between;align-items:center;gap:22px;margin:0 0 16px;color:#dceefa}
+.bm2-title strong{display:block;font-size:23px;letter-spacing:.25px;font-weight:850}
+.bm2-title strong em{font-style:normal;font-size:12px;font-weight:550;color:#8aa8b9}
+.bm2-title small,.bm2-title>span{display:block;color:#64dfec;font-size:11px;font-weight:700;letter-spacing:1.6px;margin-bottom:3px}
+.bm2-metal-frame{position:relative;display:grid;grid-template-columns:255px 702px 345px;align-items:stretch;gap:8px;min-height:440px;padding:15px;border:3px solid #a6acb3;border-radius:17px;background:linear-gradient(165deg,#c8cdd0 0%,#747f8a 8%,#151b24 12%,#0b1018 91%,#b0b6bd 99%);box-shadow:inset 0 0 0 3px #35404b,0 0 0 2px #070e13,0 18px 30px #0008;overflow:hidden}
+.bm2-screw{position:absolute;z-index:3;color:#8e9297;text-shadow:1px 1px #000;font-size:17px}.bm2-screw.tl{left:7px;top:6px}.bm2-screw.bl{left:7px;bottom:4px}.bm2-screw.tr{right:7px;top:6px}.bm2-screw.br{right:7px;bottom:4px}
+.bm2-left-bay,.bm2-right-bay{background:radial-gradient(ellipse at 70% 20%,#252b33,#03070c 73%);border-radius:16px;border:1px solid #4b535a;position:relative;min-height:407px}
+.bm2-left-bay{display:flex;align-items:center;justify-content:space-around;padding:23px 12px 17px;gap:4px}
+.bm2-power,.bm2-engage{display:flex!important;flex-direction:column!important;align-items:center;gap:7px!important;border:0!important;background:none!important;color:#cfd7de!important;font-size:13px;white-space:nowrap;cursor:default}
+.bm2-power-lamp{display:block;width:36px;height:36px;border-radius:50%;border:5px solid #a3a8b0;background:radial-gradient(circle at 39% 38%,#ffdb88,#ae382d 32%,#32181b 61%,#090b0d);box-shadow:0 0 5px #ff973e,0 3px 4px #000}
+.bm2-engage{cursor:pointer!important;padding:6px!important;border-radius:6px!important}
+.bm2-engage-lamp{display:block;width:18px;height:18px;border:3px solid #8c5864;border-radius:50%;background:#380c1a}
+.bm2-engage.active .bm2-engage-lamp{background:radial-gradient(#ffccd8,#ed175d 52%,#8d1242);box-shadow:0 0 14px #f26}
+.bm2-left-bay small{font-size:12px;letter-spacing:1px}
+.bm2-level-control{display:flex;align-items:center;flex-direction:column;justify-content:center;gap:12px;color:#d4d9e0;font-size:13px;font-weight:bold}
+.bm2-level-control .knob-value{font-size:13px;color:#6ee7b7!important}
+.bm2-level-knob{width:104px!important;height:104px!important;flex:none!important;border-radius:50%!important;cursor:ns-resize!important;background:radial-gradient(circle at 33% 28%,#d0d8e1,#8994a2 27%,#5e6773 63%,#242b34 82%,#151b23 100%)!important;border:3px solid #9aa6ae!important;box-shadow:inset 0 0 0 6px #485361,0 5px 9px #000!important;position:relative!important}
+.bm2-level-knob:before{content:"";position:absolute;left:50%;top:5px;transform:translateX(-50%);width:2px;height:15px;border-radius:2px;background:#e1ebf0}
+.bm2-glass-frame{border:5px solid #131921;border-radius:9px;background:#000509;box-shadow:0 0 0 2px #697078,0 3px 8px #000;padding:4px;overflow:hidden}
+.bm2-screen{height:384px;width:100%;background:#020714;color:#f0f7ff;padding:7px 9px 5px;overflow:hidden;font-size:13px;position:relative}
+.bm2-plot-layout{display:grid;grid-template-columns:35px 1fr 35px;gap:5px;height:268px}
+.bm2-meters{display:flex;gap:3px;justify-content:space-around;position:relative;padding-bottom:21px;min-width:0}
+.bm2-meter{width:13px;display:flex;flex-direction:column;align-items:center;font-weight:bold;font-size:11px;gap:3px}
+.bm2-leds{height:214px;width:12px;display:flex;flex-direction:column;gap:1px;justify-content:flex-start;overflow:hidden}
+.bm2-leds i{height:7px;flex:none;display:block;border-radius:1px;box-shadow:0 0 3px currentColor}
+.bm2-leds i.green{background:#4cff13;color:#4cff13}.bm2-leds i.yellow{background:#ffd709;color:#ffd709}.bm2-leds i.red{background:#ff4a22;color:#ff4a22}
+.bm2-meters small{position:absolute;bottom:1px;left:0;width:100%;text-align:center;font-size:10px;line-height:11px;color:#fff}
+.bm2-chart{position:relative;min-width:0}
+.bm2-chart-body{height:249px;display:flex}
+.bm2-db-axis{width:34px;flex:none;display:flex;flex-direction:column;justify-content:space-between;text-align:right;padding:0 3px 0 0;font-size:12px;color:#f0f6ff}
+.bm2-plot{flex:1;position:relative;border:1px solid #b7c7e3;background:repeating-linear-gradient(90deg,#01040c,#020513 13px,#061025 14px);overflow:hidden}
+.bm2-grid-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+.bm2-plot .bm-btn{position:absolute!important;z-index:1;min-width:0!important;padding:2px 7px!important;height:40px!important;border-radius:4px!important;border:1px solid #5f8af4!important;background:linear-gradient(#4384dc,#0a3f9f)!important;color:white!important;box-shadow:0 2px 5px #000b!important;font-size:12px!important;font-weight:750!important}
+.bm2-plot .bm2-screen-power{top:3px;left:4px;width:78px;background:linear-gradient(#249c1b,#066019)!important;border-color:#1ecc50!important;font-size:18px!important}
+.bm2-plot .bm2-ab-btn{top:3px;left:44%;width:110px;font-size:19px!important}
+.bm2-ab-btn small{display:block;font-size:10px}
+.bm2-plot .bm2-mode-btn{top:3px;right:3px;width:100px;font-size:15px!important}
+.bm2-plot .bm2-gain-btn{bottom:4px;left:4px;width:98px}
+.bm2-plot .bm2-chart-toggle{bottom:4px;right:4px;width:98px}
+.bm2-frequencies{display:flex;justify-content:space-between;margin-left:35px;font-size:10px;color:#e8f0fa}
+.bm2-tiles{height:80px;display:grid;grid-template-columns:repeat(6,minmax(0,1fr)) 1fr 1fr;gap:4px;margin:3px 0 1px;overflow:hidden}
+.bm2-hardware .bm2-tiles .bm-filter-tile{min-width:0!important;min-height:0!important;padding:4px 2px!important;border-radius:3px!important;border:1px solid #3663b4!important;background:linear-gradient(#376dd0,#093da1)!important;color:#fff!important;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:2px;text-shadow:0 1px 2px #15254b}
+.bm2-hardware .bm2-tiles .bm-filter-tile.red,.bm2-hardware .bm2-tiles .bm-filter-tile.selected{background:linear-gradient(#ff4c35,#b30000)!important;border-color:#d35a4a!important}
+.bm2-hardware .bm2-tiles .bm-filter-tile strong{font-size:12px!important}.bm2-hardware .bm2-tiles .bm-filter-tile span{font-size:14px!important}.bm2-hardware .bm2-tiles .bm-filter-tile small{font-size:10px!important;text-align:center}
+.bm2-feedback{height:21px;display:flex;justify-content:space-between;align-items:center;color:#a9c3df;font-size:11px;gap:7px}
+.bm2-unsaved{background:linear-gradient(#ed292b,#a30512);color:#fff;padding:3px 11px;border-radius:2px}
+.bm2-right-bay{padding:34px 14px 15px;display:flex;flex-direction:column;justify-content:space-between;align-items:center}
+.bm2-mark{display:flex;align-items:center;flex-direction:column;color:#f4f3f0;margin:10px 0 29px}
+.bm2-mark strong{font-size:29px;font-family:Georgia,serif;font-style:italic;letter-spacing:-1px}
+.bm2-mark span{font-size:11px;letter-spacing:2.6px;font-weight:bold}
+.bm2-right-knobs{display:flex;width:100%;align-items:flex-start;justify-content:space-around;gap:6px}
+.bm2-control-group{display:flex;flex-direction:column;align-items:center;gap:8px;min-width:85px}
+.bm2-metal-knob{width:65px!important;height:65px!important;flex:none!important;cursor:ns-resize!important;border-radius:50%!important;border:3px solid #9ba7b0!important;background:radial-gradient(circle at 29% 25%,#e0e7ec,#929da8 28%,#5c6771 70%,#2b333b 90%)!important;box-shadow:inset 0 0 0 6px #727f89,0 4px 8px #000c!important;position:relative!important}
+.bm2-metal-knob:before{content:"";position:absolute;top:4px;left:50%;transform:translateX(-50%);width:2px;height:13px;background:#f1f5f8}
+.bm2-encoder-label{font-size:13px;color:#f2f4f6;font-weight:bold}
+.bm2-encoder-readout{font-size:11px;color:#75e2dd!important;text-align:center;white-space:nowrap}
+.bm2-details{margin:14px 2px 0;border:1px solid #2c4656;border-radius:8px;background:#0b1925;overflow:hidden}
+.bm2-details summary{cursor:pointer;color:#bcd5e4;list-style:none;font-size:13px;font-weight:700;letter-spacing:.7px;padding:13px 17px}
+.bm2-details summary span{float:right}.bm2-details summary::-webkit-details-marker{display:none}
+.bm2-parameter-area{display:grid;grid-template-columns:repeat(8,1fr);gap:16px;padding:22px 12px}
+.bm2-parameter-area .bm-mini-control{min-width:0}
+.bm2-utilities{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;padding:0 12px 17px}
+.bm2-hardware .bm2-utilities .bm-btn{font-size:12px;padding:10px 14px}
+.bm2-disclaimer{margin-top:10px;color:#85a6b7;font-size:10px;letter-spacing:1px;text-align:center}
