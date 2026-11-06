@@ -291,3 +291,44 @@ body {
 @media(max-width:850px){
  #developer .diag-meters{grid-template-columns:1fr}
 }
+
+/* Local digital preview monitor: NEVER real analog device metering. */
+.raw-console-preview-meters{
+ display:grid;grid-template-columns:1fr 1.12fr 1.12fr;align-items:center;
+ gap:13px;margin-top:10px;padding:12px 13px;
+ border:1px solid rgba(123,189,183,.14);border-radius:9px;
+ background:linear-gradient(135deg,#101f26,#111e26);
+}
+.raw-meter-caption strong{
+ display:block;color:#bcd2d6;letter-spacing:.13em;font-size:10px;
+}
+.raw-meter-caption small{
+ display:block;margin-top:5px;color:#728f99;font-size:9px;line-height:1.5;
+}
+.raw-meter-track{
+ min-width:0;display:grid;grid-template-columns:53px minmax(0,1fr) 79px;gap:9px;align-items:center;
+}
+.raw-meter-track>span{
+ font-size:10px;letter-spacing:.06em;color:#8babb5;font-weight:800;
+}
+.raw-meter-track>strong{
+ text-align:right;color:#bce9dc;font:800 12px Consolas,monospace;white-space:nowrap;
+}
+.raw-meter-rail{
+ min-width:0;height:10px;background:linear-gradient(90deg,#101f24,#172830);
+ border:1px solid rgba(118,175,168,.15);border-radius:4px;overflow:hidden;
+}
+.raw-meter-rail i{
+ display:block;width:0%;height:100%;
+ background:linear-gradient(90deg,#346f78,#5cc7a5 63%,#d7bd72 89%,#e4a06f);
+ transition:width .11s ease;
+}
+@media(max-width:1150px){
+ .raw-console-preview-meters{grid-template-columns:1fr 1fr}
+ .raw-meter-caption{grid-column:1/-1}
+}
+@media(max-width:690px){
+ .raw-console-preview-meters{grid-template-columns:1fr}
+ .raw-meter-caption{grid-column:auto}
+}
+.raw-console-project-btn:disabled{opacity:.4;cursor:not-allowed}
