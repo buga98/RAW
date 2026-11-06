@@ -105,3 +105,10 @@ test("A/B banks preserve independent left-right and mode data",()=>{
  assert.equal(manual.channels.A.eq2Gain,3);
  assert.equal(manual.channels.B.eq2Gain,-2);
 });
+
+test("Search & Destroy follows documented 2 second hold rather than instantaneous drag",()=>{
+ assert.match(v4,/searchTimer=setTimeout\(\(\)=>\{/);
+ assert.match(v4,/\},2000\);/);
+ assert.match(v4,/onGraphParamChange\(knob,/);
+ assert.match(v4,/event\.stopImmediatePropagation\(\)/);
+});
