@@ -188,3 +188,17 @@ test("stale resync snapshot cannot overwrite newer confirmed memory",()=>{
  assert.match(h.comparison(),/requested: -12 \| SIM: -12 \| SIM CONFIRMED/);
  assert.match(h.root.panel.querySelector("#rawSimReadback").textContent,/L_threshold=-12/);
 });
+
+test("audit viewer requests only the current lease and clears on disconnect",()=>{
+ const h=harness(),socket=h.connect();
+ const button=h.root.panel.querySelector("#rawSimAuditButton");
+ assert.equal(button.disabled,false);
+ button.click();
+ assert.equal(socket.sent.at(-1).type,"studio-sim-audit");
+ socket.receive({type:"studio-sim-audit-result",simulated:true,hardwareVerified:false,
+  leaseEpoch:1,entries:[{n:1,type:"lease-claimed",deviceId:null,parameter:null,status:"claimed"}]});
+ assert.match(h.root.panel.querySelector("#rawSimAudit").textContent,/lease-claimed/);
+ h.window.RAWStudioSim.disconnect();
+ assert.doesNotMatch(h.root.panel.querySelector("#rawSimAudit").textContent,/lease-claimed/);
+ assert.equal(button.disabled,true);
+});
