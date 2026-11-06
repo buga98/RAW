@@ -244,6 +244,7 @@
   <script src="raw-chain-recall-planner-v2.js"></script>
   <script src="raw-local-rack-transaction-v3.js"></script>
   <script src="raw-project-recall-v3.js"></script>
+  <script src="raw-developer-access-v1.js"></script>
   <script src="raw-portable-project-v1.js"></script>
   <script src="raw-portable-project-panel-v1.js"></script>
   <script src="raw-local-project-library-v2.js"></script>
@@ -307,7 +308,7 @@ const TEST_MODE = (await window.RAWNative?.getRuntimeInfo?.())?.testMode === tru
 const localTestSessions = [];
 // Developer LAB is not a production permission boundary. Server-controlled
 // privileges must be enforced by Firebase Security Rules / verified backend.
-const DEVELOPER_EMAIL = "luka.buga@gmail.com";
+const DEVELOPER_EMAIL = window.RAWDeveloperAccessV1?.OWNER_EMAIL;
 let developerGranted = false;
 const developerNav = document.getElementById("developerNav");
 const developerScreen = document.getElementById("developer");
@@ -340,9 +341,10 @@ async function authorizeDeveloper(user) {
   try{
     // Fresh ID token prevents granting developer UI on a stale unverified login.
     const token=await user.getIdTokenResult(true);
-    developerGranted=auth.currentUser?.uid===user.uid &&
-      token?.claims?.email_verified===true &&
-      String(token.claims.email||"").trim().toLowerCase()===DEVELOPER_EMAIL;
+    developerGranted=window.RAWDeveloperAccessV1?.grant({
+      testMode:TEST_MODE,user,tokenResult:token,
+      activeUid:auth.currentUser?.uid
+    })===true;
   }catch(error){console.warn("RAW developer LAB token verification unavailable",error);}
   updateDeveloperUi();
 }
