@@ -131,6 +131,6 @@ test("bad project files are never stored or staged",async()=>{
 test("new project browser performs no remote studio requests or direct control writes",()=>{
  assert.doesNotMatch(script,/fetch\(|WebSocket|sendControlMessage|updateDoc|runTransaction|\.parameter\(|\.restore\(/);
  assert.match(script,/textContent=String\(label\)/);
- assert.match(script,/source staging/);
+ assert.match(script,/Source staging|STAGE SOURCES/);
  assert.match(script,/PERMANENTLY DELETE LOCAL PROJECT/);
 });
