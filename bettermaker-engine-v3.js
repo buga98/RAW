@@ -78,6 +78,7 @@
         this.slots[slot]=Object.fromEntries(Object.keys(PARAMS).map(k=>[k,cap(k,saved[slot][k])]));
       }
       this.switchAB(saved.slot||"A");this.setMode(saved.mode||"stereo");
+      this.select(saved.selected||"eq1");
       this.enabled=!!saved.enabled;
       this.filterEnabled=Object.fromEntries(["hpf","eq1","eq2","eq3","eq4","lpf","passive"].map(k=>[k,saved.filterEnabled?.[k]!==false]));
       this.screen=saved.screen==="RTA"?"RTA":"EQ";
