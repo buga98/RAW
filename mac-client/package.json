@@ -1,0 +1,60 @@
+{
+  "name": "raw-mac-test-client",
+  "version": "0.1.0",
+  "private": true,
+  "productName": "RAW Remote Studio",
+  "description": "RAW remote mastering Mac client — lab test only, no billing",
+  "main": "main.cjs",
+  "author": "RAW",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "electron": "42.11.18",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.raw.remotestudio.lab",
+    "productName": "RAW Remote Studio",
+    "asar": true,
+    "files": [
+      "main.cjs",
+      "index.html",
+      "style.css",
+      "audio-diagnostics.js",
+      "daw-bridge-client.js",
+      "icon.png",
+      "bettermaker-v2.css",
+      "bettermaker-v2.js"
+    ],
+    "directories": {
+      "output": "dist"
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "identity": null,
+      "minimumSystemVersion": "12.0",
+      "category": "public.app-category.music"
+    },
+    "dmg": {
+      "title": "RAW Remote Studio (TEST)",
+      "contents": [
+        {
+          "x": 150,
+          "y": 190
+        },
+        {
+          "x": 440,
+          "y": 190,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}
