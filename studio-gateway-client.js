@@ -181,9 +181,10 @@ function accept(knob){
  if(flushTimer===null)flushTimer=setTimeout(flush,165);
  draw();
 }
-function attach(container){
- if(!TEST||!container)return;
- root=container;observer?.disconnect();
+function attach(container,controlsRoot=container){
+ if(!TEST||!container||!controlsRoot)return;
+ // Panel may live in Developer LAB; only observe actual mastering knobs.
+ root=controlsRoot;observer?.disconnect();
  if(panel&&!panel.isConnected)panel=null;
  if(!panel){
   panel=document.createElement("section");panel.className="raw-gateway-panel";
