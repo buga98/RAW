@@ -1203,6 +1203,20 @@ function renderPlugin() {
           <span class="raw-signal-connector is-offline" aria-hidden="true"></span>
           <div class="raw-console-node is-offline"><b>04</b><div><small>MASTER PRINT</small><strong>NOT AVAILABLE</strong></div></div>
         </div>
+        <div class="raw-console-preview-meters" aria-label="Digital preview RMS levels; not physical hardware meters">
+          <div class="raw-meter-caption">
+            <strong>MONITOR LEVEL</strong>
+            <small>LOCAL WEB AUDIO · RMS · NOT ANALOG READBACK</small>
+          </div>
+          <div class="raw-meter-track">
+            <span>INPUT</span><div class="raw-meter-rail"><i id="rawConsoleInputBar"></i></div>
+            <strong id="rawConsoleInputRms">— dBFS</strong>
+          </div>
+          <div class="raw-meter-track">
+            <span>OUTPUT</span><div class="raw-meter-rail"><i id="rawConsoleOutputBar"></i></div>
+            <strong id="rawConsoleOutputRms">— dBFS</strong>
+          </div>
+        </div>
         <div class="raw-console-information">
           <span><small>RACK DEVICES</small><strong id="rawConsoleDeviceCount">—</strong></span>
           <span><small>FORMAT</small><strong id="rawConsoleChannels">STEREO · 2 CH</strong></span>
