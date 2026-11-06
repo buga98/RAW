@@ -3553,3 +3553,16 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
 .raw-local-export-button:disabled{opacity:.48;cursor:progress}
 .raw-local-export-status{padding:6px 13px;color:#a8d2d6;font:600 10px/1.5 Arial,sans-serif;letter-spacing:.3px}
 @media(max-width:750px){.raw-local-export-status{padding:6px 10px}.raw-local-export-select{max-width:112px}}
+
+/* RAW PORTABLE CHAIN ARCHIVE — read-only comparison, no hardware recall. */
+.raw-chain-archive-panel{margin:0 0 14px;padding:14px 16px;border:1px solid #476677;border-radius:12px;background:linear-gradient(145deg,#102633,#0a1927);color:#d8e7ed;font-family:Arial,sans-serif}
+.raw-chain-archive-top{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px}
+.raw-chain-archive-top strong{letter-spacing:.65px}
+.raw-chain-archive-top span{font:600 10px/1.4 Arial,sans-serif;color:#a1c7cf}
+.raw-chain-archive-actions{display:flex;align-items:center;flex-wrap:wrap;gap:9px;margin:10px 0}
+.raw-chain-archive-actions input:not([type="file"]){min-width:150px;flex:1;max-width:260px;padding:9px 11px;border:1px solid #4a6c7b;background:#071321;color:#e6f9ff;border-radius:7px;font:12px Arial}
+.raw-chain-archive-actions button,.raw-archive-file-button{display:inline-flex;align-items:center;justify-content:center;padding:9px 12px;min-height:34px;border:1px solid #4f8d97;background:#17434c;border-radius:7px;color:#d9faf5;font:700 11px Arial;cursor:pointer}
+.raw-chain-archive-actions button:hover,.raw-archive-file-button:hover{background:#25656c}
+.raw-archive-status{font:600 11px/1.5 Arial;color:#a9cad0}
+.raw-archive-diff{max-height:135px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;margin:10px 0 0;background:#07121d;border-radius:7px;font:11px/1.6 Consolas,monospace;color:#bedbdd}
+@media(max-width:740px){.raw-chain-archive-top{align-items:flex-start;flex-direction:column}.raw-chain-archive-actions input:not([type="file"]){max-width:unset;width:100%}}
