@@ -26,6 +26,7 @@ The Control Room now shows a `REQUESTED VS SIMULATED READBACK` section. It can d
 - Disconnects, expiry, stolen/released leases and stale sessions stop forwarding commands. Old snapshots no longer remain visible as current when a connection closes.
 - An unplugged simulated device is explicitly marked offline; locally changed values are **not** represented as confirmed hardware state.
 - The existing `studio-sim-agent.mjs` remains localhost-only on `127.0.0.1:7075`. No Firebase, billing, public network, MIDI, GCon, USB HID or other real-hardware path has been touched.
+- `studio-sim-audit.mjs` maintains a bounded **RAM-only**, lease-scoped test audit of claims, releases, expirations, accepted/rejected commands, heartbeat and device availability changes. Only the active owner can request `studio-sim-audit`. The client can display it with **SHOW AGENT AUDIT** and clears the display on disconnect. It is not durable, authenticated production auditing.
 
 ## Run
 
@@ -63,15 +64,17 @@ In the local RAW Electron app, start a **LOCAL TEST session** and open Control R
 3. Press `DISCONNECT ngBusComp`, then change its Threshold. The UI must indicate DEVICE OFFLINE, not SIM CONFIRMED. The knob can still move locally.
 4. Press `RECONNECT ngBusComp`, move the same control again, then `RESYNC READBACK`. The SIM value should match the accepted new value.
 5. Stop terminal 1 (Agent) and confirm Control Room says connection lost / local preview only, with the old live snapshot removed.
-6. Restart Agent. The UI should require explicit reconnect and a new lease rather than replaying commands from the previous session.
-7. End the local test session while the console is connected. The next attempted knob change or scheduled heartbeat must disconnect the Agent.
-8. Test a second Electron client against the same local agent: second client must not be able to claim the studio while the first holds it.
+6. While the lease is yours, click `SHOW AGENT AUDIT`. Check for `lease-claimed`, `command-applied`, device disconnect/reconnect, and any rejected commands. Release the lease: old audit events must not be available to the next owner.
+7. Restart Agent. The UI should require explicit reconnect and a new lease rather than replaying commands from the previous session.
+8. End the local test session while the console is connected. The next attempted knob change or scheduled heartbeat must disconnect the Agent.
+9. Test a second Electron client against the same local agent: second client must not be able to claim the studio while the first holds it.
 
 **Metering and audio are not tested by this simulator.** Analog compression, THD, EQ curves and physical response require the actual equipment and manufacturer's supported plugin + interface signal chain.
 
 ## Regression tests
 
 - `npm run studio:state:check`: pure tracker tests, UI/client contract checks, mocked browser tests of state transitions and missing/out-of-order acknowledgments.
+- `npm run studio:audit:check`: bounded lease-scoped audit event tests.
 - `npm run studio:agent:check`: all simulator, WebSocket and V3 reconciliation tests.
 - `npm run test:smoke`: entire Node test suite including previously built Bettermaker/WesAudio tests.
 - A GitHub Actions workflow is configured for this feature branch. CI execution is distinct from manually running the app.
