@@ -256,3 +256,38 @@ body {
  .raw-console-project-btn{flex:1}
  .raw-projects-workspace .raw-library-panel,.raw-projects-workspace .raw-project-panel{padding:13px}
 }
+
+/* Only the verified owner LAB can display Web Audio engineering diagnostics. */
+#developer #rawDiagnosticsDetails[hidden]{display:none!important}
+#developer #rawDiagnosticsDetails{
+ width:100%;padding:17px 19px;border:1px solid rgba(121,188,182,.25);
+ border-radius:12px;background:linear-gradient(140deg,#101f28,#0b171e);
+}
+#developer .diag-heading{
+ display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+ margin-bottom:14px;flex-wrap:wrap;
+}
+#developer .diag-heading strong{
+ color:#9de1cc;font-size:13px;font-weight:850;letter-spacing:.1em;
+}
+#developer .diag-heading span{color:#9bb5bd;font-size:11px}
+#developer .diag-meters{
+ display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
+ gap:12px;margin-bottom:13px;
+}
+#developer .diag-meters>div{background:#0b1a23;border:1px solid rgba(126,195,188,.13);border-radius:9px;padding:12px}
+#developer .diag-meters small{display:block;color:#839dab;font:800 10px "Segoe UI",sans-serif}
+#developer .diag-meters strong{display:block;color:#a0e8d0;margin-top:5px;font:850 17px Consolas,monospace}
+#developer .diag-spectrum{width:100%;height:128px;background:#06121c;border:1px solid rgba(133,193,181,.17);border-radius:10px}
+#developer .diag-actions{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;padding:10px 0}
+#developer .diag-actions span{color:#9bbbc3;font-size:11px}
+#developer .diag-key{display:inline-block;width:8px;height:8px;margin:0 7px 0 12px;border-radius:3px}
+#developer .diag-key-input{background:#879cae}
+#developer .diag-key-output{background:#5ac6a9}
+#developer .diag-action-buttons{display:flex;flex-wrap:wrap;gap:8px}
+#developer .diag-test-result{font:11px/1.6 Consolas,monospace;color:#b5ccd3;margin:6px 0}
+#developer .diag-test-result[data-state="pass"]{color:#9ce6c6}
+#developer .diag-test-result[data-state="fail"]{color:#ffaca8}
+@media(max-width:850px){
+ #developer .diag-meters{grid-template-columns:1fr}
+}
