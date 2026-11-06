@@ -213,6 +213,7 @@
   <script src="audio-diagnostics.js"></script>
   <script src="daw-bridge-client.js"></script>
   <script src="bettermaker-v2.js"></script>
+  <script src="bettermaker-engine-v3.js"></script>
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import {
@@ -1149,6 +1150,12 @@ attachNgBusButtons();
 attachNgTubeButtons();
 attachBettermakerButtons();
 window.RAWBettermakerV2?.attach();
+window.RAWBettermakerEngineV3?.attach(document.querySelector(".bm2-hardware"), () => ({
+  input: demoAudioEngine?.inputMeter || null,
+  output: demoAudioEngine?.outputMeter || null,
+  sampleRate: demoAudioCtx?.sampleRate || 44100,
+  running: !!demoAudioEngine && demoAudioCtx?.state === "running" && !!demoMediaElement && !demoMediaElement.paused
+}));
 window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
