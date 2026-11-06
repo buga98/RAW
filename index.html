@@ -219,6 +219,8 @@
   <script src="raw-chain-archive-v1.js"></script>
   <script src="raw-chain-recall-planner-v2.js"></script>
   <script src="raw-local-rack-transaction-v3.js"></script>
+  <script src="raw-portable-project-v1.js"></script>
+  <script src="raw-portable-project-panel-v1.js"></script>
   <script src="daw-bridge-client.js"></script>
   <script src="bettermaker-v2.js"></script>
   <script src="bettermaker-engine-v3.js"></script>
@@ -1201,6 +1203,31 @@ window.RAWChainArchiveV1?.attach(pluginHost, () => ({
   bus:window.RAWNgBusCompV1Model||null,
   tube:window.RAWNgTubeCompV1Model||null
 }));
+if (TEST_MODE) window.RAWPortableProjectPanelV1?.attach(pluginHost, {
+  readArchive:()=>window.RAWChainArchiveV1.capture({
+    chainOrder:[...chainDevices],
+    meq:rawBm3Model||null,
+    manual:window.RAWMEQManualModel||null,
+    bus:window.RAWNgBusCompV1Model||null,
+    tube:window.RAWNgTubeCompV1Model||null,
+    label:"RAW Portable Project"
+  }),
+  getSources:()=>[...uploadedFiles],
+  canStageSources:()=>TEST_MODE===true&&!!activeSessionId,
+  stageSources:async files=>{
+    if(!TEST_MODE||!activeSessionId||!Array.isArray(files)||files.length<1||
+       files.length>MAX_FILES)return false;
+    if(files.some(f=>!f||typeof f.name!=="string"||typeof f.size!=="number"))return false;
+    stopWave();
+    uploadedFiles=[...files];
+    renderFileList();
+    await simulateUpload(); // in TEST_MODE: local message only, never HTTP upload
+    const pill=pluginHost.querySelector("#rawAudioDock .file-pill");
+    if(pill)pill.textContent="♫ "+uploadedFiles[0].name;
+    initWaveform(uploadedFiles[0]); // rebind audio, keep existing rack control models
+    return true;
+  }
+});
 window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
