@@ -24,8 +24,9 @@
     "studio:gateway:lab": "node studio-gateway-lab.mjs",
     "studio:gateway:agent": "node studio-gateway-outbound-agent.mjs",
     "studio:gateway:demo": "node scripts/studio-gateway-demo.mjs",
-    "studio:gateway:check": "node --test tests/studio-gateway-lab-v1.test.mjs",
-    "security:electron:check": "node --test tests/electron-preload-security-v1.test.mjs"
+    "studio:gateway:check": "node --test tests/studio-gateway-lab-v1.test.mjs tests/studio-gateway-client-v1.test.mjs",
+    "security:electron:check": "node --test tests/electron-preload-security-v1.test.mjs",
+    "studio:gateway:ui-lab": "node scripts/studio-gateway-ui-lab.mjs"
   },
   "keywords": [],
   "author": "",
