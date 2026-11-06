@@ -84,7 +84,7 @@
     return level>0?Math.max(-90,Math.min(0,20*Math.log10(level))):-90;
   };
 
-  function attach(root, audioProvider, onParamChange){
+  function attach(root, audioProvider, onParamChange, onLocalParamChange){
     if(!root||root.dataset.bm3Attached==="yes")return null;
     root.dataset.bm3Attached="yes";
     const model=new StudioEQ();
@@ -152,6 +152,9 @@
           const label=k.closest(".bm-control")?.querySelector(".knob-value");
           if(label)label.textContent=format(key,v)+(k.dataset.unit==="dB"?" dB":k.dataset.unit==="Q"?" Q":"");
         });
+        // A/B recall and Reset are LOCAL PREVIEW ONLY: never issue new hardware
+        // or MIDI commands until authenticated manufacturer-plugin integration exists.
+        if(typeof onLocalParamChange==="function")onLocalParamChange(key,v);
       }
     }
     // Drag the virtual touchscreen EQ plot: coordinates reflect the visual display.
