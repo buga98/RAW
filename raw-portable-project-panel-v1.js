@@ -85,7 +85,7 @@ function attach(host,{readArchive,getSources,canStageSources,stageSources}={}){
      parsed.sources.length+" embedded source file(s) verified; NOT STAGED OR UPLOADED");
    detail(describe());
   }catch(err){
-   imported=null;
+   imported=null;history=[];
    setStatus("Project import REJECTED: "+err.message);
    detail("No audio was staged and no rack controls were modified.");
   }finally{lock(false);}
