@@ -152,3 +152,34 @@ test("expired owner lease releases the test studio and refuses stale write",asyn
   assert.ok(newer.leaseEpoch>old.leaseEpoch);
  }finally{await lab.cleanup();}
 });
+
+test("heartbeat renews the local lease but does not grant a lease to other clients",async()=>{
+ let current=Date.now();
+ const lab=await setup(()=>current);
+ try{
+  const a=await lab.connect(),b=await lab.connect();
+  const lease=await claim(a);
+  current+=20_000;
+  const pong=await request(a,{type:"studio-sim-ping",sessionId:TEST_SESSION},m=>m.type==="studio-sim-pong");
+  assert.equal(pong.leaseEpoch,lease.leaseEpoch);
+  const rejected=await request(b,{type:"studio-sim-ping",sessionId:TEST_SESSION},m=>m.type==="studio-sim-error");
+  assert.equal(rejected.code,"NOT_OWNER");
+  current+=20_000; // 40 seconds from start, only 20 since last heartbeat
+  const stillAlive=await request(a,{type:"studio-sim-ping",sessionId:TEST_SESSION},m=>m.type==="studio-sim-pong");
+  assert.equal(stillAlive.leaseEpoch,lease.leaseEpoch);
+ }finally{await lab.cleanup();}
+});
+test("non-owner may not release owner lease or change device online state",async()=>{
+ const lab=await setup();
+ try{
+  const a=await lab.connect(),b=await lab.connect();
+  const lease=await claim(a);
+  const release=await request(b,{type:"studio-sim-release"},m=>m.type==="studio-sim-error");
+  assert.equal(release.code,"NOT_OWNER");
+  const offline=await request(b,{type:"studio-sim-device-online",deviceId:"ngbuscomp",online:false},
+   m=>m.type==="studio-sim-error");
+  assert.equal(offline.code,"NOT_OWNER");
+  const stillOwner=await request(a,{type:"studio-sim-ping",sessionId:TEST_SESSION},m=>m.type==="studio-sim-pong");
+  assert.equal(stillOwner.leaseEpoch,lease.leaseEpoch);
+ }finally{await lab.cleanup();}
+});
