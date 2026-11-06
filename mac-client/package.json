@@ -23,7 +23,8 @@
       "daw-bridge-client.js",
       "icon.png",
       "bettermaker-v2.css",
-      "bettermaker-v2.js"
+      "bettermaker-v2.js",
+      "bettermaker-engine-v3.js"
     ],
     "directories": {
       "output": "dist"
