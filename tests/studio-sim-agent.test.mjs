@@ -183,3 +183,28 @@ test("non-owner may not release owner lease or change device online state",async
   assert.equal(stillOwner.leaseEpoch,lease.leaseEpoch);
  }finally{await lab.cleanup();}
 });
+
+test("only the current simulator lease owner can read its audit records",async()=>{
+ const lab=await setup();
+ try{
+  const a=await lab.connect(),b=await lab.connect();
+  const first=await claim(a);
+  const accepted=await request(a,command(first.leaseEpoch),m=>m.type==="simulator-command-result");
+  assert.equal(accepted.status,"simulated-applied");
+  const denied=await request(b,{type:"studio-sim-audit"},m=>m.type==="studio-sim-error");
+  assert.equal(denied.code,"NOT_OWNER");
+  const own=await request(a,{type:"studio-sim-audit"},m=>m.type==="studio-sim-audit-result");
+  assert.equal(own.leaseEpoch,first.leaseEpoch);
+  assert.equal(own.simulated,true);
+  assert.equal(own.hardwareVerified,false);
+  assert.equal(own.entries.some(x=>x.type==="command-applied"&&x.deviceId==="ngbuscomp"),true);
+  assert.equal(own.entries.some(x=>x.type==="lease-claimed"),true);
+  assert.equal(own.entries.every(x=>x.leaseEpoch===first.leaseEpoch),true);
+  await request(a,{type:"studio-sim-release"},m=>m.type==="studio-sim-released");
+  const second=await claim(b);
+  const next=await request(b,{type:"studio-sim-audit"},m=>m.type==="studio-sim-audit-result");
+  assert.equal(next.leaseEpoch,second.leaseEpoch);
+  assert.equal(next.entries.some(x=>x.type==="command-applied"),false);
+  assert.equal(next.entries.every(x=>x.leaseEpoch===second.leaseEpoch),true);
+ }finally{await lab.cleanup();}
+});
