@@ -9,6 +9,7 @@ on:
       - feature/electron-security-preload-v1
       - feature/local-audio-print-and-chain-archive-v1
       - feature/chain-recall-planner-v2
+      - feature/local-rack-transaction-v3
   workflow_dispatch:
 
 permissions:
