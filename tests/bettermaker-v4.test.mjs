@@ -90,3 +90,18 @@ test("V4 manual model has zero direct USB, WebSocket or billing code",()=>{
  assert.match(v4,/HARDWARE CONTROL NOT VERIFIED/);
  assert.match(v4,/data-bm4="close"/);
 });
+
+test("A/B banks preserve independent left-right and mode data",()=>{
+ const {manual,model}=fixture();
+ manual.setMode("dualMono");
+ manual.setParameter("eq2Gain",3);
+ manual.selectChannel("B");
+ manual.setParameter("eq2Gain",-2);
+ manual.copyCurrentToBank("B");
+ manual.channels[manual.channel]=JSON.parse(JSON.stringify(model.values));
+ model.switchAB("B");
+ manual.syncBankAfterSwitch();
+ assert.equal(model.values.eq2Gain,-2);
+ assert.equal(manual.channels.A.eq2Gain,3);
+ assert.equal(manual.channels.B.eq2Gain,-2);
+});
