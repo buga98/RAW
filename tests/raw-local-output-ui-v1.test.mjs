@@ -43,8 +43,9 @@ test("chain archive can only compare and never automatically recall state",()=>{
 test("local print and archive scripts do not alter billing or require a network port",()=>{
  assert.doesNotMatch(audio,/fetch\(|WebSocket|http:\/\/|https:\/\/|updateDoc|runTransaction|easymidi/);
  assert.doesNotMatch(archive,/fetch\(|WebSocket|http:\/\/|https:\/\/|updateDoc|runTransaction|easymidi/);
- assert.equal(packageInfo.scripts["studio:local-assets:check"],
-  "node --test tests/raw-local-wav-export-v1.test.mjs tests/raw-chain-archive-v1.test.mjs");
+ assert.match(packageInfo.scripts["studio:local-assets:check"],/tests\/raw-local-wav-export-v1\.test\.mjs/);
+ assert.match(packageInfo.scripts["studio:local-assets:check"],/tests\/raw-chain-archive-v1\.test\.mjs/);
+ assert.match(packageInfo.scripts["studio:local-assets:check"],/tests\/raw-output-delivery-contract-v1\.test\.mjs/);
  assert.doesNotThrow(()=>new vm.Script(audio));
  assert.doesNotThrow(()=>new vm.Script(archive));
 });
