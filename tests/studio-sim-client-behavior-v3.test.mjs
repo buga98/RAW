@@ -114,6 +114,10 @@ test("client wires local knob -> pending -> distinct simulated readback",()=>{
 test("offline device edits remain unconfirmed and do not emit socket commands",()=>{
  const h=harness(),socket=h.connect();
  socket.receive({type:"simulator-device-state",deviceId:"ngbuscomp",online:false,simulated:true});
+ socket.receive({type:"simulator-snapshot",simulated:true,hardwareVerified:false,
+  leaseEpoch:1,stateVersion:1,devices:{
+   ngbuscomp:{online:false,source:"simulated-memory",values:{L_threshold:-8.5}}
+  }});
  const before=socket.sent.length;
  h.move("ngbuscomp","L_threshold",-10);
  assert.equal(socket.sent.length,before);
