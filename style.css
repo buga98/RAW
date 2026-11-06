@@ -3566,3 +3566,10 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
 .raw-archive-status{font:600 11px/1.5 Arial;color:#a9cad0}
 .raw-archive-diff{max-height:135px;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;padding:10px;margin:10px 0 0;background:#07121d;border-radius:7px;font:11px/1.6 Consolas,monospace;color:#bedbdd}
 @media(max-width:740px){.raw-chain-archive-top{align-items:flex-start;flex-direction:column}.raw-chain-archive-actions input:not([type="file"]){max-width:unset;width:100%}}
+
+/* RAW safe V2 recall preview: review differences without issuing hardware commands. */
+.raw-chain-archive-actions button[data-chain-archive="preview"]{background:#244b69;border-color:#5c91b0;color:#e6f7ff}
+.raw-chain-archive-actions button[data-chain-archive="clear"]{background:#1b2833;border-color:#4c6874;color:#b9cbd4}
+.raw-archive-plan{white-space:pre-wrap;overflow-wrap:anywhere;max-height:200px;overflow:auto;
+ margin:10px 0 0;padding:11px 12px;border-radius:8px;border:1px solid #38647c;
+ background:#071826;color:#aee0e8;font:11px/1.6 ui-monospace,Consolas,monospace}
