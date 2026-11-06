@@ -377,6 +377,11 @@ if (TEST_MODE) {
   document.getElementById("testModeBanner").style.display = "block";
   document.body.style.paddingTop = "35px";
   console.info("REMOTE STUDIO LOCAL TEST MODE: cloud writes and billing disabled");
+} else {
+  // IndexedDB project workbench is currently a tested LOCAL TEST workflow;
+  // do not expose a production menu that would not actually mount it.
+  const localProjectsTab=document.querySelector('.tab[data-screen="projects"]');
+  if(localProjectsTab)localProjectsTab.hidden=true;
 }
 
 let currentUser = null;
@@ -1378,6 +1383,13 @@ if (developerAllowed()) {
 }
 const sourceTag=pluginHost.querySelector("#rawConsoleSource");
 if(sourceTag)sourceTag.textContent=firstAudioFile?.name||"NO AUDIO LOADED";
+if(!TEST_MODE){
+  const localProjectsButton=pluginHost.querySelector(".raw-console-project-btn");
+  if(localProjectsButton){
+    localProjectsButton.disabled=true;
+    localProjectsButton.title="Local project management is currently available only in LOCAL TEST";
+  }
+}
 const devicesTag=pluginHost.querySelector("#rawConsoleDeviceCount");
 if(devicesTag)devicesTag.textContent=String(audioRoute?.deviceCount??devices.length);
 const channelsTag=pluginHost.querySelector("#rawConsoleChannels");
