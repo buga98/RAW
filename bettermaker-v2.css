@@ -149,3 +149,9 @@
 /* 2-second Search & Destroy hold feedback, never active during device lock. */
 .bm2-plot.bm4-search-active{cursor:crosshair}
 .bm2-plot.bm4-search-active:after{content:"SEARCH & DESTROY · FREQ ↔ / GAIN ↕";position:absolute;z-index:3;pointer-events:none;left:50%;bottom:52px;transform:translateX(-50%);white-space:nowrap;border:1px solid #60c6ef;border-radius:3px;background:#07213fe8;color:#d3f9ff;font:700 12px Arial;padding:6px 9px}
+
+/* Manual p.10: selected MID/SIDE or LEFT/RIGHT + FOCUS appears in non-stereo mode. */
+.bm4-focus-controls{position:absolute;z-index:4;right:5px;top:46px;display:flex;flex-direction:column;gap:5px;width:99px}
+.bm4-focus-controls[hidden]{display:none!important}
+.bm4-focus-controls button{border:1px solid #4579c1;border-radius:3px;background:linear-gradient(#3674c9,#164587);color:white;font:700 12px Arial;min-height:29px}
+.bm4-focus-controls button.active{border-color:#ee5353;background:linear-gradient(#ef594c,#a70e1e)}
