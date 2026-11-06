@@ -53,7 +53,7 @@ export function createStudioGatewayLab({
   const old=lease;lease=null;
   cancelPending(reason);
   send(old.client,{type:"gateway-lease-ended",reason,leaseEpoch:old.epoch,labOnly:true});
-  send(agent,{type:"gateway-agent-lease",action:"stop",sessionId:old.sessionId,leaseEpoch:old.epoch});
+  send(agent,{type:"gateway-agent-lease",action:"stop",sessionId:old.sessionId,leaseEpoch:old.epoch,labOnly:true});
   for(const ws of allClients())if(ws!==old.client)
    send(ws,{type:"gateway-studio-state",status:agent?"free":"agent-offline",labOnly:true});
  }
@@ -96,7 +96,7 @@ export function createStudioGatewayLab({
     throw safe("Local test session required","INVALID_SESSION");
    lease={client:ws,sessionId:msg.sessionId,epoch:++epoch,expiresAt:now()+leaseMs,ready:false,sequence:0,windowStart:now(),count:0};
    send(ws,{type:"gateway-claim-pending",sessionId:lease.sessionId,leaseEpoch:lease.epoch,labOnly:true});
-   send(agent,{type:"gateway-agent-lease",action:"start",sessionId:lease.sessionId,leaseEpoch:lease.epoch});
+   send(agent,{type:"gateway-agent-lease",action:"start",sessionId:lease.sessionId,leaseEpoch:lease.epoch,labOnly:true});
    return;
   }
   if(!lease||lease.client!==ws)throw safe("No active owner lease","NOT_OWNER");
