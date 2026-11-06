@@ -11,7 +11,7 @@ const manifest=JSON.parse(readFileSync(new URL("../package.json",import.meta.url
 test("Gateway console is strictly TEST mode and only uses localhost",()=>{
  assert.doesNotThrow(()=>new vm.Script(client));
  assert.match(client,/get\("testMode"\)==="1"/);
- assert.match(client,/if\(!TEST\|\|!container\)return/);
+ assert.match(client,/if\(!TEST\|\|!container\|\|!controlsRoot\)return/);
  assert.match(client,/ws:\/\/127\.0\.0\.1:7076/);
  assert.match(html,/studio-gateway-client\.js/);
  assert.match(html,/studio-gateway-client\.css/);
