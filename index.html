@@ -1155,7 +1155,7 @@ window.RAWBettermakerEngineV3?.attach(document.querySelector(".bm2-hardware"), (
   output: demoAudioEngine?.outputMeter || null,
   sampleRate: demoAudioCtx?.sampleRate || 44100,
   running: !!demoAudioEngine && demoAudioCtx?.state === "running" && !!demoMediaElement && !demoMediaElement.paused
-}));
+}), (knob, value) => setKnobValue(knob, value));
 window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
