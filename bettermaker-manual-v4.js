@@ -246,6 +246,16 @@ function attach(root, model, onPreviewApply, onGraphParamChange){
   });
   root.querySelector(".bm2-screen-power")?.classList.toggle("active",manual.settings.filters[model.selected]!==false);
   root.classList.toggle("bm4-locked",manual.locked);
+  focusControls.hidden=manual.mode==="stereo";
+  const channelButton=focusControls.querySelector('[data-bm4="cycle-channel"]');
+  if(channelButton)channelButton.textContent=manual.mode==="ms"?
+    (manual.channel==="A"?"MID":"SIDE"):
+    (manual.channel==="A"?"LEFT":"RIGHT");
+  const focusButton=focusControls.querySelector('[data-bm4="focus-toggle"]');
+  if(focusButton){
+    focusButton.textContent=manual.focus?"FOCUS ON":"FOCUS OFF";
+    focusButton.classList.toggle("active",manual.focus);
+  }
   status((manual.locked?"LOCKED · ":"")+(manual.mode==="stereo"?"STEREO":manual.mode.toUpperCase()+" "+(manual.channel==="A"?"LEFT/MID":"RIGHT/SIDE"))+
     " · EQ CURVE PREVIEW · hardware not connected");
   redraw();
@@ -357,7 +367,11 @@ function attach(root, model, onPreviewApply, onGraphParamChange){
   if(name==="shape"){const [id,shape]=value.split(":");manual.shape(id,shape);renderSelected(id);}
   if(name==="gainlock"){manual.gainLock(value,!manual.settings.gainLock[value]);renderSelected(value);}
   if(name==="channel"){if(manual.selectChannel(value))restorePreview();}
-  if(name==="focus")manual.focus=!manual.focus;
+  if(name==="focus"||name==="focus-toggle")manual.focus=!manual.focus;
+  if(name==="cycle-channel"){
+    const target=manual.channel==="A"?"B":"A";
+    if(manual.selectChannel(target))restorePreview();
+  }
   if(name==="peakhold")manual.peakHold=value;
   if(name==="notes")manual.notes=!manual.notes;
   if(name==="lock")manual.lock();
@@ -418,6 +432,14 @@ function attach(root, model, onPreviewApply, onGraphParamChange){
  // Suppress the V3 immediate-drag handler only inside this V4 test branch.
  let searchTimer=null,searchActive=false,searchStart=null,searchPointer=null;
  const chart=root.querySelector(".bm2-plot");
+ const focusControls=document.createElement("div");
+ focusControls.className="bm4-focus-controls";
+ focusControls.innerHTML='<button type="button" data-bm4="cycle-channel">LEFT</button><button type="button" data-bm4="focus-toggle">FOCUS OFF</button>';
+ chart?.append(focusControls);
+ focusControls.addEventListener("click",event=>{
+   const button=event.target.closest("button[data-bm4]");
+   if(button)action(button);
+ });
  const cancelSearch=()=>{
    if(searchTimer!==null)clearTimeout(searchTimer);
    searchTimer=null;searchActive=false;searchStart=null;searchPointer=null;
