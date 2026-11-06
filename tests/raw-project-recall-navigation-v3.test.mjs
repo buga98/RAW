@@ -21,6 +21,7 @@ function navigation({rack=true,library=true,owner=true,session=true}={}){
   renderCount:0
  };
  const env={
+  TEST_MODE:true,
   currentUser:{uid:"owner",emailVerified:true},
   developerAllowed:()=>owner,
   activeSessionId:session?"test-1234567890123":null,
