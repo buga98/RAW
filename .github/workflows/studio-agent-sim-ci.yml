@@ -27,5 +27,9 @@ jobs:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
       - name: Simulator unit and two-client WebSocket tests
         run: npm run studio:agent:check
+      - name: Authenticated loopback Gateway and outbound Agent
+        run: npm run studio:gateway:check
+      - name: Live loopback demonstration with ephemeral credentials
+        run: npm run studio:gateway:demo
       - name: Existing RAW smoke regression tests
         run: npm run test:smoke
