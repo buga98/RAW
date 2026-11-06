@@ -653,6 +653,7 @@ onAuthStateChanged(auth, async (user) => {
   if(auth.currentUser?.uid!==user.uid)return;
 
   const userSnap = await getDoc(doc(db, "users", user.uid));
+  if(auth.currentUser?.uid!==user.uid)return;
   currentUserData = userSnap.exists() ? userSnap.data() : {};
 
   updateUserPanel();
@@ -1163,7 +1164,7 @@ function renderPlugin() {
   window.RAWWorkspaceStatusMonitor?.disconnect?.();
   window.RAWWorkspaceActiveProjectStatus=null;
   let audioRoute=null;
-  try{
+  if(devices.length)try{
     audioRoute=window.RAWAudioRouteV4?.plan({
       chainOrder:devices.map(x=>x.id),sources:[...uploadedFiles],
       channels:2,mode:"local-preview"
