@@ -216,6 +216,7 @@
 
   <script src="audio-diagnostics.js"></script>
   <script src="raw-local-wav-export-v1.js"></script>
+  <script src="raw-chain-archive-v1.js"></script>
   <script src="daw-bridge-client.js"></script>
   <script src="bettermaker-v2.js"></script>
   <script src="bettermaker-engine-v3.js"></script>
@@ -1190,6 +1191,13 @@ const rawBm3Model = window.RAWBettermakerEngineV3?.attach(document.querySelector
 window.RAWBettermakerManualV4?.attach(document.querySelector(".bm2-hardware"), rawBm3Model, (parameter,value)=>applyDemoAudioParam("bettermaker_eq",parameter,value), (knob,value)=>setKnobValue(knob,value));
 window.RAWStudioSim?.attach(pluginHost);
 window.RAWStudioGatewayV1?.attach(pluginHost); // visible only in TEST_MODE, not the production UI
+window.RAWChainArchiveV1?.attach(pluginHost, () => ({
+  chainOrder:[...chainDevices],
+  meq:rawBm3Model||null,
+  manual:window.RAWMEQManualModel||null,
+  bus:window.RAWNgBusCompV1Model||null,
+  tube:window.RAWNgTubeCompV1Model||null
+}));
 window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
