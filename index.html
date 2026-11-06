@@ -3306,15 +3306,11 @@ function formatFileSize(bytes) {
   return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
 }
 
-/* ELECTRON IPC */
-window.openPluginSession = function() {
-  if (!window.require) {
-    alert("Electron IPC nije dostupan.");
-    return;
-  }
-
-  const { ipcRenderer } = window.require("electron");
-  ipcRenderer.send("open-plugin-session");
+/* ELECTRON IPC — restricted preload API */
+window.openPluginSession = async function() {
+  if (!window.RAWNative?.openPluginSession) return alert("Studio API nije dostupan.");
+  const result = await window.RAWNative.openPluginSession();
+  if (!result?.ok) alert("Studio launch: " + (result?.code || "UNAVAILABLE"));
 };
 
 renderPlugin();
