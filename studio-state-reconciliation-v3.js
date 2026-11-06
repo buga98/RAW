@@ -99,7 +99,7 @@ class Tracker {
     item.confirmed=value;item.version=reply.stateVersion;
     // Snapshot is a measurement of simulator state, not a transport ACK.
     if(item.state==="PENDING")continue;
-    item.state=same(item.desired,item.confirmed)?"SIM CONFIRMED":"DIVERGED";
+    item.state=item.desired===null?"SIM BASELINE":same(item.desired,item.confirmed)?"SIM CONFIRMED":"DIVERGED";
     item.note="Snapshot from simulator memory; NOT hardware";
    }
   }
