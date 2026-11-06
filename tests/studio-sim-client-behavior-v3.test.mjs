@@ -143,3 +143,12 @@ test("client disconnect prevents further socket commands and keeps local-only st
  assert.match(h.comparison(),/LOCAL ONLY/);
  assert.equal(h.window.RAWStudioSim.interceptsControls(),false);
 });
+
+test("socket loss clears last snapshot so historical values cannot appear live",()=>{
+ const h=harness(),socket=h.connect();
+ assert.match(h.root.panel.querySelector("#rawSimReadback").textContent,/ngBusComp/);
+ socket.close();
+ assert.match(h.root.panel.querySelector("#rawSimReadback").textContent,/No simulated readback snapshot/);
+ assert.equal(h.window.RAWStudioSim.interceptsControls(),false);
+ assert.match(h.history(),/CONNECTION LOST/);
+});
