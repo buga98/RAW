@@ -73,3 +73,14 @@
 .bm2-power{grid-column:1;grid-row:1}
 .bm2-engage{grid-column:1;grid-row:2}
 .bm2-level-control{grid-column:2;grid-row:1/3}
+
+/* Manufacturer touchscreen passive page (blue LO/HI, red attenuation and passive tiles). */
+.bm2-passive-panel{display:none;height:80px;grid-template-columns:1.35fr 1.35fr 1.35fr .85fr .85fr;gap:5px;margin-top:3px}
+.bm2-passive-open .bm2-tiles{display:none}
+.bm2-passive-open .bm2-passive-panel{display:grid}
+.bm2-passive-cell{color:#fff;border-radius:4px;border:1px solid #4482d9!important;font-size:15px;font-weight:800;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;padding:3px;min-width:0}
+.bm2-passive-cell strong{font-size:18px}.bm2-passive-cell span{font-size:13px}.bm2-passive-cell small{font-size:12px}
+.bm2-passive-blue{background:linear-gradient(#3678d4,#1142a3)}
+.bm2-passive-red{background:linear-gradient(#eb3f24,#ad1000);border-color:#bd3224!important}
+.bm2-passive-cell.active{outline:2px solid #f2f6ff;outline-offset:-3px}
+.bm2-passive-close small{margin-top:7px}
