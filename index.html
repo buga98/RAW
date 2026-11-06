@@ -8,6 +8,7 @@
   <link rel="stylesheet" href="bettermaker-v2.css" />
   <link rel="stylesheet" href="ngbuscomp-control-v1.css" />
   <link rel="stylesheet" href="ngtubecomp-control-v1.css" />
+  <link rel="stylesheet" href="studio-sim-client.css" />
 </head>
 <body>
   <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
@@ -219,6 +220,7 @@
   <script src="bettermaker-manual-v4.js"></script>
   <script src="ngbuscomp-control-v1.js"></script>
   <script src="ngtubecomp-control-v1.js"></script>
+  <script src="studio-sim-client.js"></script>
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import {
@@ -299,6 +301,7 @@ const chainSlot = null;
 const pluginHost = document.getElementById("pluginHost");
 let controlSocket = null;
 window.RAWBridgeTestSessionId = () => TEST_MODE ? activeSessionId : null;
+window.RAWStudioSimSession = () => TEST_MODE ? activeSessionId : null;
 let waveSurfer = null;
 let regionsPlugin = null;
 let currentRegion = null;
@@ -359,6 +362,10 @@ function stopHeartbeat() {
   }
 }
 function sendControlMessage(message) {
+  // The isolated 7075 Studio Simulator takes ownership of LOCAL TEST preview
+  // controls only after an explicit CONNECT. Prevent simultaneous legacy CC21
+  // MIDI bridge traffic. Simulator UI observes safe whitelisted knobs itself.
+  if (TEST_MODE && window.RAWStudioSim?.interceptsControls()) return;
   // No approved GCon/hardware transport for either WesAudio device yet.
   // Keep prototype changes LOCAL even if a studio socket is open.
   if (message?.type === "parameter-change" &&
@@ -1173,6 +1180,7 @@ const rawBm3Model = window.RAWBettermakerEngineV3?.attach(document.querySelector
   running: !!demoAudioEngine && demoAudioCtx?.state === "running" && !!demoMediaElement && !demoMediaElement.paused
 }), (knob, value) => setKnobValue(knob, value), (parameter, value) => applyDemoAudioParam("bettermaker_eq", parameter, value));
 window.RAWBettermakerManualV4?.attach(document.querySelector(".bm2-hardware"), rawBm3Model, (parameter,value)=>applyDemoAudioParam("bettermaker_eq",parameter,value), (knob,value)=>setKnobValue(knob,value));
+window.RAWStudioSim?.attach(pluginHost); // visible only in TEST_MODE, not the production UI
 window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
