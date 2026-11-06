@@ -16,8 +16,8 @@ test("library script loads after portable codec and before RAW main module",()=>
  const modulePos=html.indexOf('<script type="module">');
  assert.ok(codecPos>=0&&libraryPos>codecPos&&panelPos>libraryPos&&modulePos>panelPos);
  assert.match(html,/if \(TEST_MODE\) \{\nconst rawProjectUiOptions/);
- assert.match(html,/RAWLocalProjectLibraryPanelV2\?\.attach\(pluginHost/);
- assert.match(html,/getDraft:\(\)=>window\.RAWPortableProjectPanelV1\?\.getDraft\(pluginHost\)/);
+ assert.match(html,/RAWLocalProjectLibraryPanelV2\?\.attach\(projectsHost/);
+ assert.match(html,/getDraft:\(\)=>window\.RAWPortableProjectPanelV1\?\.getDraft\(projectsHost\)/);
 });
 test("project notes and original manual checkpoints are carried into library revision saves",()=>{
  assert.match(portable,/section\.getRAWPortableDraft=\(\)=>/);
