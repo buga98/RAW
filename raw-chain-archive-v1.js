@@ -205,7 +205,7 @@ function attach(container,readState){
       " DIFFERENCES · "+lastPlan.summary.devices.join(", ")+"\n"+
       global.RAWChainRecallPlannerV2.summarize(lastPlan,30)+
       "\n\nDRY RUN ONLY · NO LIVE KNOBS, DAW, HARDWARE OR BILLING CHANGED";
-    status.textContent="Plan generated from disposable local models. NO APPLY is available.";
+    status.textContent="Preview ready. SANDBOX APPLY is optional; NO LIVE DEVICE APPLY is available.";
    }catch(e){
     lastPlan=null;sandboxState=null;sandboxTx=null;
     out.textContent="RECALL PREVIEW REJECTED: "+e.message;
