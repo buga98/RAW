@@ -23,7 +23,7 @@ test("values snap, clamp and reject unknowns",()=>{
  const m=new Model();
  assert.equal(m.parameter("L","threshold",-6.24),true);
  assert.equal(m.state.channels.L.threshold,-6);
- m.parameter("R","thd",100);assert.equal(m.state.channels.R.thd,8);
+ m.parameter("R","thd",120);assert.equal(m.state.channels.R.thd,100);
  m.parameter("R","attack",999);assert.equal(m.state.channels.R.attack,7);
  assert.equal(m.parameter("L","attack","bad"),false);
  assert.equal(m.parameter("Z","attack",1),false);
