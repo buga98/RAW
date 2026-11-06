@@ -3,5 +3,6 @@
 "use strict";
 const { contextBridge, ipcRenderer } = require("electron");
 contextBridge.exposeInMainWorld("RAWNative", Object.freeze({
-  openPluginSession: () => ipcRenderer.invoke("open-plugin-session")
+  openPluginSession: () => ipcRenderer.invoke("open-plugin-session"),
+  getRuntimeInfo: () => ipcRenderer.invoke("raw-runtime-info")
 }));
