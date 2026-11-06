@@ -9,7 +9,8 @@ const sources=[
  "raw-chain-archive-v1.js","raw-chain-recall-planner-v2.js"
 ];
 function harness(){
- const c={window:{},TextEncoder,Uint8Array,Date,JSON};
+ const c={window:{},TextEncoder,Uint8Array,Date};
+ // Keep the VM's native JSON intrinsic; injecting host JSON changes object prototypes.
  vm.createContext(c);
  for(const p of sources)vm.runInContext(readFileSync(new URL("../"+p,import.meta.url),"utf8"),c);
  const w=c.window;
