@@ -200,7 +200,7 @@ function attach(root, model, onPreviewApply){
  button("LEFT / MID","channel","A")+button("RIGHT / SIDE","channel","B")+
  button("FOCUS ON / OFF","focus","toggle")+
  button("PEAK HOLD FAST","peakhold","FAST")+button("PEAK HOLD INF","peakhold","INF")+
- button("NOTE LABELS","notes","toggle")+button("LOCK DEVICE","lock","toggle")+
+ button("NOTE LABELS","notes","toggle")+button("LOCK DEVICE","lock","toggle")+button("UNLOCK (DEMO)","unlock","chord")+
  button("RESET ALL (CONFIRM)","reset","all");
  menu?.append(extra);
  function refresh(){
@@ -209,7 +209,7 @@ function attach(root, model, onPreviewApply){
     if(FILTERS.includes(id))tile.classList.toggle("bm4-bypassed",!manual.settings.filters[id]);
   });
   root.querySelector(".bm2-screen-power")?.classList.toggle("active",manual.settings.filters[model.selected]!==false);
-  root.querySelector(".bm2-hardware")?.classList.toggle("bm4-locked",manual.locked);
+  root.classList.toggle("bm4-locked",manual.locked);
   status((manual.locked?"LOCKED · ":"")+(manual.mode==="stereo"?"STEREO":manual.mode.toUpperCase()+" "+(manual.channel==="A"?"LEFT/MID":"RIGHT/SIDE"))+
     " · EQ CURVE PREVIEW · hardware not connected");
   redraw();
@@ -262,6 +262,7 @@ function attach(root, model, onPreviewApply){
   const name=b.dataset.bm4,value=b.dataset.value;
   if(name==="close"){overlay.hidden=true;return;}
   if(manual.locked&&name!=="unlock"){status("LOCKED — hold P2 and P3 together to unlock (preview).");return;}
+  if(name==="unlock"){manual.unlockByHoldingBoth(1500);refresh();return;}
   if(name==="open"){renderSelected(value);return;}
   if(name==="filter"){manual.filterOn(value,!manual.settings.filters[value]);renderSelected(model.selected==="lpf"?"hpf":model.selected);}
   if(name==="slope"){manual.slope(Number(value));renderSelected("hpf");}
@@ -319,6 +320,13 @@ function attach(root, model, onPreviewApply){
    if(btn.dataset.filter&&FILTERS.includes(btn.dataset.filter)){setTimeout(refresh,0);}
    setTimeout(refresh,0);
  }, true);
+ // Block direct touchscreen graph edits during LOCK, too: its native V3 path
+ // forwards validated EQ1 Gain to the test MIDI bridge on pointerdown.
+ root.addEventListener("pointerdown",event=>{
+   if(manual.locked&&event.target.closest(".bm2-plot")){
+     event.preventDefault();event.stopImmediatePropagation();
+   }
+ },true);
  // Prevent the UI from silently issuing commands while the manual LOCK is on:
  // legacy knob handling uses mousedown listeners, so capture stops activation.
  root.addEventListener("mousedown",event=>{
@@ -334,7 +342,7 @@ function attach(root, model, onPreviewApply){
    // Allow opening the local settings panel to see lock status, but never
    // allow parameter changes or bridge forwarding while locked.
    if(button.dataset.filter==="menu"||button.dataset.bm3Action==="close")return;
-   if(button.dataset.bm4==="close")return;
+   if(button.dataset.bm4==="close"||button.dataset.bm4==="unlock")return;
    event.preventDefault();
    event.stopImmediatePropagation();
    status("LOCKED · hold P2 and P3 together for 1.5 s to unlock");
