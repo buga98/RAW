@@ -115,3 +115,24 @@ test("snapshot is copy-safe, not a write-through hardware object",()=>{
  assert.equal(f.simulator.snapshot().devices.ngbuscomp.values.L_threshold,-8.5);
  assert.equal(f.simulator.online.ngbuscomp,true);
 });
+
+test("simulator revisions strictly increase, replay and no-op device toggles do not",()=>{
+ const f=fixture();
+ const initial=f.simulator.snapshot();
+ assert.equal(initial.stateVersion,0);
+ const first=f.send();
+ assert.equal(first.stateVersion,1);
+ assert.equal(f.simulator.snapshot().stateVersion,1);
+ const repeated=f.send();
+ assert.equal(repeated.duplicate,true);
+ assert.equal(repeated.stateVersion,1);
+ assert.equal(f.simulator.snapshot().stateVersion,1);
+ f.simulator.setOnline(f.owner,"ngbuscomp",false);
+ assert.equal(f.simulator.snapshot().stateVersion,2);
+ f.simulator.setOnline(f.owner,"ngbuscomp",false);
+ assert.equal(f.simulator.snapshot().stateVersion,2);
+ f.simulator.setOnline(f.owner,"ngbuscomp",true);
+ assert.equal(f.simulator.snapshot().stateVersion,3);
+ f.send({requestId:"newer",sequence:2,value:-10});
+ assert.equal(f.simulator.snapshot().stateVersion,4);
+});
