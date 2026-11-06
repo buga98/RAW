@@ -1159,7 +1159,7 @@ const rawBm3Model = window.RAWBettermakerEngineV3?.attach(document.querySelector
   sampleRate: demoAudioCtx?.sampleRate || 44100,
   running: !!demoAudioEngine && demoAudioCtx?.state === "running" && !!demoMediaElement && !demoMediaElement.paused
 }), (knob, value) => setKnobValue(knob, value), (parameter, value) => applyDemoAudioParam("bettermaker_eq", parameter, value));
-window.RAWBettermakerManualV4?.attach(document.querySelector(".bm2-hardware"), rawBm3Model, (parameter,value)=>applyDemoAudioParam("bettermaker_eq",parameter,value));
+window.RAWBettermakerManualV4?.attach(document.querySelector(".bm2-hardware"), rawBm3Model, (parameter,value)=>applyDemoAudioParam("bettermaker_eq",parameter,value), (knob,value)=>setKnobValue(knob,value));
 window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
