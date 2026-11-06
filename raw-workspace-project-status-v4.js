@@ -8,13 +8,18 @@ const err=(code,message)=>{const e=new Error(message);e.code=code;throw e;};
 function create({capture,archive=global.RAWChainArchiveV1,planner=global.RAWChainRecallPlannerV2,onChange=()=>{}}={}){
  if(typeof capture!=="function"||!archive?.parse||!planner?.createPlan)
   err("STATUS_UNAVAILABLE","RAW project snapshot comparison unavailable");
- let baseline=null,reference=null,last=null;
+ let baseline=null,reference=null,last=null,initialRack=null;
  const snapshot=x=>archive.parse(JSON.stringify(x));
  function evaluate(){
   try{
    const current=snapshot(capture());
+   if(!initialRack)initialRack=current;
    if(!baseline){
-    last={phase:"unsaved",label:"NO SAVED CHECKPOINT",changed:null,dirty:true,reference:null};
+    const difference=planner.createPlan(initialRack,current);
+    const changed=difference.summary.changed;
+    last={phase:changed?"unsaved":"new",
+     label:changed?"UNSAVED RACK CHANGES":"NEW SESSION · NO SAVED VERSION",
+     changed,dirty:changed>0,reference:null};
    }else{
     const difference=planner.createPlan(baseline,current);
     last={phase:difference.summary.changed?"modified":"saved",
