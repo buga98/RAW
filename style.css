@@ -3573,3 +3573,17 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
 .raw-archive-plan{white-space:pre-wrap;overflow-wrap:anywhere;max-height:200px;overflow:auto;
  margin:10px 0 0;padding:11px 12px;border-radius:8px;border:1px solid #38647c;
  background:#071826;color:#aee0e8;font:11px/1.6 ui-monospace,Consolas,monospace}
+
+/* RAW LOCAL SANDBOX — simulated transaction only, NEVER live hardware recall. */
+.raw-chain-archive-actions button[data-chain-archive="sandbox-apply"]{
+  border-color:#4a9c9b;background:#193c42;color:#c3fff6
+}
+.raw-chain-archive-actions button[data-chain-archive="sandbox-undo"]{
+  border-color:#64768b;background:#253143;color:#d1e3ff
+}
+.raw-sandbox-receipt{
+  white-space:pre-wrap;overflow-wrap:anywhere;max-height:125px;overflow:auto;
+  border-radius:8px;border:1px solid #3a6869;background:#0b2028;
+  color:#bce9de;font:11px/1.6 ui-monospace,Consolas,monospace;
+  padding:10px;margin:10px 0 0
+}
