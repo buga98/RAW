@@ -64,7 +64,8 @@ function capture({chainOrder,meq,manual,bus,tube,label="RAW Chain"}={}){
   bettermaker_eq:meq?{engine:meq.snapshot(),manual:manual?{
    bankChannels:clone(manual.bankChannels),bankOptions:clone(manual.bankOptions),
    channel:manual.channel,mode:manual.mode,locked:manual.locked,
-   peakHold:manual.peakHold,brightness:manual.brightness
+   peakHold:manual.peakHold,brightness:manual.brightness,
+   notes:manual.notes===true,rtaSource:manual.rtaSource,rtaStyle:manual.rtaStyle
   }:null}:null,
   ngbuscomp:bus?bus.export():null,
   ngtubecomp:tube?tube.export():null
