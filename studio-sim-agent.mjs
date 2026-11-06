@@ -5,6 +5,7 @@ import { WebSocketServer } from "ws";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
 import { StudioDeviceSimulator } from "./studio-device-simulator.mjs";
+import { LocalSimAudit } from "./studio-sim-audit.mjs";
 
 const LOCAL_SESSION = /^test-[0-9]{10,20}$/;
 const HEARTBEAT_MS = 30_000;
@@ -15,6 +16,7 @@ const DEFAULT_PORT = 7075;
 
 export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
  const simulator=new StudioDeviceSimulator({now});
+ const audit=new LocalSimAudit({now,limit:200});
  const clients=new Set();
  const enabled=new Set(["bettermaker_eq","ngbuscomp","ngtubecomp"]);
  let sessionId=null,deadline=0;
@@ -40,11 +42,13 @@ export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
  const broadcast=()=>{for(const ws of clients)send(ws,stateFor(ws));};
  const release=(ws)=>{
   if(!simulator.owns(ws))return false;
+  audit.record("lease-released",{leaseEpoch:simulator.leaseEpoch,status:"released"});
   simulator.endLease(ws);sessionId=null;deadline=0;broadcast();return true;
  };
  const expire=()=>{
   if(simulator.owner&&now()>=deadline){
    const old=simulator.owner;
+   audit.record("lease-expired",{leaseEpoch:simulator.leaseEpoch,status:"expired"});
    release(old);
    send(old,{type:"studio-sim-expired",simulated:true,reason:"LOCAL_LEASE_EXPIRED"});
   }
@@ -74,6 +78,7 @@ export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
      if(simulator.owner)throw Object.assign(new Error("Studio already claimed"),{code:"OCCUPIED"});
      const claim=simulator.beginLease(ws);
      sessionId=msg.sessionId;deadline=now()+HEARTBEAT_MS;
+     audit.record("lease-claimed",{leaseEpoch:claim.leaseEpoch,status:"claimed"});
      send(ws,{type:"studio-sim-claimed",...claim,sessionId,heartbeatMs:HEARTBEAT_MS});
      send(ws,simulator.snapshot());
      broadcast();return;
@@ -86,7 +91,14 @@ export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
      if(!simulator.owns(ws))throw Object.assign(new Error("Studio not owned"),{code:"NOT_OWNER"});
      if(msg.sessionId!==sessionId)throw Object.assign(new Error("Session mismatch"),{code:"SESSION_MISMATCH"});
      deadline=now()+HEARTBEAT_MS;
+     audit.record("heartbeat",{leaseEpoch:simulator.leaseEpoch,status:"renewed"});
      send(ws,{type:"studio-sim-pong",leaseEpoch:simulator.leaseEpoch,simulated:true});
+     return;
+    }
+    if(msg.type==="studio-sim-audit"){
+     if(!simulator.owns(ws))throw Object.assign(new Error("Audit requires current studio owner"),{code:"NOT_OWNER"});
+     send(ws,{type:"studio-sim-audit-result",simulated:true,hardwareVerified:false,
+      leaseEpoch:simulator.leaseEpoch,entries:audit.forLease(simulator.leaseEpoch)});
      return;
     }
     if(msg.type==="studio-sim-snapshot"){
@@ -96,6 +108,8 @@ export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
     if(msg.type==="studio-sim-device-online"){
      if(!simulator.owns(ws))throw Object.assign(new Error("Owner required"),{code:"NOT_OWNER"});
      const result=simulator.setOnline(ws,msg.deviceId,msg.online);
+     audit.record(msg.online?"device-online":"device-offline",{leaseEpoch:simulator.leaseEpoch,
+      deviceId:msg.deviceId,status:msg.online?"online":"offline"});
      send(ws,result);send(ws,simulator.snapshot());return;
     }
     if(msg.type!=="parameter-change")throw Object.assign(new Error("Unsupported request"),{code:"UNSUPPORTED"});
@@ -104,8 +118,14 @@ export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
     if(now()-windowStart>=WINDOW_MS){windowStart=now();commands=0;}
     if(++commands>MAX_COMMANDS)throw Object.assign(new Error("Too many changes per second"),{code:"RATE_LIMIT"});
     const result=simulator.apply(msg,{owner:ws,enabledDevices:enabled});
+    audit.record("command-applied",{leaseEpoch:simulator.leaseEpoch,
+     requestId:msg.requestId,deviceId:msg.deviceId,parameter:msg.parameter,status:result.status});
     send(ws,result);
    }catch(error){
+    if(simulator.owns(ws))audit.record("command-rejected",{
+     leaseEpoch:simulator.leaseEpoch,requestId,
+     status:typeof error.code==="string"?error.code:"INVALID_MESSAGE"
+    });
     send(ws,{type:"studio-sim-error",requestId,simulated:true,
      code:typeof error.code==="string"?error.code:"INVALID_MESSAGE",
      message:String(error.message||"Invalid request").slice(0,160)});
@@ -120,7 +140,7 @@ export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
   clients.clear();
   server.close(()=>resolveClose());
  });
- return {server,simulator,close,port};
+ return {server,simulator,audit,close,port};
 }
 
 const launched=process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.meta.url);
