@@ -48,3 +48,10 @@ RAWAudioRouteV4.plan({chainOrder,sources,channels:2,mode:"local-preview"}) daje 
 5. Nadzor i isporuka stvarnog mastera s nepromjenjivim provenance manifestom.
 
 Nikakav signal iz ovog dokumenta ili preview ploče ne dokazuje da Bettermaker/WesAudio fizički obrađuju audio.
+
+
+## 6. Izvršni ugovor budućeg audio workera
+
+Modul raw-studio-audio-job-v4.mjs daje createAudioCaptureDraft() za strogo validiran opis budućeg posla nakon što je izvor već dekodiran u PCM. Traži projekt/verziju, identifikator sesije, uređaje iz allowliste, SHA-256, sample-rate, 2 kanala i broj frameova. Odbija nepoznata polja poput tokena, direktnih URL-ova, drivera ili tvrdnji da je master snimljen.
+
+Draft je immutable i uvijek ima transportAllowed=false, hardwareCommandsAllowed=false, analogCaptured=false i masterAvailable=false. Ne sadrži kod za streaming, DAC/ADC, proizvođačke komande ili wav render; za stvarnu implementaciju potreban je zaseban autorizirani worker i dokazna potvrda fizikalnih stageova.
