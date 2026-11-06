@@ -9,6 +9,7 @@ const css=read("raw-workspace-v4.css");
 const lib=read("raw-local-project-library-panel-v2.js");
 const routes=read("raw-audio-route-v4.js");
 const project=read("raw-workspace-project-status-v4.js");
+const audio=read("audio-diagnostics.js");
 test("professional desk ships independently of original device displays/knobs",()=>{
  assert.match(html,/raw-console-hero/);
  assert.match(html,/MASTERING DESK/);
@@ -51,6 +52,19 @@ test("diagnostics and Gateway remain in LAB; local rack preserves navigation",()
  assert.match(html,/RAWChainArchiveV1\?\.attach\(developerLabHost/);
  assert.match(html,/if \(screenId === "plugin" && !pluginHost\.querySelector\("\.chain-control"\)\) renderPlugin\(\)/);
  assert.match(html,/if \(TEST_MODE\) \{/);
+});
+test("mastering monitor displays actual local Web Audio RMS, not fake hardware values",()=>{
+ assert.match(html,/id="rawConsoleInputRms"/);
+ assert.match(html,/id="rawConsoleOutputRms"/);
+ assert.match(html,/id="rawConsoleInputBar"/);
+ assert.match(html,/id="rawConsoleOutputBar"/);
+ assert.match(html,/LOCAL WEB AUDIO · RMS · NOT ANALOG READBACK/);
+ assert.match(audio,/function updateDeskMeters\(beforeDb,afterDb\)/);
+ assert.match(audio,/updateDeskMeters\(beforeDb,afterDb\)/);
+ assert.match(audio,/updateDeskMeters\(null,null\)/);
+ assert.match(audio,/getFloatTimeDomainData\(data\)/);
+ assert.match(css,/\.raw-meter-rail/);
+ assert.doesNotMatch(audio,/hardwareVerified:\s*true|physicalReadback:\s*true/);
 });
 test("audio diagnostics controls and meters are mounted only in the developer screen",()=>{
  assert.match(html,/id="rawDiagnosticsToggle"/);
