@@ -97,6 +97,12 @@ class Tracker {
     const item=this.item(deviceId,parameter);
     if(reply.stateVersion<item.version)continue;
     item.confirmed=value;item.version=reply.stateVersion;
+    // Snapshot values are last-known memory; offline devices cannot confirm live changes.
+    if(device.online===false){
+     item.state="DEVICE OFFLINE";
+     item.note="Last-known simulated memory; disconnected device is NOT confirmed";
+     continue;
+    }
     // Snapshot is a measurement of simulator state, not a transport ACK.
     if(item.state==="PENDING")continue;
     item.state=item.desired===null?"SIM BASELINE":same(item.desired,item.confirmed)?"SIM CONFIRMED":"DIVERGED";
