@@ -7,7 +7,8 @@ const paths=["bettermaker-engine-v3.js","bettermaker-manual-v4.js",
  "ngbuscomp-control-v1.js","ngtubecomp-control-v1.js",
  "raw-chain-archive-v1.js","raw-chain-recall-planner-v2.js"];
 function env(){
- const context={window:{},TextEncoder,Uint8Array,Date,JSON};
+ const context={window:{},TextEncoder,Uint8Array,Date};
+ // Keep the VM's native JSON intrinsic; injecting host JSON changes object prototypes.
  vm.createContext(context);
  for(const path of paths){
   const code=readFileSync(new URL("../"+path,import.meta.url),"utf8");
