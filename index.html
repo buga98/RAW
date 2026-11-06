@@ -1213,9 +1213,16 @@ if (TEST_MODE) window.RAWPortableProjectPanelV1?.attach(pluginHost, {
     label:"RAW Portable Project"
   }),
   getSources:()=>[...uploadedFiles],
-  canStageSources:()=>TEST_MODE===true&&!!activeSessionId,
+  canStageSources:()=>TEST_MODE===true&&!!activeSessionId&&
+    !window.RAWStudioGatewayV1?.interceptsControls?.()&&
+    !window.RAWStudioSim?.interceptsControls?.()&&
+    !window.RAWDawBridge?.isActive?.(),
   stageSources:async files=>{
-    if(!TEST_MODE||!activeSessionId||!Array.isArray(files)||files.length<1||
+    if(!TEST_MODE||!activeSessionId||
+       window.RAWStudioGatewayV1?.interceptsControls?.()||
+       window.RAWStudioSim?.interceptsControls?.()||
+       window.RAWDawBridge?.isActive?.()||
+       !Array.isArray(files)||files.length<1||
        files.length>MAX_FILES)return false;
     if(files.some(f=>!f||typeof f.name!=="string"||typeof f.size!=="number"))return false;
     stopWave();
