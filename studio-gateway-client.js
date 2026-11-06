@@ -157,7 +157,7 @@ function flush(){
   tracker.sent(payload);
   const timeout=setTimeout(()=>{
    if(!pending.has(requestId))return;
-   pending.delete(requestId);tracker.reject(requestId,"ACK_TIMEOUT");
+   pending.delete(requestId);tracker.reject(requestId,"TIMEOUT");
    label="ACK TIMEOUT · SIM READBACK NOT CONFIRMED";log(label);
   },3200);
   pending.set(requestId,{timeout});
