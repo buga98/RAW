@@ -491,6 +491,8 @@ window.goTo = function(screenId) {
     t.classList.toggle("active", t.dataset.screen === screenId);
   });
 
+  if ((screenId === "projects" || screenId === "developer") &&
+      activeSessionId && !projectsHost.querySelector(".raw-library-panel")) renderPlugin();
   if (screenId === "plugin") renderPlugin();
   if (screenId === "sessions") renderSessions();
 };
@@ -1270,18 +1272,20 @@ const rawBm3Model = window.RAWBettermakerEngineV3?.attach(document.querySelector
   running: !!demoAudioEngine && demoAudioCtx?.state === "running" && !!demoMediaElement && !demoMediaElement.paused
 }), (knob, value) => setKnobValue(knob, value), (parameter, value) => applyDemoAudioParam("bettermaker_eq", parameter, value));
 window.RAWBettermakerManualV4?.attach(document.querySelector(".bm2-hardware"), rawBm3Model, (parameter,value)=>applyDemoAudioParam("bettermaker_eq",parameter,value), (knob,value)=>setKnobValue(knob,value));
+// Dynamic accessor prevents a previously attached developer archive panel from
+// keeping a stale controller after Control Room re-renders.
+window.RAWDeveloperRackModels=()=>({
+  chainOrder:[...chainDevices],
+  meq:rawBm3Model||null,manual:window.RAWMEQManualModel||null,
+  bus:window.RAWNgBusCompV1Model||null,
+  tube:window.RAWNgTubeCompV1Model||null
+});
 if (developerAllowed()) {
   // Keep the knob observer on the mastering surface but render LAB panels in
   // the private developer screen. Never attach these transports for other users.
   window.RAWStudioSim?.attach(developerLabHost,pluginHost);
   window.RAWStudioGatewayV1?.attach(developerLabHost,pluginHost);
-  window.RAWChainArchiveV1?.attach(developerLabHost, () => ({
-    chainOrder:[...chainDevices],
-    meq:rawBm3Model||null,
-    manual:window.RAWMEQManualModel||null,
-    bus:window.RAWNgBusCompV1Model||null,
-    tube:window.RAWNgTubeCompV1Model||null
-  }));
+  window.RAWChainArchiveV1?.attach(developerLabHost, () => window.RAWDeveloperRackModels?.());
   const dawToolbar=pluginHost.querySelector(".raw-daw-toolbar");
   if(dawToolbar)developerLabHost.prepend(dawToolbar);
 }else{
@@ -1326,7 +1330,7 @@ const recall=window.RAWProjectRecallV3?.create({
     meq:rawBm3Model,manual:window.RAWMEQManualModel,
     bus:window.RAWNgBusCompV1Model,tube:window.RAWNgTubeCompV1Model
   }),
-  canRestore:()=>TEST_MODE===true&&!!activeSessionId&&
+  canRestore:()=>TEST_MODE===true&&!!currentUser?.emailVerified&&!!activeSessionId&&
     !window.RAWStudioGatewayV1?.interceptsControls?.()&&
     !window.RAWStudioSim?.interceptsControls?.()&&
     !window.RAWDawBridge?.isActive?.(),
