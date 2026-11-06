@@ -140,7 +140,7 @@ function attach(container,readState){
  if(!container||typeof readState!=="function"||!global.document)return;
  let panel=container.querySelector(".raw-chain-archive-panel");
  if(!panel){
-  let lastImported=null,localLast=null,lastPlan=null;
+  let lastImported=null,localLast=null,lastPlan=null,sandboxState=null,sandboxTx=null;
   panel=global.document.createElement("section");
   panel.className="raw-chain-archive-panel";
   panel.innerHTML='<div class="raw-chain-archive-top"><strong>CHAIN ARCHIVE · OFFLINE V1</strong><span>LOCAL SNAPSHOTS · NO HARDWARE RECALL</span></div>'+
@@ -149,10 +149,13 @@ function attach(container,readState){
    '<label class="raw-archive-file-button">↑ IMPORT CHAIN JSON<input id="rawArchiveInput" type="file" accept=".json,application/json" hidden></label>'+
    '<button type="button" data-chain-archive="compare">COMPARE</button>'+
    '<button type="button" data-chain-archive="preview">PREVIEW RECALL (DRY RUN)</button>'+
-   '<button type="button" data-chain-archive="clear">CLEAR PREVIEW</button></div>'+
+   '<button type="button" data-chain-archive="clear">CLEAR PREVIEW</button>'+
+   '<button type="button" data-chain-archive="sandbox-apply">SIMULATE APPLY · SANDBOX</button>'+
+   '<button type="button" data-chain-archive="sandbox-undo">UNDO SANDBOX</button></div>'+
    '<div class="raw-archive-status" role="status">Spremi postavke svih uređaja kao datoteku; import je samo pregled/usporedba.</div>'+
    '<pre class="raw-archive-diff">No comparison loaded.</pre>'+
-   '<pre class="raw-archive-plan" aria-live="polite">Recall preview not generated. No hardware commands can be sent by this panel.</pre>';
+   '<pre class="raw-archive-plan" aria-live="polite">Recall preview not generated. No hardware commands can be sent by this panel.</pre>'+
+   '<pre class="raw-sandbox-receipt" aria-live="polite">SANDBOX EMPTY · no live rack controls will be changed.</pre>';
   container.prepend(panel);
   const status=panel.querySelector(".raw-archive-status");
   panel.querySelector('[data-chain-archive="save"]').addEventListener("click",()=>{
@@ -168,7 +171,8 @@ function attach(container,readState){
    if(file.size>MAX_BYTES){status.textContent="Import rejected: file exceeds 512 KiB";return;}
    try{
     const imported=parse(await file.text());
-    lastImported=imported;lastPlan=null;
+    lastImported=imported;lastPlan=null;sandboxState=null;sandboxTx=null;
+    panel.querySelector(".raw-sandbox-receipt").textContent="SANDBOX EMPTY · import did not alter live controls.";
     panel.querySelector(".raw-archive-plan").textContent=
       "Archive imported for inspection only. Live knobs and hardware remain untouched.";
     status.textContent="Imported '"+imported.label+"' for READ-ONLY comparison · no knobs modified";
@@ -182,22 +186,73 @@ function attach(container,readState){
      fail("PLANNER_UNAVAILABLE","Recall planner library not loaded");
     const current=capture({...readState(),label:"Current local controls"});
     lastPlan=global.RAWChainRecallPlannerV2.createPlan(lastImported,current);
+    sandboxState=parse(JSON.stringify(current)); // private scratch copy; never a model object
+    if(global.RAWLocalRackTransactionV3?.create){
+     sandboxTx=global.RAWLocalRackTransactionV3.create({
+      capture:()=>sandboxState,
+      restore:(next,opts)=>{
+       if(opts?.localOnly!==true||opts?.suppressHardware!==true)return false;
+       sandboxState=parse(JSON.stringify(next));return true;
+      },
+      // Only this disposable JSON copy can change. No live model or transport exists.
+      canMutate:()=>true
+     });
+     sandboxTx.prepare(lastImported);
+    }else sandboxTx=null;
+    panel.querySelector(".raw-sandbox-receipt").textContent=
+      "SANDBOX READY · optionally simulate the transaction, not a live rack recall.";
     out.textContent="READ-ONLY RECALL PREVIEW · "+lastPlan.summary.changed+
       " DIFFERENCES · "+lastPlan.summary.devices.join(", ")+"\n"+
       global.RAWChainRecallPlannerV2.summarize(lastPlan,30)+
       "\n\nDRY RUN ONLY · NO LIVE KNOBS, DAW, HARDWARE OR BILLING CHANGED";
     status.textContent="Plan generated from disposable local models. NO APPLY is available.";
    }catch(e){
-    lastPlan=null;
+    lastPlan=null;sandboxState=null;sandboxTx=null;
     out.textContent="RECALL PREVIEW REJECTED: "+e.message;
     status.textContent="No changes applied. "+(e.code||"INVALID_ARCHIVE");
    }
   });
   panel.querySelector('[data-chain-archive="clear"]').addEventListener("click",()=>{
-   lastPlan=null;
+   lastPlan=null;sandboxTx?.clear();
    panel.querySelector(".raw-archive-plan").textContent=
      "Preview cleared. No live controls were changed.";
    status.textContent="Recall preview cleared · local archive stays read-only";
+  });
+  panel.querySelector('[data-chain-archive="sandbox-apply"]').addEventListener("click",()=>{
+   const output=panel.querySelector(".raw-sandbox-receipt");
+   try{
+    if(!sandboxTx||!lastPlan)fail("NO_PLAN","Import and PREVIEW RECALL first");
+    const live=capture({...readState(),label:"Live unchanged"});
+    if(!global.RAWChainRecallPlannerV2.isStillCurrent(lastPlan,live))
+     fail("STALE_PREVIEW","Live controls changed since preview. Create a new preview first");
+    if(typeof global.confirm!=="function"||
+       !global.confirm("SIMULATE local APPLY to an ISOLATED JSON sandbox? No live knobs, hardware, MIDI, Gateway or billing will change.")){
+      output.textContent="Sandbox apply cancelled · live rack untouched";return;
+    }
+    const receipt=sandboxTx.apply({confirmed:true});
+    const diff=compare(sandboxState,lastImported,10);
+    if(diff.differences.length)fail("SANDBOX_MISMATCH","Sandbox did not match imported archive");
+    output.textContent="SANDBOX APPLY VERIFIED · "+receipt.changed+
+     " changes · model JSON matched target\n"+
+     "LIVE RACK UNTOUCHED · simulated transaction only · UNDO SANDBOX available";
+    status.textContent="Sandbox transaction validated. No controls were applied.";
+   }catch(e){output.textContent="SANDBOX APPLY REJECTED: "+e.message;
+    status.textContent="No live rack, MIDI, Gateway or hardware command was sent.";}
+  });
+  panel.querySelector('[data-chain-archive="sandbox-undo"]').addEventListener("click",()=>{
+   const output=panel.querySelector(".raw-sandbox-receipt");
+   try{
+    if(!sandboxTx?.getState().canUndo)fail("NO_UNDO","No sandbox apply available to undo");
+    if(typeof global.confirm!=="function"||
+       !global.confirm("Undo the temporary SANDBOX transaction? The live rack is not involved.")){
+      output.textContent="Sandbox undo cancelled";return;
+    }
+    const receipt=sandboxTx.undo({confirmed:true});
+    output.textContent="SANDBOX UNDO VERIFIED · "+receipt.changed+
+      " changes · scratch state returned to its previous snapshot\n"+
+      "Live knobs and studio never changed.";
+    status.textContent="Sandbox undo complete · read-only project archive unchanged";
+   }catch(e){output.textContent="SANDBOX UNDO REJECTED: "+e.message;}
   });
   panel.querySelector('[data-chain-archive="compare"]').addEventListener("click",()=>{
    try{
