@@ -13,3 +13,7 @@
 .raw-sim-devices button.offline{background:#4c271e;border-color:#ce6346;color:#ffd7bd}
 .raw-sim-panel pre{white-space:pre-wrap;overflow-wrap:anywhere;max-height:126px;overflow:auto;margin:13px 0 0;padding:11px 12px;border-radius:7px;background:#060f1a;color:#a9c9ce;font:11px/1.6 ui-monospace,Consolas,monospace}
 @media(max-width:750px){.raw-sim-head{align-items:flex-start;flex-direction:column}.raw-sim-toolbar{align-items:flex-start}.raw-sim-panel{padding:13px}}
+
+.raw-sim-compare-title{margin-top:14px;font:700 11px/1.4 Arial,sans-serif;color:#a9dbe3;letter-spacing:.65px}
+#rawSimCompared{max-height:160px;border:1px solid #326076;background:#071724;color:#c2e4e3;line-height:1.75}
+#rawSimReadback{max-height:110px;color:#9aadc3}
