@@ -16,7 +16,8 @@ test("UI agent is only attached to LOCAL TEST Control Room, with no new producti
  assert.match(client,/simulated-memory/);
  assert.match(html,/studio-sim-client\.js/);
  assert.match(html,/studio-sim-client\.css/);
- assert.match(html,/RAWStudioSim\?\.attach\(pluginHost\)/);
+ assert.match(html,/RAWStudioSim\?\.attach\(developerLabHost,pluginHost\)/);
+ assert.match(html,/if \(developerAllowed\(\)\)/);
  assert.match(html,/if \(TEST_MODE && window\.RAWStudioSim\?\.interceptsControls\(\)\) return/);
 });
 test("client only forwards small local simulator mapping, not arbitrary hardware IDs",()=>{
