@@ -33,7 +33,17 @@ test('local test mode prevents billable/cloud session mutations', () => {
   assert.match(html, /if \(TEST_MODE\) \{[\s\S]*?localTestSessions\.unshift/);
   assert.match(html, /async function chargeSessionFor\(sessionId\) \{\s*if \(TEST_MODE\) return;/);
   assert.match(html, /function startHeartbeat\(\) \{\s*if \(TEST_MODE\) return;/);
-  assert.match(html, /function sendControlMessage\(message\) \{\s*if \(TEST_MODE\)/);
+  // Simulated transports intercept LOCAL TEST controls before the isolated
+  // TEST_MODE branch; that branch must return before the production socket.
+  const start=html.indexOf("function sendControlMessage(message) {");
+  const end=html.indexOf("\nconnectControlSocket();",start);
+  assert.ok(start>=0&&end>start,"Send control function is present");
+  const send=html.slice(start,end);
+  assert.match(send,/if \(TEST_MODE && window\.RAWStudioGatewayV1\?\.interceptsControls\(\)\) return/);
+  assert.match(send,/if \(TEST_MODE && window\.RAWStudioSim\?\.interceptsControls\(\)\) return/);
+  assert.match(send,/if \(TEST_MODE\) \{[\s\S]*?window\.RAWDawBridge\?\.send\(message\);[\s\S]*?return;/);
+  assert.ok(send.indexOf("if (TEST_MODE) {")<send.indexOf("controlSocket.send(JSON.stringify(payload))"),
+    "LOCAL TEST branch returns before production socket dispatch");
   assert.match(html, /if \(!activeSessionId \|\| TEST_MODE\) return;/);
   assert.match(html, /LOCALNO|LOKALNO/);
 });
