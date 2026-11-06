@@ -135,20 +135,23 @@ function download(archive,documentRef=global.document,urlRef=global.URL){
  try{a.click();}finally{a.remove();global.setTimeout(()=>urlRef.revokeObjectURL(objectUrl),30000);}
  return filename;
 }
-let lastImported=null,localLast=null;
 function attach(container,readState){
  if(!container||typeof readState!=="function"||!global.document)return;
  let panel=container.querySelector(".raw-chain-archive-panel");
  if(!panel){
+  let lastImported=null,localLast=null,lastPlan=null;
   panel=global.document.createElement("section");
   panel.className="raw-chain-archive-panel";
   panel.innerHTML='<div class="raw-chain-archive-top"><strong>CHAIN ARCHIVE · OFFLINE V1</strong><span>LOCAL SNAPSHOTS · NO HARDWARE RECALL</span></div>'+
    '<div class="raw-chain-archive-actions"><input id="rawArchiveLabel" maxlength="60" placeholder="Naziv projekta / preseta" value="RAW Chain">'+
    '<button type="button" data-chain-archive="save">↓ EXPORT CHAIN JSON</button>'+
    '<label class="raw-archive-file-button">↑ IMPORT CHAIN JSON<input id="rawArchiveInput" type="file" accept=".json,application/json" hidden></label>'+
-   '<button type="button" data-chain-archive="compare">COMPARE</button></div>'+
+   '<button type="button" data-chain-archive="compare">COMPARE</button>'+
+   '<button type="button" data-chain-archive="preview">PREVIEW RECALL (DRY RUN)</button>'+
+   '<button type="button" data-chain-archive="clear">CLEAR PREVIEW</button></div>'+
    '<div class="raw-archive-status" role="status">Spremi postavke svih uređaja kao datoteku; import je samo pregled/usporedba.</div>'+
-   '<pre class="raw-archive-diff">No comparison loaded.</pre>';
+   '<pre class="raw-archive-diff">No comparison loaded.</pre>'+
+   '<pre class="raw-archive-plan" aria-live="polite">Recall preview not generated. No hardware commands can be sent by this panel.</pre>';
   container.prepend(panel);
   const status=panel.querySelector(".raw-archive-status");
   panel.querySelector('[data-chain-archive="save"]').addEventListener("click",()=>{
@@ -164,9 +167,36 @@ function attach(container,readState){
    if(file.size>MAX_BYTES){status.textContent="Import rejected: file exceeds 512 KiB";return;}
    try{
     const imported=parse(await file.text());
-    lastImported=imported;
+    lastImported=imported;lastPlan=null;
+    panel.querySelector(".raw-archive-plan").textContent=
+      "Archive imported for inspection only. Live knobs and hardware remain untouched.";
     status.textContent="Imported '"+imported.label+"' for READ-ONLY comparison · no knobs modified";
    }catch(error){status.textContent="Import rejected: "+error.message;}
+  });
+  panel.querySelector('[data-chain-archive="preview"]').addEventListener("click",()=>{
+   const out=panel.querySelector(".raw-archive-plan");
+   try{
+    if(!lastImported)fail("NO_IMPORT","Import a saved archive first");
+    if(!global.RAWChainRecallPlannerV2?.createPlan)
+     fail("PLANNER_UNAVAILABLE","Recall planner library not loaded");
+    const current=capture({...readState(),label:"Current local controls"});
+    lastPlan=global.RAWChainRecallPlannerV2.createPlan(lastImported,current);
+    out.textContent="READ-ONLY RECALL PREVIEW · "+lastPlan.summary.changed+
+      " DIFFERENCES · "+lastPlan.summary.devices.join(", ")+"\n"+
+      global.RAWChainRecallPlannerV2.summarize(lastPlan,30)+
+      "\n\nDRY RUN ONLY · NO LIVE KNOBS, DAW, HARDWARE OR BILLING CHANGED";
+    status.textContent="Plan generated from disposable local models. NO APPLY is available.";
+   }catch(e){
+    lastPlan=null;
+    out.textContent="RECALL PREVIEW REJECTED: "+e.message;
+    status.textContent="No changes applied. "+(e.code||"INVALID_ARCHIVE");
+   }
+  });
+  panel.querySelector('[data-chain-archive="clear"]').addEventListener("click",()=>{
+   lastPlan=null;
+   panel.querySelector(".raw-archive-plan").textContent=
+     "Preview cleared. No live controls were changed.";
+   status.textContent="Recall preview cleared · local archive stays read-only";
   });
   panel.querySelector('[data-chain-archive="compare"]').addEventListener("click",()=>{
    try{
