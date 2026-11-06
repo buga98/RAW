@@ -23,7 +23,7 @@ Ne pokretati Gateway pri testiranju Project Recall. Ne spojiti stvarne uređaje.
 ## B. Projekti i sigurni povrat
 
 1. Klikni Moji projekti. Prikazani su koraci Spremi → Verificiraj → Preview/Restore.
-2. Početni status: NO SAVED CHECKPOINT. SAVE NEW PROJECT v1: RACK MATCHES CHECKPOINT.
+2. Početni status: NEW SESSION · NO SAVED VERSION (bez lažne oznake da je rack izmijenjen). SAVE NEW PROJECT v1: RACK MATCHES CHECKPOINT.
 3. Pomakni Bettermaker EQ1 i ngBusComp L Threshold. Status = UNSAVED RACK CHANGES s brojem razlika.
 4. SAVE NEW VERSION: novi baseline i status spremljeno; prethodna verzija ostaje dostupna.
 5. OPEN / VERIFY (READ ONLY) za v1; PREVIEW RESTORE prikazuje samo razlike bez promjene gumba.
