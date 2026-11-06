@@ -13,8 +13,17 @@ const channelDefault=()=>({hpfSlope:12,hpfResonant:false,eq1Shape:"bell",eq4Shap
  filters:Object.fromEntries(FILTERS.map(k=>[k,true]))});
 class ManualMEQ {
  constructor(model){
-  this.model=model; this.channels={A:deep(model.values),B:deep(model.values)};
-  this.options={A:channelDefault(),B:channelDefault()};
+  this.model=model;
+  this.bankChannels={
+    A:{A:deep(model.slots.A),B:deep(model.slots.A)},
+    B:{A:deep(model.slots.B),B:deep(model.slots.B)}
+  };
+  this.bankOptions={
+    A:{A:channelDefault(),B:channelDefault()},
+    B:{A:channelDefault(),B:channelDefault()}
+  };
+  this.channels=this.bankChannels[model.slot];
+  this.options=this.bankOptions[model.slot];
   this.channel="A"; this.locked=false;this.peakHold="FAST";this.notes=false;
   this.rtaSource="output";this.rtaStyle="curve";this.brightness=100;this.focus=false;
   this.pendingReset=null;
@@ -22,6 +31,18 @@ class ManualMEQ {
  get mode(){return this.model.mode;}
  get settings(){return this.options[this.channel];}
  get other(){return this.channel==="A"?"B":"A";}
+ syncBankAfterSwitch(){
+  this.channels=this.bankChannels[this.model.slot];
+  this.options=this.bankOptions[this.model.slot];
+  Object.assign(this.model.values,this.channels[this.channel]);
+ }
+ copyCurrentToBank(target){
+  if(target!=="A"&&target!=="B")return false;
+  this.channels[this.channel]=deep(this.model.values);
+  this.bankChannels[target]=deep(this.channels);
+  this.bankOptions[target]=deep(this.options);
+  return true;
+ }
  canEdit(){return !this.locked;}
  selectChannel(ch){
   if(this.mode==="stereo")return false;
@@ -215,6 +236,51 @@ function attach(root, model, onPreviewApply){
   redraw();
  }
  // Sync V3 changes with manual channel bank, not direct hardware.
+ // Each A/B memory bank also contains independent L/R or MID/SIDE states.
+ const nativeSwitchAB=model.switchAB.bind(model);
+ model.switchAB=(target)=>{
+  if(manual.locked)return false;
+  manual.channels[manual.channel]=deep(model.values);
+  const ok=nativeSwitchAB(target);
+  if(ok){manual.syncBankAfterSwitch();setTimeout(refresh,0);}
+  return ok;
+ };
+ const nativeCopyAB=model.copyAB.bind(model);
+ model.copyAB=(target=model.slot==="A"?"B":"A")=>{
+  if(manual.locked)return false;
+  const result=nativeCopyAB(target);
+  manual.copyCurrentToBank(target);
+  return result;
+ };
+ const nativeReset=model.reset.bind(model);
+ model.reset=()=>{
+  if(manual.locked)return false;
+  const result=nativeReset();
+  manual.channels[manual.channel]=deep(model.values);
+  manual.options[manual.channel]=channelDefault();
+  if(manual.mode==="stereo"){
+    manual.channels[manual.other]=deep(model.values);
+    manual.options[manual.other]=channelDefault();
+  }
+  return result;
+ };
+ const nativeRestore=model.restore.bind(model);
+ model.restore=(saved)=>{
+  if(manual.locked)return false;
+  const ok=nativeRestore(saved);
+  if(ok){
+   manual.bankChannels={
+     A:{A:deep(model.slots.A),B:deep(model.slots.A)},
+     B:{A:deep(model.slots.B),B:deep(model.slots.B)}
+   };
+   manual.bankOptions={
+     A:{A:channelDefault(),B:channelDefault()},
+     B:{A:channelDefault(),B:channelDefault()}
+   };
+   manual.syncBankAfterSwitch();
+  }
+  return ok;
+ };
  const nativeSet=model.set.bind(model);
  model.set=(key,val)=>{
   if(manual.locked)return false;
