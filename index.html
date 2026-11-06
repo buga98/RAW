@@ -270,7 +270,7 @@ const db = getFirestore(appFirebase);
 const auth = getAuth(appFirebase);
 // The Electron main process passes testMode=1 only when RAW_TEST_MODE=1.
 // Local testing never writes sessions, uploads, hardware state, or credits.
-const TEST_MODE = new URLSearchParams(window.location.search).get("testMode") === "1";
+const TEST_MODE = (await window.RAWNative?.getRuntimeInfo?.())?.testMode === true;
 const localTestSessions = [];
 if (TEST_MODE) {
   document.getElementById("testModeBanner").style.display = "block";
