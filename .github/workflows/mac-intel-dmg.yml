@@ -1,0 +1,47 @@
+name: Build RAW Mac Intel DMG (Bettermaker V2)
+on:
+  push:
+    branches: [feature/bettermaker-v2]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  mac-intel-dmg:
+    runs-on: macos-15-intel
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - name: Prepare isolated macOS client
+        shell: bash
+        run: |
+          set -euo pipefail
+          cp mac-client-main.cjs mac-client/main.cjs
+          cp index.html style.css audio-diagnostics.js daw-bridge-client.js bettermaker-v2.js bettermaker-v2.css icon.png mac-client/
+          node -e "const p=require('./mac-client/package.json'); if(p.main!=='main.cjs'||p.devDependencies.easymidi) process.exit(1)"
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install standalone build tools
+        working-directory: mac-client
+        run: npm install --no-audit --no-fund
+      - name: Build unsigned Intel DMG
+        working-directory: mac-client
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+          ELECTRON_BUILDER_ALLOW_UNRESOLVED_DEPENDENCIES: "false"
+        run: npx electron-builder --mac dmg --x64 --publish never
+      - name: Inspect output and packaged app
+        shell: bash
+        run: |
+          set -euo pipefail
+          find mac-client/dist -maxdepth 2 -type f -print
+          ls -lh mac-client/dist/*.dmg
+          test -f mac-client/dist/*.dmg
+      - name: Upload installable DMG
+        uses: actions/upload-artifact@v4
+        with:
+          name: RAW-Mac-Intel-DMG-Bettermaker-V2
+          path: mac-client/dist/*.dmg
+          if-no-files-found: error
+          retention-days: 30
