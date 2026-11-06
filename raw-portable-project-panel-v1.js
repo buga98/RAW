@@ -115,7 +115,7 @@ function attach(host,{readArchive,getSources,canStageSources,stageSources}={}){
   try{
    if(!imported)throw new Error("Import a .rawproj first");
    if(typeof canStageSources!=="function"||canStageSources()!==true)
-    throw new Error("Local source staging requires an active LOCAL TEST session");
+    throw new Error("Local source staging requires an active LOCAL TEST session and disconnected studio bridges");
    if(typeof stageSources!=="function")throw new Error("Local audio stage adapter unavailable");
    if(typeof global.confirm!=="function"||
       !global.confirm("Replace local TEST session audio list with the verified original files from this project? Rack knobs will NOT change. Nothing will be uploaded.")){
