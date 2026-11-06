@@ -40,6 +40,13 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
           ${tile("passive","PASSIVE","AIR 20/28","TAP TO OPEN","red")}
           ${tile("menu","MENU","PRESETS","SETTINGS","blue")}
         </div>
+        <div class="bm2-passive-panel" aria-label="Bettermaker Passive EQ page">
+          <button type="button" class="bm2-passive-cell bm2-passive-blue" data-bm2-passive="low">BOOST <strong>3.7</strong><span>FREQ 20 Hz</span><small>CUT 3.5</small></button>
+          <button type="button" class="bm2-passive-cell bm2-passive-blue" data-bm2-passive="high">BOOST <strong>6.6</strong><span>FREQ 5 kHz</span><small>BW 8.5</small></button>
+          <button type="button" class="bm2-passive-cell bm2-passive-red" data-bm2-passive="cut">ATTEN <strong>3.3</strong><span>FREQ 20 kHz</span></button>
+          <button type="button" class="bm2-passive-cell bm2-passive-red bm2-passive-close" data-bm2-close="1">PASSIVE <small>TAP TO CLOSE</small></button>
+          <button type="button" class="bm2-passive-cell bm2-passive-blue" data-bm2-close="1">MENU</button>
+        </div>
         <div class="bm2-feedback"><span id="bmSelectedFilter">EQ CURVE</span><span id="bm2ScreenHelp">Select EQ1–EQ4 · P1 FREQ · P2 GAIN · P3 Q</span><b class="bm2-unsaved">UNSAVED</b></div>
       </div></div>
       <div class="bm2-right-bay"><div class="bm2-mark"><strong>Bettermaker</strong><span>MASTERING EQUALIZER</span></div><div class="bm2-right-knobs">${p(1,"eq1Freq",22,470,132,1,"Hz")}${p(2,"eq1Gain",-15,15,0,0.1,"dB")}${p(3,"eq1Q",0.2,7,1.5,0.1,"Q")}</div></div>
@@ -62,6 +69,14 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
         ${bmMiniKnob("eq4Q","EQ4 Q",0.2,7,1.6,0.1,"0.2","7","Q")}
         ${bmMiniKnob("lpfFreq","LPF FREQ",2000,38000,18000,100,"2k","38k","Hz")}
         ${bmMiniKnob("outputGain","OUTPUT",-10,10,0,0.1,"-10","+10","dB")}
+        ${bmMiniKnob("passiveLoBoost","PASS LO BOOST",0,14,3.7,0.1,"0","14","dB")}
+        ${bmMiniKnob("passiveLoCut","PASS LO CUT",0,14,3.5,0.1,"0","14","dB")}
+        ${bmMiniKnob("passiveLoFreq","PASS LO FREQ",20,100,20,1,"20","100","Hz")}
+        ${bmMiniKnob("passiveHiBoost","PASS HI BOOST",0,14,6.6,0.1,"0","14","dB")}
+        ${bmMiniKnob("passiveHiBw","PASS HI BW",0,10,8.5,0.1,"0","10","Q")}
+        ${bmMiniKnob("passiveHiFreq","PASS HI FREQ",500,28000,5000,100,"500","28k","Hz")}
+        ${bmMiniKnob("passiveHiCut","PASS HI CUT",0,14,3.3,0.1,"0","14","dB")}
+        ${bmMiniKnob("passiveHiCutFreq","PASS HI CUT FREQ",5000,20000,20000,100,"5k","20k","Hz")}
       </div>
       <div class="bm2-utilities">
         <button class="bm-btn active" data-device-id="bettermaker_eq" data-param="abState" data-value="A" data-group="bm-ab">A</button>
@@ -84,11 +99,16 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
     eq3:[["eq3Freq",480,10000,2890,10,"Hz"],["eq3Gain",-15,15,0,0.1,"dB"],["eq3Q",0.2,7,1.6,0.1,"Q"]],
     eq4:[["eq4Freq",1000,23000,5450,10,"Hz"],["eq4Gain",-15,15,0,0.1,"dB"],["eq4Q",0.2,7,1.6,0.1,"Q"]],
     hpf:[["hpfFreq",10,240,45,1,"Hz"],["hpfResonance",0,100,0,1,"%"],["lpfFreq",2000,38000,18000,100,"Hz"]],
-    lpf:[["lpfFreq",2000,38000,18000,100,"Hz"],["outputGain",-10,10,0,0.1,"dB"],["hpfFreq",10,240,45,1,"Hz"]]
+    lpf:[["lpfFreq",2000,38000,18000,100,"Hz"],["outputGain",-10,10,0,0.1,"dB"],["hpfFreq",10,240,45,1,"Hz"]],
+    passiveLow:[["passiveLoBoost",0,14,3.7,0.1,"dB"],["passiveLoCut",0,14,3.5,0.1,"dB"],["passiveLoFreq",20,100,20,1,"Hz"]],
+    passiveHigh:[["passiveHiBoost",0,14,6.6,0.1,"dB"],["passiveHiBw",0,10,8.5,0.1,"Q"],["passiveHiFreq",500,28000,5000,100,"Hz"]],
+    passiveCut:[["passiveHiCut",0,14,3.3,0.1,"dB"],["passiveHiCutFreq",5000,20000,20000,100,"Hz"],["passiveHiFreq",500,28000,5000,100,"Hz"]]
   };
   const fmt=(v,unit)=>unit==="Hz"&&v>=1000?(v/1000).toFixed(1)+" kHz":Number(v).toFixed(unit==="dB"||unit==="Q"?1:0)+" "+unit;
   const select=id=>{
-    if(!assign[id]){document.getElementById("bm2ScreenHelp").textContent=(id==="passive"?"Passive filter controls: view / hardware mapping pending":"Settings and presets: hardware integration pending");return;}
+    root.classList.toggle("bm2-passive-open",id==="passive");
+    if(id==="passive"){document.getElementById("bm2ScreenHelp").textContent="PASSIVE · Select LO / HI / ATTEN to assign P1–P3";return;}
+    if(!assign[id]){document.getElementById("bm2ScreenHelp").textContent="Settings / presets: hardware integration pending";return;}
     root.querySelectorAll("[data-p-slot]").forEach((knob,i)=>{
       const [key,min,max,defaultValue,step,unit]=assign[id][i];
       const matching=root.querySelector(`.bm2-parameter-area .knob[data-id="${key}"]`);
@@ -102,6 +122,16 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
     document.getElementById("bm2ScreenHelp").textContent=`${id.toUpperCase()} · P1 FREQ · P2 GAIN · P3 Q`;
   };
   root.querySelectorAll(".bm2-tile").forEach(button=>button.addEventListener("click",()=>select(button.dataset.filter)));
+  root.querySelectorAll("[data-bm2-passive]").forEach(button=>button.addEventListener("click",()=>{
+    root.querySelectorAll("[data-bm2-passive]").forEach(b=>b.classList.toggle("active",b===button));
+    const selected={low:"passiveLow",high:"passiveHigh",cut:"passiveCut"}[button.dataset.bm2Passive];
+    if(selected)select(selected);
+  }));
+  root.querySelectorAll("[data-bm2-close]").forEach(button=>button.addEventListener("click",()=>{
+    root.classList.remove("bm2-passive-open");
+    document.getElementById("bm2ScreenHelp").textContent="EQ CURVE · Select EQ1–EQ4 to edit";
+    root.querySelectorAll(".bm2-tile").forEach(b=>b.classList.remove("selected"));
+  }));
   // Visual preview of the active EQ parameter response (approximate bell curves).
   // Not a measurement of the analog device; physical audio verification comes later.
   const drawCurve=()=>{
