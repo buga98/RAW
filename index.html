@@ -606,7 +606,10 @@ window.registerUser = async function() {
 window.logoutUser = async function() {
   try {
     if (activeSessionId) {
-      const ok = confirm("Imaš aktivnu session. Želiš završiti session i odjaviti se?");
+      const unsaved=window.RAWWorkspaceActiveProjectStatus?.getStatus?.()?.dirty===true;
+      const ok = confirm(unsaved
+        ? "Imaš NESPREMLJENE rack postavke. Prije odjave možeš spremiti novu verziju u Moji projekti. Želiš svejedno završiti sesiju i odjaviti se?"
+        : "Imaš aktivnu session. Želiš završiti session i odjaviti se?");
       if (!ok) return;
 
       await window.endChainSession({
@@ -769,6 +772,10 @@ window.startChainSession = async function() {
 
     if (!devices.length) {
       alert("Nema uređaja u chainu.");
+      return;
+    }
+    if(TEST_MODE&&activeSessionId){
+      alert("Već imaš aktivnu LOCAL TEST sesiju. Vrati se u Control Room ili prvo završi postojeću sesiju.");
       return;
     }
 const sessionRef = draftSessionId
@@ -1064,6 +1071,11 @@ window.endChainSession = async function(options = {}) {
     if (!stayOnPage) window.goTo("devices");
     return;
   }
+  if(TEST_MODE&&!silent&&reason==="user"&&
+     window.RAWWorkspaceActiveProjectStatus?.getStatus?.()?.dirty===true&&
+     !confirm("Imaš nespremljene promjene na virtualnom racku. Spremi novu verziju u Moji projekti ili potvrdi završetak sesije bez spremanja. Nastaviti?")){
+    return;
+  }
 
   if (isEndingSession) {
     console.log("Session close već traje, preskačem dupli poziv.");
@@ -1149,6 +1161,7 @@ function renderPlugin() {
   const devices = getActiveChainDevices();
   const firstAudioFile = uploadedFiles[0];
   window.RAWWorkspaceStatusMonitor?.disconnect?.();
+  window.RAWWorkspaceActiveProjectStatus=null;
   let audioRoute=null;
   try{
     audioRoute=window.RAWAudioRouteV4?.plan({
@@ -1412,6 +1425,7 @@ const projectStatus=window.RAWWorkspaceProjectStatusV4?.create({
   }
 });
 projectStatus?.evaluate();
+window.RAWWorkspaceActiveProjectStatus=projectStatus;
 let statusRefreshHandle=null;
 const queueProjectStatusRefresh=()=>{
   clearTimeout(statusRefreshHandle);
