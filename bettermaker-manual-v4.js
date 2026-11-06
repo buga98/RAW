@@ -136,7 +136,7 @@ class ManualMEQ {
  snapshot(){return deep({channels:this.channels,options:this.options,channel:this.channel,locked:this.locked,peakHold:this.peakHold,notes:this.notes,brightness:this.brightness,rtaSource:this.rtaSource});}
 }
 
-function attach(root, model, onPreviewApply){
+function attach(root, model, onPreviewApply, onGraphParamChange){
  if(!root||!model||root.dataset.bm4Attached)return null;
  root.dataset.bm4Attached="1";
  const manual=new ManualMEQ(model);
@@ -398,6 +398,63 @@ function attach(root, model, onPreviewApply){
      event.preventDefault();event.stopImmediatePropagation();
    }
  },true);
+ // Manual p.12: Search & Destroy requires approximately 2 seconds HOLD
+ // before dragging (up/down gain, left/right frequency).
+ // Suppress the V3 immediate-drag handler only inside this V4 test branch.
+ let searchTimer=null,searchActive=false,searchStart=null,searchPointer=null;
+ const chart=root.querySelector(".bm2-plot");
+ const cancelSearch=()=>{
+   if(searchTimer!==null)clearTimeout(searchTimer);
+   searchTimer=null;searchActive=false;searchStart=null;searchPointer=null;
+   chart?.classList.remove("bm4-search-active");
+ };
+ const searchUpdate=(event)=>{
+   if(!searchActive||typeof onGraphParamChange!=="function")return;
+   const band=model.selected;
+   if(!BANDS.includes(band))return;
+   const bounds=chart.getBoundingClientRect();
+   if(bounds.width<=0||bounds.height<=0)return;
+   const ratioX=clamp((event.clientX-bounds.left)/bounds.width,0,1);
+   const ratioY=clamp((event.clientY-bounds.top)/bounds.height,0,1);
+   const freq=10*Math.pow(5000,ratioX);
+   for(const [key,val] of [[band+"Freq",freq],[band+"Gain",15-30*ratioY]]){
+     const knob=root.querySelector('.bm2-parameter-area .knob[data-id="'+key+'"]');
+     if(!knob)continue;
+     const min=Number(knob.dataset.min),max=Number(knob.dataset.max),step=Number(knob.dataset.step)||1;
+     onGraphParamChange(knob,clamp(Math.round(clamp(val,min,max)/step)*step,min,max));
+   }
+ };
+ chart?.addEventListener("pointerdown",event=>{
+   if(event.button!==0||event.target.closest("button")||manual.locked)return;
+   event.preventDefault();
+   // The original V3 event handler lives on chart; stop it at capture level.
+   event.stopImmediatePropagation();
+   cancelSearch();
+   searchPointer=event.pointerId;
+   searchStart={x:event.clientX,y:event.clientY};
+   chart.setPointerCapture?.(event.pointerId);
+   searchTimer=setTimeout(()=>{
+     if(!searchStart||manual.locked)return;
+     searchActive=true;chart.classList.add("bm4-search-active");
+     status("SEARCH & DESTROY · drag horizontal FREQ · vertical GAIN");
+     searchUpdate(event);
+   },2000);
+ },true);
+ chart?.addEventListener("pointermove",event=>{
+   if(searchPointer!==event.pointerId)return;
+   if(!searchActive&&searchStart&&Math.hypot(event.clientX-searchStart.x,event.clientY-searchStart.y)>12){
+     cancelSearch();return;
+   }
+   if(searchActive)searchUpdate(event);
+ },true);
+ for(const ev of ["pointerup","pointercancel","lostpointercapture"]){
+   chart?.addEventListener(ev,event=>{
+     if(searchPointer===null||event.pointerId===searchPointer){
+       if(searchActive&&ev==="pointerup")searchUpdate(event);
+       cancelSearch();setTimeout(refresh,0);
+     }
+   },true);
+ }
  // Prevent the UI from silently issuing commands while the manual LOCK is on:
  // legacy knob handling uses mousedown listeners, so capture stops activation.
  root.addEventListener("mousedown",event=>{
