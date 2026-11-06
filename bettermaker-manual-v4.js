@@ -305,10 +305,12 @@ function attach(root, model, onPreviewApply){
    for(const ev of ["pointerup","pointercancel","pointerleave"])knob.addEventListener(ev,()=>{delete down[knob.dataset.pSlot]});
  });
  // A/B switching updates local preview channel cache; external V3 still owns bank management.
+ // Capture before legacy V3 handlers so the previous mode is still known when
+ // collapsing two independent channels into stereo (manual: selected channel wins).
  root.addEventListener("click",event=>{
    const btn=event.target.closest("button");
    if(!btn)return;
-   if(btn.dataset.bm3Mode){
+   if(btn.dataset.bm3Mode && !manual.locked){
      if(manual.setMode(btn.dataset.bm3Mode)){restorePreview();}
    }
    if(btn.dataset.param==="filterEnabled"){
@@ -316,7 +318,27 @@ function attach(root, model, onPreviewApply){
    }
    if(btn.dataset.filter&&FILTERS.includes(btn.dataset.filter)){setTimeout(refresh,0);}
    setTimeout(refresh,0);
- });
+ }, true);
+ // Prevent the UI from silently issuing commands while the manual LOCK is on:
+ // legacy knob handling uses mousedown listeners, so capture stops activation.
+ root.addEventListener("mousedown",event=>{
+   if(manual.locked&&event.target.closest(".knob")){
+     event.preventDefault();
+     event.stopImmediatePropagation();
+   }
+ },true);
+ root.addEventListener("click",event=>{
+   if(!manual.locked)return;
+   const button=event.target.closest("button");
+   if(!button)return;
+   // Allow opening the local settings panel to see lock status, but never
+   // allow parameter changes or bridge forwarding while locked.
+   if(button.dataset.filter==="menu"||button.dataset.bm3Action==="close")return;
+   if(button.dataset.bm4==="close")return;
+   event.preventDefault();
+   event.stopImmediatePropagation();
+   status("LOCKED · hold P2 and P3 together for 1.5 s to unlock");
+ },true);
  // Safe visual sync only. No real hardware plugin endpoints are assumed.
  const watch=new MutationObserver(()=>refresh());
  root.querySelectorAll(".bm2-parameter-area .knob[data-id]").forEach(k=>watch.observe(k,{attributes:true,attributeFilter:["data-value"]}));
