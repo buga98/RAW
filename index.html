@@ -214,6 +214,7 @@
   <script src="daw-bridge-client.js"></script>
   <script src="bettermaker-v2.js"></script>
   <script src="bettermaker-engine-v3.js"></script>
+  <script src="bettermaker-manual-v4.js"></script>
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import {
@@ -1150,7 +1151,7 @@ attachNgBusButtons();
 attachNgTubeButtons();
 attachBettermakerButtons();
 window.RAWBettermakerV2?.attach();
-window.RAWBettermakerEngineV3?.attach(document.querySelector(".bm2-hardware"), () => ({
+const rawBm3Model = window.RAWBettermakerEngineV3?.attach(document.querySelector(".bm2-hardware"), () => ({
   input: demoAudioEngine?.inputMeter || null,
   output: demoAudioEngine?.outputMeter || null,
   inputChannels: [demoAudioEngine?.inputL, demoAudioEngine?.inputR],
@@ -1158,6 +1159,7 @@ window.RAWBettermakerEngineV3?.attach(document.querySelector(".bm2-hardware"), (
   sampleRate: demoAudioCtx?.sampleRate || 44100,
   running: !!demoAudioEngine && demoAudioCtx?.state === "running" && !!demoMediaElement && !demoMediaElement.paused
 }), (knob, value) => setKnobValue(knob, value), (parameter, value) => applyDemoAudioParam("bettermaker_eq", parameter, value));
+window.RAWBettermakerManualV4?.attach(document.querySelector(".bm2-hardware"), rawBm3Model, (parameter,value)=>applyDemoAudioParam("bettermaker_eq",parameter,value));
 window.RAWDawBridge?.refresh();
 fitRackDevices();
 initWaveform(firstAudioFile);
