@@ -1,0 +1,61 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+import vm from "node:vm";
+
+const read=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
+const html=read("index.html");
+const css=read("raw-workspace-v4.css");
+const lib=read("raw-local-project-library-panel-v2.js");
+const routes=read("raw-audio-route-v4.js");
+const project=read("raw-workspace-project-status-v4.js");
+test("professional desk ships independently of original device displays/knobs",()=>{
+ assert.match(html,/raw-console-hero/);
+ assert.match(html,/MASTERING DESK/);
+ assert.match(html,/raw-console-signal/);
+ assert.match(html,/id="rawConsoleSource"/);
+ assert.match(html,/id="rawConsoleDeviceCount"/);
+ assert.match(html,/id="rawWorkspaceCheckpoint"/);
+ assert.match(css,/\.raw-console-hero/);
+ assert.match(css,/\.raw-console-node\.is-offline/);
+ assert.doesNotThrow(()=>new vm.Script(routes));
+ assert.doesNotThrow(()=>new vm.Script(project));
+});
+test("actual analog routing and print are prominently marked unavailable",()=>{
+ assert.match(html,/REAL ANALOG CHAIN/);
+ assert.match(html,/NOT ROUTED/);
+ assert.match(html,/MASTER PRINT/);
+ assert.match(html,/NOT AVAILABLE/);
+ assert.match(html,/LOCAL DIGITAL PREVIEW/);
+ assert.doesNotMatch(html,/ANALOG MASTER READY|REAL HARDWARE CONNECTED/);
+});
+test("project version save and verified restore feed checkpoint state, Undo marks dirty",()=>{
+ assert.match(lib,/safeCallback\(onCheckpoint,\{projectId:result\.record\.id,revision:1,kind:"saved",rack:draft\.rack\}\)/);
+ assert.match(lib,/safeCallback\(onCheckpoint,\{projectId:result\.record\.id,revision:result\.record\.latestRevision,kind:"saved",rack:draft\.rack\}\)/);
+ assert.match(lib,/safeCallback\(onCheckpoint,\{projectId,revision,kind:"restored",rack:opened\?\.manifest\?\.rack\}\)/);
+ assert.match(lib,/safeCallback\(onStateChange\)/);
+ assert.match(html,/onCheckpoint:checkpoint=>projectStatus\?\.checkpoint\(checkpoint\)/);
+ assert.match(html,/attributeFilter:\["data-value"\]/);
+});
+test("Developer owner-only gate uses stale-authorization cancellation and explicit recheck",()=>{
+ assert.match(html,/const attempt=\+\+developerAuthEpoch/);
+ assert.match(html,/attempt!==developerAuthEpoch\|\|auth\.currentUser\?\.uid!==user\.uid/);
+ assert.match(html,/window\.checkDeveloperAccess=async function/);
+ assert.match(html,/id="rawDeveloperAccessStatus"/);
+ assert.match(html,/if \(developerAllowed\(\)\) \{/);
+ assert.match(html,/revokeDeveloperLabs\(\);\s*await signOut\(auth\)/);
+});
+test("diagnostics and Gateway remain in LAB; local rack preserves navigation",()=>{
+ assert.match(html,/RAWStudioSim\?\.attach\(developerLabHost,pluginHost\)/);
+ assert.match(html,/RAWStudioGatewayV1\?\.attach\(developerLabHost,pluginHost\)/);
+ assert.match(html,/RAWChainArchiveV1\?\.attach\(developerLabHost/);
+ assert.match(html,/if \(screenId === "plugin" && !pluginHost\.querySelector\("\.chain-control"\)\) renderPlugin\(\)/);
+ assert.match(html,/if \(TEST_MODE\) \{/);
+});
+test("new stylesheet/assets load before app module",()=>{
+ const module=html.indexOf('<script type="module">');
+ for(const name of ["raw-audio-route-v4.js","raw-workspace-project-status-v4.js"]){
+  const i=html.indexOf('src="'+name+'"');assert.ok(i>=0&&i<module);
+ }
+ assert.match(html,/href="raw-workspace-v4\.css"/);
+});
