@@ -39,7 +39,7 @@ test("Pending and confirmed states remain separated, no stale replay",()=>{
  assert.match(client,/tracker\.desire\(device,parameter,value\)/);
  assert.match(client,/tracker\.sent\(payload\)/);
  assert.match(client,/tracker\.acknowledge\(m\)/);
- assert.match(client,/tracker\.reject\(requestId,"ACK_TIMEOUT"\)/);
+ assert.match(client,/tracker\.reject\(requestId,"TIMEOUT"\)/);
  assert.match(client,/queued\.clear\(\)/);
  assert.match(client,/CONNECTION LOST/);
  assert.match(client,/SIMULATED READBACK CONFIRMED \(NOT PHYSICAL\)/);
