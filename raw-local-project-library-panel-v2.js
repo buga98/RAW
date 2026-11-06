@@ -25,6 +25,8 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
   '<label>VERSION <select data-library-version aria-label="Stored RAW project revision"><option value="">Select a project first</option></select></label></div>'+
   '<div class="raw-library-actions">'+
   '<button type="button" data-library="open">OPEN / VERIFY (READ ONLY)</button>'+
+  '<button type="button" data-library="compare">COMPARE SAVED RACK</button>'+
+  '<button type="button" data-library="rack-json">↓ EXPORT RACK JSON</button>'+
   '<button type="button" data-library="stage">STAGE SOURCES · LOCAL TEST</button>'+
   '<button type="button" data-library="download">↓ DOWNLOAD .RAWPROJ</button>'+
   '<button type="button" data-library="delete">DELETE PROJECT…</button></div>'+
@@ -127,9 +129,32 @@ function attach(host,{getDraft,readArchive,getSources,canStageSources,stageSourc
   detail("VERIFIED LOCAL PROJECT · "+m.projectName+" · v"+revision+
    "\nSOURCES: "+m.sources.map(s=>s.name+" · SHA-256 "+s.sha256.slice(0,16)+"…").join("\n         ")+
    "\nCHECKPOINTS: "+m.checkpoints.length+
+   (m.checkpoints.length?"\n"+m.checkpoints.map((v,i)=>
+    "  "+(i+1)+". "+v.label+" · "+new Date(v.when).toLocaleString()).join("\n"):"")+
    "\nRACK: "+m.rack.chainOrder.join(" → ")+
    "\nREAD-ONLY OPEN · AUDIO NOT STAGED · RACK NOT APPLIED");
   status("OPEN / VERIFY OK · every embedded audio checksum verified · nothing applied");
+ }));
+ one('[data-library="compare"]').addEventListener("click",()=>run(async()=>{
+  const {projectId,revision}=chosen();
+  if(!opened||opened.record.projectId!==projectId||opened.record.revision!==revision)
+   throw new Error("OPEN / VERIFY the saved revision first");
+  const current=global.RAWChainArchiveV1?.parse(JSON.stringify(readArchive()));
+  const planner=global.RAWChainRecallPlannerV2;
+  if(!current||!planner?.createPlan)throw new Error("Local rack comparator unavailable");
+  const plan=planner.createPlan(opened.manifest.rack,current);
+  detail("READ-ONLY LIBRARY RACK COMPARE · "+plan.summary.changed+" DIFFERENCES\n"+
+   planner.summarize(plan,32)+"\n\nNO LIVE CONTROLS CHANGED");
+  status("Saved v"+revision+" rack compared against active UI · read-only");
+ }));
+ one('[data-library="rack-json"]').addEventListener("click",()=>run(async()=>{
+  const {projectId,revision}=chosen();
+  if(!opened||opened.record.projectId!==projectId||opened.record.revision!==revision)
+   throw new Error("OPEN / VERIFY the saved revision first");
+  const archiveAPI=global.RAWChainArchiveV1;
+  if(!archiveAPI?.download)throw new Error("Chain Archive downloader is unavailable");
+  const name=archiveAPI.download(opened.manifest.rack);
+  status("Downloaded saved rack JSON: "+name+" · no live recall");
  }));
  one('[data-library="stage"]').addEventListener("click",()=>run(async()=>{
   const {projectId,revision}=chosen();
