@@ -103,3 +103,16 @@
 .bm2-plot .bm-btn:hover,.bm2-tile:hover{filter:brightness(1.15)}
 .bm2-hardware .bm2-right-knobs .knob:focus-visible,
 .bm2-hardware .bm2-level-knob:focus-visible{outline:3px solid #70ffe3;outline-offset:6px}
+
+/* Preset bank layout sized for the 5-inch style embedded screen. */
+.bm3-mode-panel{overflow-y:auto;padding:13px 14px 12px}
+.bm3-mode-title{font-size:17px;margin-bottom:12px}
+.bm3-mode-choices{gap:6px}
+.bm3-mode-choices button{font-size:11px;padding:8px 4px}
+.bm3-mode-footnote{font-size:10px;margin-top:9px}
+.bm3-preset-controls{display:grid;grid-template-columns:86px 1fr 55px 55px 55px;gap:5px;margin-top:14px;align-items:end;text-align:left;color:#b7ddf0;font-size:10px}
+.bm3-preset-controls label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.bm3-preset-controls input{width:100%;background:#071423;border:1px solid #578ac2;color:#e6f7ff;border-radius:4px;padding:5px 4px;min-width:0}
+.bm3-preset-controls button{font-size:10px;padding:6px 3px;background:#1b5790;color:#f6fbff;border:1px solid #5a9dd9;border-radius:4px}
+.bm3-preset-controls #bm3PresetStatus{grid-column:1/-1;font-size:9px;color:#d9a979}
+.bm2-plot{touch-action:none}
