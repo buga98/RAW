@@ -72,11 +72,13 @@ export class StudioDeviceSimulator {
   if(!this.owns(owner))reject("NOT_OWNER","Studio not claimed by this connection");
   if(!message||typeof message!=="object"||Array.isArray(message)||message.type!=="parameter-change")
    reject("INVALID_MESSAGE","parameter-change required");
-  const {requestId,sequence,sessionId,issuedAt,expiresAt,deviceId,parameter,value}=message;
+  const {requestId,sequence,leaseEpoch,sessionId,issuedAt,expiresAt,deviceId,parameter,value}=message;
   if(typeof requestId!=="string"||!ID.test(requestId))reject("INVALID_REQUEST_ID","Invalid requestId");
   if(typeof sessionId!=="string"||!SESSION.test(sessionId))
    reject("INVALID_SESSION","Only local test session IDs accepted");
   if(!Number.isSafeInteger(sequence)||sequence<1)reject("INVALID_SEQUENCE","Positive integer sequence required");
+  if(!Number.isSafeInteger(leaseEpoch)||leaseEpoch!==this.leaseEpoch)
+   reject("STALE_LEASE","Command lease does not match active studio lease");
   if(!Number.isSafeInteger(issuedAt)||!Number.isSafeInteger(expiresAt))
    reject("INVALID_TIME","Integer timestamps required");
   const now=this.now();
@@ -91,7 +93,7 @@ export class StudioDeviceSimulator {
   if(!schema)reject("UNKNOWN_PARAMETER","Parameter has no simulated mapping");
   if(typeof value!=="number"||!matchingStep(value,schema))
    reject("INVALID_VALUE","Parameter must be a finite in-range value matching its step");
-  const signature=JSON.stringify([sessionId,sequence,issuedAt,expiresAt,deviceId,parameter,value]);
+  const signature=JSON.stringify([sessionId,sequence,leaseEpoch,issuedAt,expiresAt,deviceId,parameter,value]);
   const duplicate=this.replies.get(requestId);
   if(duplicate){
    if(duplicate.signature!==signature)reject("REQUEST_ID_CONFLICT","Reused requestId with different payload");
