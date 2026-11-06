@@ -34,7 +34,7 @@ test("new file invalidates stale regions and previous waveform URL",()=>{
  assert.match(html,/waveformObjectUrl = URL\.createObjectURL\(file\)/);
 });
 test("chain archive can only compare and never automatically recall state",()=>{
- assert.match(html,/RAWChainArchiveV1\?\.attach\(pluginHost/);
+ assert.match(html,/RAWChainArchiveV1\?\.attach\(developerLabHost/);
  assert.match(html,/src="raw-chain-archive-v1.js"/);
  assert.match(archive,/READ-ONLY comparison/);
  assert.match(archive,/No comparison loaded/);
