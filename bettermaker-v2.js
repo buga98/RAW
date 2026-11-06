@@ -106,7 +106,7 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
   };
   const fmt=(v,unit)=>unit==="Hz"&&v>=1000?(v/1000).toFixed(1)+" kHz":Number(v).toFixed(unit==="dB"||unit==="Q"?1:0)+" "+unit;
   const select=id=>{
-    root.classList.toggle("bm2-passive-open",id==="passive");
+    root.classList.toggle("bm2-passive-open",id==="passive"||id.startsWith("passive"));
     if(id==="passive"){document.getElementById("bm2ScreenHelp").textContent="PASSIVE · Select LO / HI / ATTEN to assign P1–P3";return;}
     if(!assign[id]){document.getElementById("bm2ScreenHelp").textContent="Settings / presets: hardware integration pending";return;}
     root.querySelectorAll("[data-p-slot]").forEach((knob,i)=>{
@@ -119,7 +119,7 @@ window.RAWBettermakerV2 = { render: function render(device,index,bmMiniKnob){
       knob.setAttribute("aria-valuemin",String(min));knob.setAttribute("aria-valuemax",String(max));knob.setAttribute("aria-valuenow",String(value));
       knob.parentElement.querySelector(".knob-value").textContent=fmt(value,unit);
     });
-    document.getElementById("bm2ScreenHelp").textContent=`${id.toUpperCase()} · P1 FREQ · P2 GAIN · P3 Q`;
+    document.getElementById("bm2ScreenHelp").textContent=id.startsWith("passive") ? `${id.toUpperCase()} · P1 / P2 / P3 contextual passive parameters` : `${id.toUpperCase()} · P1 FREQ · P2 GAIN · P3 Q`;
   };
   root.querySelectorAll(".bm2-tile").forEach(button=>button.addEventListener("click",()=>select(button.dataset.filter)));
   root.querySelectorAll("[data-bm2-passive]").forEach(button=>button.addEventListener("click",()=>{
