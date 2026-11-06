@@ -143,6 +143,6 @@ test("saved MEQ manual lock and both channel banks are restored faithfully",()=>
 test("recall module itself has no remote sends, sockets, downloads or billing writes",()=>{
  const code=readFileSync(new URL("../raw-project-recall-v3.js",import.meta.url),"utf8");
  assert.doesNotMatch(code,/fetch\(|WebSocket|sendControlMessage|updateDoc|runTransaction|ipcRenderer|\.send\(/);
- assert.match(code,/suppressHardware:false|suppressHardware===true/);
+ assert.match(code,/suppressHardware!==true/);
  assert.match(code,/STALE_LOCAL_STATE|Transaction\.create/);
 });
