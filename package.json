@@ -18,8 +18,8 @@
     "studio:sim:check": "node --test tests/studio-device-simulator.test.mjs",
     "studio:sim:demo": "node scripts/studio-simulator-demo.mjs",
     "studio:agent:sim": "node studio-sim-agent.mjs",
-    "studio:agent:check": "node --test tests/studio-device-simulator.test.mjs tests/studio-sim-agent.test.mjs tests/studio-sim-client-contract.test.mjs tests/studio-state-reconciliation-v3.test.mjs tests/studio-state-client-contract-v3.test.mjs",
-    "studio:state:check": "node --test tests/studio-state-reconciliation-v3.test.mjs tests/studio-state-client-contract-v3.test.mjs"
+    "studio:agent:check": "node --test tests/studio-device-simulator.test.mjs tests/studio-sim-agent.test.mjs tests/studio-sim-client-contract.test.mjs tests/studio-state-reconciliation-v3.test.mjs tests/studio-state-client-contract-v3.test.mjs tests/studio-sim-client-behavior-v3.test.mjs",
+    "studio:state:check": "node --test tests/studio-state-reconciliation-v3.test.mjs tests/studio-state-client-contract-v3.test.mjs tests/studio-sim-client-behavior-v3.test.mjs"
   },
   "keywords": [],
   "author": "",
