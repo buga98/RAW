@@ -128,5 +128,6 @@
       value: message.value
     }));
   }
-  window.RAWDawBridge = { connect, disconnect, send, refresh:ui };
+  window.RAWDawBridge = { connect, disconnect, send, refresh:ui,
+    isActive:()=>!!socket&&socket.readyState===WebSocket.OPEN };
 })();
