@@ -3546,3 +3546,10 @@ body.sidebar-collapsed #plugin.active .audio-region-panel { left: 142px; }
 #plugin.active #rawBridgeStatus { color:#7dedbb; font-size:11px; font-weight:950; min-width:78px; text-align:right; }
 #plugin.active #rawBridgeConnect { font-size:11px; padding:8px 12px; }
 #plugin.active #rawBridgeDetails { flex-basis:100%; color:#91aebd; font-size:11px; }
+
+/* RAW LOCAL SOURCE EXPORT — no hardware/DSP "print" claimed. */
+.raw-local-export-select{background:#0b1725;color:#d7ecf5;border:1px solid #395771;border-radius:7px;padding:7px 8px;font:600 11px Arial,sans-serif}
+.raw-local-export-button{border-color:#388f95!important;color:#baf7e1!important}
+.raw-local-export-button:disabled{opacity:.48;cursor:progress}
+.raw-local-export-status{padding:6px 13px;color:#a8d2d6;font:600 10px/1.5 Arial,sans-serif;letter-spacing:.3px}
+@media(max-width:750px){.raw-local-export-status{padding:6px 10px}.raw-local-export-select{max-width:112px}}
