@@ -28,8 +28,9 @@
     "security:electron:check": "node --test tests/electron-preload-security-v1.test.mjs",
     "studio:gateway:ui-lab": "node scripts/studio-gateway-ui-lab.mjs",
     "studio:release:preflight": "npm run security:electron:check && npm run studio:gateway:check && npm run studio:agent:check && npm run test:smoke && npm run studio:local-assets:check",
-    "studio:local-assets:check": "node --test tests/raw-local-wav-export-v1.test.mjs tests/raw-chain-archive-v1.test.mjs tests/raw-local-output-ui-v1.test.mjs tests/raw-output-delivery-contract-v1.test.mjs tests/raw-chain-recall-planner-v2.test.mjs tests/raw-chain-archive-ui-v2.test.mjs tests/raw-chain-recall-ui-contract-v2.test.mjs",
-    "studio:chain:recall:check": "node --test tests/raw-chain-recall-planner-v2.test.mjs tests/raw-chain-archive-ui-v2.test.mjs tests/raw-chain-recall-ui-contract-v2.test.mjs"
+    "studio:local-assets:check": "node --test tests/raw-local-wav-export-v1.test.mjs tests/raw-chain-archive-v1.test.mjs tests/raw-local-output-ui-v1.test.mjs tests/raw-output-delivery-contract-v1.test.mjs tests/raw-chain-recall-planner-v2.test.mjs tests/raw-chain-archive-ui-v2.test.mjs tests/raw-chain-recall-ui-contract-v2.test.mjs tests/raw-local-rack-transaction-v3.test.mjs tests/raw-chain-sandbox-ui-v3.test.mjs",
+    "studio:chain:recall:check": "node --test tests/raw-chain-recall-planner-v2.test.mjs tests/raw-chain-archive-ui-v2.test.mjs tests/raw-chain-recall-ui-contract-v2.test.mjs",
+    "studio:chain:sandbox:check": "node --test tests/raw-local-rack-transaction-v3.test.mjs tests/raw-chain-sandbox-ui-v3.test.mjs"
   },
   "keywords": [],
   "author": "",
