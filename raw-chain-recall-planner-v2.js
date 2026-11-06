@@ -115,7 +115,7 @@ function createPlan(target,current,{maxChanges=MAX_CHANGES}={}){
   n:i+1,path:d.path,from:d.before,to:d.after,
   deviceId:d.path.startsWith("deviceStates.")?
    d.path.split(".")[1]:null,
-  needsPhysicalConfirmation:false
+  needsPhysicalConfirmation:true
  }));
  return {
   kind,version:VERSION,createdAt:new Date().toISOString(),
