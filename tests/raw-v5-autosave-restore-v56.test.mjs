@@ -55,13 +55,13 @@ function fixture(t){
 async function ready(t,{dirty=true}={}){
  const h=fixture(t),saved=h.createService();
  await saved.open();
- h.eq.set('eq1Gain',6);
+ h.manual.setParameter('eq1Gain',6);
  h.bus.parameter('L','threshold',-11);
  assert.equal(await saved.flush(),true);
  const stored=h.capture();
  saved.close();
  if(dirty){
-  h.eq.set('eq1Gain',-3);
+  h.manual.setParameter('eq1Gain',-3);
   h.bus.parameter('L','threshold',-8.5);
  }
  const original=h.capture();
@@ -115,7 +115,7 @@ test('V5.6: recovery can never apply without preview AND explicit consent',async
 });
 test('V5.6: stale user knob modification after preview is rejected before any restore',async t=>{
  const {h,recovery,controller}=await ready(t);
- controller.preview();h.eq.set('eq1Gain',2);
+ controller.preview();h.manual.setParameter('eq1Gain',2);
  const before=h.capture();
  assert.throws(()=>controller.apply({confirmed:true}),
   e=>e.code==='STALE_LOCAL_STATE');
