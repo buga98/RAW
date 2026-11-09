@@ -11,6 +11,7 @@ function bind({dock,mastering,viewport=global,scroller}={}){
  cleanup();latestUpdate=()=>{};
  if(!dock||typeof dock.getBoundingClientRect!=="function"||
     !viewport||typeof viewport.addEventListener!=="function")return false;
+ let floatingHeight=Math.max(75,Number(dock.offsetHeight)||180);
  const trigger=()=>{
   if(dock.hidden)return false;
   if(!mastering||!mastering.isConnected){
@@ -18,8 +19,12 @@ function bind({dock,mastering,viewport=global,scroller}={}){
    return false;
   }
   const viewHeight=Number(viewport.innerHeight)||800;
-  const height=Math.min(280,Math.max(75,Number(dock.offsetHeight)||180));
-  const threshold=Math.max(80,viewHeight-height-24);
+  // Freeze the measured floating height while inline, to avoid toggling back
+  // due to a different intrinsic size after the CSS position changes.
+  if(!dock.classList.contains("raw-source-safe-inline"))
+    floatingHeight=Math.max(75,Number(dock.offsetHeight)||180);
+  const height=Math.min(viewHeight*0.68,floatingHeight);
+  const threshold=Math.max(80,viewHeight-height+48);
   const top=mastering.getBoundingClientRect().top;
   const inline=Number.isFinite(top)&&top<threshold;
   dock.classList.toggle("raw-source-safe-inline",inline);
