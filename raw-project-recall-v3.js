@@ -71,8 +71,33 @@ function create({
   selection=null;
   return {...result,remoteSent:false};
  }
+ // V5.6: reuse the *same* rollback-safe LOCAL transaction for a verified
+ // AutoSave rack draft. This is NOT a .rawproj project/source recall.
+ // The caller must obtain target exclusively from the SHA-verified local store.
+ function prepareRecovery(rack){
+  if(canRestore()!==true)reject("NOT_LOCAL_TEST",
+   "Recovery requires an active local session and disconnected studio bridges");
+  const target=archive.parse(JSON.stringify(rack));
+  const plan=tx.prepare(target);
+  selection={kind:"local-autosave-recovery"};
+  return {...plan,localOnly:true,hardwareVerified:false};
+ }
+ function applyRecovery({confirmed=false}={}){
+  if(selection?.kind!=="local-autosave-recovery")
+   reject("NO_RECOVERY_PREVIEW","Preview the verified AutoSave rack before restore");
+  if(canRestore()!==true)reject("NOT_LOCAL_TEST",
+   "Recovery cannot alter rack while a studio bridge is connected");
+  const result=tx.apply({confirmed});
+  selection=null;
+  return {...result,remoteSent:false,source:"VERIFIED_LOCAL_AUTOSAVE"};
+ }
+ function undoRecovery({confirmed=false}={}){
+  const result=tx.undo({confirmed});
+  selection=null;
+  return {...result,remoteSent:false,source:"VERIFIED_LOCAL_AUTOSAVE"};
+ }
  function clear(){tx.clear();selection=null;}
- return {prepare,apply,undo,clear,getState:tx.getState};
+ return {prepare,apply,undo,prepareRecovery,applyRecovery,undoRecovery,clear,getState:tx.getState};
 }
 global.RAWProjectRecallV3={create};
 })(typeof window!=="undefined"?window:globalThis);
