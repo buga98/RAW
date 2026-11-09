@@ -107,3 +107,27 @@ Commands:
 - `npm run studio:audio:v5:worker:check`: V5.4 Worker integration + UI + IPC tests.
 - `npm run studio:audio:v5:check`: all V5 tests.
 - `npm run test:smoke`: full repository tests.
+
+
+## V5.5 — automatic local rack draft and safe restart discovery
+
+A *separate* `RAW_LOCAL_RACK_RECOVERY_V55` IndexedDB database preserves only the current **virtual rack control-model state**, without creating manual project revisions, billing events, DAW commands or physical readbacks. A verified Firebase UID is hashed locally into the database scope so different users of one Windows profile do not see one another's recovery drafts. The main rack control models are validated by `RAWChainArchiveV1.parse` before persistence. Each committed journal entry contains its own SHA-256 and sequence number; two alternating slots allow fallback to the last intact snapshot after a corrupted or interrupted write. These hashes detect corruption **but do not authenticate hardware**. Only one small rack JSON snapshot is written per quiet period (~850 ms), not original audio or processed WAV files.
+
+On starting a fresh LOCAL TEST session, the application **checks for an existing verified draft before writing anything**. If one exists, the new blank/default rack **must not overwrite it**: Projects shows `RECOVERABLE COPY FOUND`. PREVIEW RECOVERY compares the saved settings to the current rack without changing a single control. EXPORT RECOVERY JSON saves a read-only copy to the user's disk. Discarding the old copy requires explicit user consent. After a confirmed discard, AutoSave starts a new journal. If both slots are corrupt, AutoSave blocks overwriting until the user explicitly discards them.
+
+No actual rack restoration occurs in V5.5. The next V5.6 phase will connect recovery to the already verified rollback-safe LOCAL TEST transaction, with authorization/chain compatibility checks. Actual hardware reconnect and physical device readback remain later phases. **Do not interpret finding a draft as recovered original audio or resumed analog mastering.**
+
+### TEST 15 — Windows manual verification
+
+1. Confirm the V5 branch has no uncommitted changes; close Electron and update with `git pull --ff-only origin feature/studio-audio-worker-v5`.
+2. Run `npm run studio:autosave:v5:check` and `npm run test:smoke`, then `npm run test:local`.
+3. Sign in to your verified account. Start a LOCAL TEST chain session with the three modelled devices. Go to **Moji projekti**. The AutoSave card should appear above the regular project library; after the first checkpoint it reports `AUTO SAVE ACTIVE`.
+4. In **Control Room**, change an EQ parameter and at least one compressor setting; leave the controls idle for a few seconds. In **Moji projekti**, the AutoSave card must show a recent local save. The existing `.rawproj` Save New Project / Save New Version buttons must still work independently.
+5. Close the Electron app (without deleting its profile), relaunch `npm run test:local`, log in again and create the same LOCAL TEST rack. The AutoSave card must say `RECOVERABLE COPY FOUND` rather than overwriting the previous state.
+6. Click **PREVIEW RECOVERY**. Expect a read-only summary of changed parameters; *the currently visible rack knobs must not move*. If chain order differs, the preview reports the mismatch and still must not apply anything.
+7. Click **EXPORT RECOVERY JSON**, check that a `.json` rack settings file downloads, not a WAV or audio master. Before discarding any copy, keep this file if you need a backup.
+8. Select **DISCARD OLD COPY · START FRESH**, first cancel the confirmation: no copy is removed. Then explicitly confirm. AutoSave should switch to `ACTIVE` and start writing fresh snapshots.
+9. Log out, log in again and verify owner-only Developer LAB access remains unchanged. No old project revisions should be deleted by AutoSave.
+10. Test a different/unverified login where possible: it must not see the other account's draft or get LOCAL TEST privileges.
+
+**Limitations:** The debounce interval means the last subsecond of knob movements may be missing if Windows/Electron crashes immediately. LOCAL TEST AutoSave is not backup against disk loss or profile deletion and is intentionally *not* cloud sync. Any real analog session must require server-side authorization, exclusive lease, physical state recheck and a distinct audio preservation path.
