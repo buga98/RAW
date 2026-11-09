@@ -27,7 +27,7 @@ function boot({testMode=true,platform="win32",files=true}={}){
   whenReady(){return Promise.resolve();},
   on(){},setAppUserModelId(){},quit(){}
  };
- const ipcMain={handle(name,fn){ipc={name,fn};ipcHandlers[name]=fn;}};
+ const ipcMain={handle(name,fn){if(name==="open-plugin-session")ipc={name,fn};ipcHandlers[name]=fn;}};
  const spawn=(exe,args,opts)=>{
   launched={exe,args,opts};
   const child=new EventEmitter();child.unref=()=>{};
@@ -46,7 +46,8 @@ function boot({testMode=true,platform="win32",files=true}={}){
   process:{env:{RAW_TEST_MODE:testMode?"1":"0"},platform},URL
  });
  return {get options(){return options;},get window(){return window;},
-  get ipc(){return ipc;},get runtime(){return ipcHandlers["raw-runtime-info"];},get launched(){return launched;}};
+  get ipc(){return ipc;},get runtime(){return ipcHandlers["raw-runtime-info"];},
+  get diagnostic(){return ipcHandlers["raw-v5-diagnostics"];},get launched(){return launched;}};
 }
 test("renderer uses context isolation + sandbox and no direct Node integration",async()=>{
  const app=boot();await Promise.resolve();
@@ -59,9 +60,10 @@ test("renderer uses context isolation + sandbox and no direct Node integration",
  assert.match(renderer,/RAWNative\?\.openPluginSession/);
  assert.doesNotMatch(renderer,/window\.require|ipcRenderer\.send|ipcRenderer\.invoke/);
 });
-test("preload exposes one restricted IPC operation, never require or filesystem",()=>{
+test("preload exposes only allowlisted native operations, never require or filesystem",()=>{
  const exposure={};
- const ipcRenderer={invoke:(name)=>name};
+ const invocations=[];
+ const ipcRenderer={invoke:(name,...args)=>{invocations.push({name,args});return name;}};
  vm.runInNewContext(preload,{
   require:name=>{
    assert.equal(name,"electron");
@@ -69,9 +71,12 @@ test("preload exposes one restricted IPC operation, never require or filesystem"
   }
  });
  assert.deepEqual(Object.keys(exposure),["RAWNative"]);
- assert.deepEqual(Object.keys(exposure.RAWNative),["openPluginSession","getRuntimeInfo"]);
+ assert.deepEqual(Object.keys(exposure.RAWNative),["openPluginSession","getRuntimeInfo","runAudioV5Diagnostic"]);
  assert.equal(exposure.RAWNative.openPluginSession(),"open-plugin-session");
  assert.equal(exposure.RAWNative.getRuntimeInfo(),"raw-runtime-info");
+ assert.equal(exposure.RAWNative.runAudioV5Diagnostic("clean"),"raw-v5-diagnostics");
+ assert.equal(invocations[2].name,"raw-v5-diagnostics");
+ assert.deepEqual(invocations[2].args,["clean"]);
 });
 test("test mode prevents launching native studio software",async()=>{
  const app=boot({testMode:true});await Promise.resolve();
@@ -113,4 +118,24 @@ test("testMode is available only from the trusted Electron main process",async()
  const app=boot({testMode:true});await Promise.resolve();
  assert.equal(app.runtime({sender:app.window.webContents}).testMode,true);
  assert.equal(app.runtime({sender:{getURL:()=> "https://evil.example"}}).testMode,false);
+});
+
+test("V5 diagnostics IPC is disabled in production and unavailable to forged origin",async()=>{
+ const production=boot({testMode:false});await Promise.resolve();
+ const trusted=production.window.webContents;
+ assert.deepEqual(await production.diagnostic({sender:trusted},"clean"),{ok:false,code:"LOCAL_TEST_ONLY"});
+ const local=boot({testMode:true});await Promise.resolve();
+ assert.deepEqual(await local.diagnostic({sender:{getURL:()=>"https://evil.example"}},"clean"),{ok:false,code:"LOCAL_TEST_ONLY"});
+ assert.deepEqual(await local.diagnostic({sender:local.window.webContents},"../../hardware"),
+  {ok:false,code:"INVALID_SCENARIO"});
+ assert.deepEqual(await local.diagnostic({sender:local.window.webContents},{}),
+  {ok:false,code:"INVALID_SCENARIO"});
+ assert.equal(local.launched,null);
+});
+test("V5 diagnostic IPC imports only fixed local test runner and requires trusted window",()=>{
+ assert.match(main,/ipcMain\.handle\("raw-v5-diagnostics",async\(event,scenario\)=>/);
+ assert.match(main,/if\(!TEST_MODE\|\|!owner\|\|owner\.isDestroyed\(\)\|\|!isLocalAppUrl\(sender\.getURL\(\)\)\)/);
+ assert.match(main,/RAW_V5_DIAGNOSTIC_SCENARIOS\.has\(scenario\)/);
+ assert.match(main,/import\("\.\/raw-v5-diagnostics-runner-v5\.mjs"\)/);
+ assert.doesNotMatch(preload,/require\(["']node:fs|ipcRenderer\.send|writeFile/);
 });
