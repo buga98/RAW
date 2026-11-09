@@ -5,7 +5,7 @@ Datum: 2026-11-06
 
 ## Što je napravljeno
 
-Kontrolna konzola `studio-sim-client.js` prikazuje se **isključivo** u lokalnom Electron `?testMode=1` načinu rada. Novi zasebni `studio-sim-agent.mjs` sluša na `ws://127.0.0.1:7075` i ne može slati MIDI, GCon, HID, USB ili analogne audio signale. Nije povezan s produkcijskim računima, Firebase naplatom ili ranijim DAW bridgeom.
+Kontrolna konzola `studio-sim-client.js` prikazuje se **isključivo** u lokalnom Electron `?testMode=1` načinu rada. Novi zasebni `studio-sim-agent.mjs` sluša na `ws://127.0.0.1:7077` i ne može slati MIDI, GCon, HID, USB ili analogne audio signale. Nije povezan s produkcijskim računima, Firebase naplatom ili ranijim DAW bridgeom.
 
 Postojeći `studio-lab-bridge.mjs`, `daw-bridge.mjs`, stabilna grana i naplata nisu mijenjani. Nema pristupa pravim uređajima; svi ACK-ovi su označeni kao simulirani.
 
@@ -27,7 +27,7 @@ Ako grana već postoji lokalno: `git switch feature/studio-agent-simulator-v2` i
 npm run studio:agent:sim
 ```
 
-Očekivani ispis je `RAW SIM AGENT | ws://127.0.0.1:7075 | LOCAL TEST ONLY`.
+Očekivani ispis je `RAW SIM AGENT | ws://127.0.0.1:7077 | LOCAL TEST ONLY`.
 
 **Terminal 2:**
 
