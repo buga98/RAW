@@ -308,3 +308,28 @@ test("V5.7: Developer link drop button uses real unexpected-close logic",()=>{
  h.tick(350);
  assert.equal(h.sockets.length,2);
 });
+
+test("V5.7: heartbeat silence triggers link-loss recovery rather than indefinitely claiming READY",()=>{
+ const h=harness(),sock=h.connect();
+ h.tick(10000);
+ assert.equal(sock.sent.at(-1).type,"studio-sim-ping");
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"READY");
+ h.tick(4000);
+ assert.equal(sock.readyState,3);
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"RETRY_WAIT");
+ assert.equal(h.window.RAWStudioSim.recoveryState().ready,false);
+ h.tick(350);assert.equal(h.sockets.length,2);
+});
+test("V5.7: simulated pong keeps healthy link alive; untrusted pong cannot clear watchdog",()=>{
+ const h=harness(),sock=h.connect();
+ h.tick(10000);
+ sock.receive({type:"studio-sim-pong",leaseEpoch:1,simulated:true,hardwareVerified:true});
+ h.tick(4000);
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"RETRY_WAIT");
+ const good=harness(),live=good.connect();
+ good.tick(10000);
+ live.receive({type:"studio-sim-pong",leaseEpoch:1,simulated:true,hardwareVerified:false});
+ good.tick(4000);
+ assert.equal(good.window.RAWStudioSim.recoveryState().phase,"READY");
+ assert.equal(good.sockets.length,1);
+});
