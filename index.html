@@ -388,7 +388,7 @@ function mountDeveloperLabs(){
   window.RAWDawBridge?.refresh();
   window.RAWAudioV5Lab?.attach?.(developerLabHost,developerAllowed);
   window.RAWAudioWorkerV54Lab?.attach?.(developerLabHost,developerAllowed);
-  mountDigitalPremaster();
+  if(typeof mountDigitalPremaster==="function")mountDigitalPremaster();
 }
 async function authorizeDeveloper(user) {
   const attempt=++developerAuthEpoch;
