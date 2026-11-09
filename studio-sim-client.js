@@ -41,7 +41,7 @@ function ensureSupervisor(){
 }
 function reconnecting(){
  return ["RETRY_WAIT","CONNECTING","CLAIMING","RECONCILING",
-   "PAUSED_DEVICE","BLOCKED"].includes(supervisor?.snapshot()?.phase);
+   "PAUSED_DEVICE"].includes(supervisor?.snapshot()?.phase);
 }
 const tracker=new global.RAWStudioStateV3.Tracker();
 const label=(id,key)=>NAMES[id]+" · "+key;
