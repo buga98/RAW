@@ -7,11 +7,11 @@ const read=name=>readFileSync(new URL('../'+name,import.meta.url),'utf8');
 const ui=read('raw-v5-autosave-panel-v55.js');
 const html=read('index.html');
 const css=read('raw-v5-autosave.css');
-function stub(state='ACTIVE'){
+function stub(state='ACTIVE',withRestorer=false){
  let status={phase:state,lastSavedAt:'2026-11-09T10:00:00.000Z',
   pendingRecovery:state==='RECOVERY_AVAILABLE',sequence:2,warning:null,
   fallbackUsed:false,simulationOnly:true};
- let published=null,opens=0,flushes=0,discards=0,schedules=0,closes=0;
+ let published=null,opens=0,flushes=0,discards=0,schedules=0,closes=0,restores=0,undos=0;
  const service={
   open:async()=>{opens++;published(status);return status;},
   schedule(){schedules++;return true;},
@@ -34,10 +34,12 @@ function stub(state='ACTIVE'){
   '[data-autosave-detail]':{textContent:''},
   '[data-autosave-recovery-actions]':{hidden:true},
   '[data-autosave-preview]':{disabled:false,addEventListener(n,cb){this.click=cb;}},
+  '[data-autosave-restore]':{disabled:true,addEventListener(n,cb){this.click=cb;}},
+  '[data-autosave-undo]':{hidden:true,disabled:false,addEventListener(n,cb){this.click=cb;}},
   '[data-autosave-export]':{disabled:false,addEventListener(n,cb){this.click=cb;}},
   '[data-autosave-discard]':{disabled:false,addEventListener(n,cb){this.click=cb;}}
  };
- const panel={className:'',innerHTML:'',
+ const panel={className:'',innerHTML:'',remove(){}, 
   querySelector(sel){return registry[sel]||null;}};
  const consoleTag={textContent:'',dataset:{}};
  const anchor={clicks:0,click(){this.clicks++;},remove(){}};
@@ -47,8 +49,29 @@ function stub(state='ACTIVE'){
   body:{append(){}}
  };
  let allowed=true,answer=false,initialized=0,cleared=0,created=0;
+ let prepared=false,undone=false;
+ const recoveryCtrl={
+   preview(){
+     if(!allowed)throw new Error('RECOVERY_DENIED');
+     prepared=true;return {readOnly:true,changes:3};
+   },
+   apply({confirmed}){
+     if(!prepared||confirmed!==true||!allowed)throw new Error('RESTORE_DENIED');
+     restores++;prepared=false;undone=false;
+     status={...status,phase:'ACTIVE',pendingRecovery:false};
+     published(status);
+     return {changed:3,localModelVerified:true};
+   },
+   undo({confirmed}){
+     if(!allowed||confirmed!==true||!restores||undone)throw new Error('UNDO_DENIED');
+     undos++;undone=true;return {changed:3};
+   },
+   snapshot(){return {previewReady:prepared,undoAvailable:restores>0&&!undone};},
+   clear(){prepared=false;}
+ };
  const window={
   RAWAutoSaveRecoveryV55:{create({onChange}){created++;published=onChange;return service;}},
+  RAWAutoSaveRestoreV56:{create(){return recoveryCtrl;}},
   document,setInterval(){initialized++;return 12;},
   clearInterval(n){assert.equal(n,12);cleared++;},
   setTimeout(fn){fn();},
@@ -58,10 +81,14 @@ function stub(state='ACTIVE'){
  vm.runInNewContext(ui,{window,document,Blob});
  const host={panels:[],prepend(p){this.panels.unshift(p);}};
  return {window,host,panel,registry,consoleTag,anchor,
-  options:()=>({userId:'local-uid',sessionId:'test-1',capture:()=>({}),canWrite:()=>allowed}),
+  options:()=>({
+   userId:'local-uid',sessionId:'test-1',capture:()=>({}),canWrite:()=>allowed,
+   ...(withRestorer?{recoveryRecall:{},canRestore:()=>allowed}:{})
+  }),
   allow:v=>{allowed=v;},consent:v=>{answer=v;},
   get opens(){return opens;},get flushes(){return flushes;},get discards(){return discards;},
   get schedules(){return schedules;},get closes(){return closes;},get created(){return created;},
+  get restores(){return restores;},get undos(){return undos;},
   get startedTimers(){return initialized;},get clearedTimers(){return cleared;}
  };
 }
@@ -69,6 +96,8 @@ const settle=()=>new Promise(resolve=>setImmediate(resolve));
 test('AutoSave UI exists in normal Projects/Control Room, never adds new developer-only complexity',()=>{
  assert.match(html,/src="raw-v5-autosave-recovery-v55\.js"/);
  assert.match(html,/src="raw-v5-autosave-panel-v55\.js"/);
+ assert.match(html,/src="raw-v5-autosave-restore-v56\.js"/);
+ assert.match(html,/recoveryRecall,/);
  assert.match(html,/id="rawAutosaveConsoleStatus"/);
  assert.match(html,/window\.RAWAutoSaveV55UI\?\.mount\?\.\(projectsHost/);
  assert.match(html,/window\.RAWAutoSaveV55UI\?\.notifyChanged\?\.\(\)/);
@@ -146,5 +175,48 @@ test('re-render in same session preserves writer, but switching sessions closes 
  f.window.RAWAutoSaveV55UI.mount(f.host,{...f.options(),sessionId:'test-2'});
  await settle();assert.equal(f.created,2);
  assert.equal(f.closes,1);
+ f.window.RAWAutoSaveV55UI.stop();
+});
+
+test('V5.6 UI restores only after PREVIEW and explicit confirmation',async()=>{
+ const f=stub('RECOVERY_AVAILABLE',true);
+ f.window.RAWAutoSaveV55UI.mount(f.host,f.options());await settle();
+ assert.equal(f.registry['[data-autosave-restore]'].disabled,true);
+ await f.registry['[data-autosave-restore]'].click();await settle();
+ assert.equal(f.restores,0);
+ await f.registry['[data-autosave-preview]'].click();await settle();
+ assert.equal(f.registry['[data-autosave-restore]'].disabled,false);
+ f.consent(false);
+ await f.registry['[data-autosave-restore]'].click();
+ assert.equal(f.restores,0);
+ f.consent(true);
+ await f.registry['[data-autosave-restore]'].click();
+ assert.equal(f.restores,1);
+ assert.equal(f.registry['[data-autosave-recovery-actions]'].hidden,true);
+ assert.equal(f.registry['[data-autosave-undo]'].hidden,false);
+ assert.match(f.registry['[data-autosave-detail]'].textContent,/READBACK VERIFIED/);
+ f.window.RAWAutoSaveV55UI.stop();
+});
+test('V5.6 UI undo is explicit, reversible and hidden after successful undo',async()=>{
+ const f=stub('RECOVERY_AVAILABLE',true);
+ f.window.RAWAutoSaveV55UI.mount(f.host,f.options());await settle();
+ await f.registry['[data-autosave-preview]'].click();await settle();
+ f.consent(true);await f.registry['[data-autosave-restore]'].click();
+ assert.equal(f.registry['[data-autosave-undo]'].hidden,false);
+ f.consent(false);await f.registry['[data-autosave-undo]'].click();
+ assert.equal(f.undos,0);
+ f.consent(true);await f.registry['[data-autosave-undo]'].click();
+ assert.equal(f.undos,1);
+ assert.equal(f.registry['[data-autosave-undo]'].hidden,true);
+ assert.match(f.registry['[data-autosave-detail]'].textContent,/RECOVERY UNDONE/);
+ f.window.RAWAutoSaveV55UI.stop();
+});
+test('V5.6 UI never restores when authenticated session is revoked',async()=>{
+ const f=stub('RECOVERY_AVAILABLE',true);
+ f.window.RAWAutoSaveV55UI.mount(f.host,f.options());await settle();
+ await f.registry['[data-autosave-preview]'].click();await settle();
+ f.allow(false);f.consent(true);
+ await f.registry['[data-autosave-restore]'].click();
+ assert.equal(f.restores,0);
  f.window.RAWAutoSaveV55UI.stop();
 });
