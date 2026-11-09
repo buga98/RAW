@@ -58,6 +58,26 @@ ipcMain.handle("open-plugin-session",async event=>{
     child.once("spawn",()=>{child.unref();resolve({ok:true,status:"process-started-not-DAW-confirmed"});});
   });
 });
+// Strictly offline, finite diagnostic menu. This never opens a studio adapter.
+const RAW_V5_DIAGNOSTIC_SCENARIOS = new Set([
+  "clean", "latency", "swap", "gain", "clip", "hash-mismatch", "abort", "invalid-block"
+]);
+ipcMain.handle("raw-v5-diagnostics",async(event,scenario)=>{
+  const sender=event?.sender;
+  const owner=sender?BrowserWindow.fromWebContents(sender):null;
+  if(!TEST_MODE||!owner||owner.isDestroyed()||!isLocalAppUrl(sender.getURL()))
+    return {ok:false,code:"LOCAL_TEST_ONLY"};
+  if(typeof scenario!=="string"||!RAW_V5_DIAGNOSTIC_SCENARIOS.has(scenario))
+    return {ok:false,code:"INVALID_SCENARIO"};
+  try {
+    // Fixed relative module and fixed scenario. No user paths, ports or commands.
+    const {runVirtualAudioScenario}=await import("./raw-v5-diagnostics-runner-v5.mjs");
+    return {ok:true,result:runVirtualAudioScenario(scenario)};
+  }catch(error){
+    console.warn("RAW V5 offline diagnostic failed",error?.message);
+    return {ok:false,code:"DIAGNOSTIC_UNAVAILABLE"};
+  }
+});
 app.whenReady().then(()=>{
   if(process.platform==="win32")app.setAppUserModelId("com.raw.remote-studio");
   createWindow();
