@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import vm from "node:vm";
 
-const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
+// Windows git autocrlf must not invalidate a correct LOCAL TEST guard.
+const html=readFileSync(new URL("../index.html",import.meta.url),"utf8").replace(/\r\n/g,"\n");
 const lib=readFileSync(new URL("../raw-local-project-library-v2.js",import.meta.url),"utf8");
 const panel=readFileSync(new URL("../raw-local-project-library-panel-v2.js",import.meta.url),"utf8");
 const portable=readFileSync(new URL("../raw-portable-project-panel-v1.js",import.meta.url),"utf8");
