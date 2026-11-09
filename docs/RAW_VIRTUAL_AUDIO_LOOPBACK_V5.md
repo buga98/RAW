@@ -159,3 +159,29 @@ The V5.5 dual-slot journal still discovers a verified prior draft after relaunch
 9. Sign out, back in and start the rack again: only the authenticated account's verified backups are accessible. Existing manual project revisions and saved original audio must remain intact.
 
 **Limitations:** V5.6 restores rack model values, not the song, physical analog equipment, device leases, studio routing, PCM capture, session billing, or real processed audio. Because the local demo creates a new session ID after each relaunch, **we intentionally require the user's confirmation** before applying a backup. Unattended reconnect and verified physical-device resume belong to later phases.
+
+
+## V5.7 — automatic local Simulator reconnect (not physical transport)
+
+New `raw-local-reconnect-v57.js` implements a deliberately bounded state machine wired to the **existing** `studio-sim-client.js` local WebSocket agent on `127.0.0.1:7075`. The user explicitly connects to the Simulator **once** in Developer LAB. After an unexpected link loss, RAW clears all in-flight/queued knob commands, marks readings unconfirmed, and automatically retries with bounded exponential delays (350 ms, 700 ms, 1400 ms; max four attempts including the initial connection). On an attempted reconnect RAW must receive a fresh lease for the **same current LOCAL TEST session**, then a complete, simulated, lease-matching readback snapshot of all three devices before enabling any *new* forwarding. Nothing replays old parameter changes or downloads old audio.
+
+An occupied studio lease, expired/invalid claim, changed session, user disconnect, or owner logout blocks retry (fail-closed). If a simulated device goes offline, the whole simulator forwarding path pauses until a fresh full readback confirms it is online again. A silent connection is checked by a simulated heartbeat: an unanswered 10-second ping with a four-second response deadline forces a bounded reconnect. Heartbeat/pong is explicitly `simulated:true`, `hardwareVerified:false`.
+
+While reconnect is in progress, Project Recall and V5.6 AutoSave Restore remain blocked even if the simulator socket itself has dropped. Existing versions, local rack state, pending AutoSave copies and source audio are untouched.
+
+**Not implemented in this phase:** automatic restoration of a user project after a full app restart, real Gateway token renewal, remote studio claims, real hardware safety/readback, physical network auto-reconnect, resuming interrupted analog audio or DAW jobs. The existing V5.6 session recovery after relaunch remains a **verified manual confirmation** process. Do not use Simulator results as evidence of production readiness.
+
+### TEST 17 — hands-on LOCAL TEST reconnect acceptance
+
+1. Close RAW. From a clean `feature/studio-audio-worker-v5` branch, pull and run `npm run studio:reconnect:v5:check`, then `npm run test:smoke`.
+2. Open *PowerShell #1*: `npm run studio:agent:sim`. Leave this local Simulator agent open.
+3. Open *PowerShell #2*: `npm run test:local`. Sign in as verified developer, start a LOCAL TEST chain session with three devices.
+4. Open **Programerski dio → STUDIO AGENT · SIMULATOR V2** and click `CONNECT + CLAIM SIM` once. Wait until the **AUTO RECOVERY** indicator says `READY`. No actual hardware or payments are involved.
+5. Click `TEST LINK DROP`. The indicator should show `RETRY_WAIT`, `CONNECTING` / `CLAIMING`, then `RECONCILING`, and finally `READY` after a new lease and full readback. You should **not** have to click Connect again. No old knob commands are replayed.
+6. Change a Bettermaker frequency or a compressor setting **after** READY. A new simulated command can be confirmed by simulated readback. A change while disconnected is local-only and never replayed.
+7. Click `DISCONNECT SIM`, wait several seconds. Reconnect must **not** restart after explicit disconnect.
+8. Reconnect manually, then close the `studio:agent:sim` terminal process (Ctrl+C). The panel should attempt a few retries and then say `BLOCKED · RETRY_EXHAUSTED`; RAW itself must stay responsive. Restart Simulator agent, click `CONNECT + CLAIM SIM` again and confirm READY.
+9. Simulate a disconnected device using the per-device control: while offline, new control messages must stay local-only. Reconnect the simulated device and wait for a new full snapshot before further forwarding.
+10. Sign out and back in. No lingering retry timers must reconnect on behalf of a signed-out or newly authenticated session. Rack AutoSave remains a separate persisted local feature.
+
+**Security:** no reconnect to DAW/real Gateway or hardware in V5.7; no tokens persisted, no replay of old queued commands, and no billed session. Production will require separately designed authentication renewal, server authorization, lease fencing, state consistency and explicit hardware interlocks.
