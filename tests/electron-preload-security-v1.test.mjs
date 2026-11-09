@@ -47,7 +47,8 @@ function boot({testMode=true,platform="win32",files=true}={}){
  });
  return {get options(){return options;},get window(){return window;},
   get ipc(){return ipc;},get runtime(){return ipcHandlers["raw-runtime-info"];},
-  get diagnostic(){return ipcHandlers["raw-v5-diagnostics"];},get launched(){return launched;}};
+  get diagnostic(){return ipcHandlers["raw-v5-diagnostics"];},
+  get worker(){return ipcHandlers["raw-v5-worker-command"];},get launched(){return launched;}};
 }
 test("renderer uses context isolation + sandbox and no direct Node integration",async()=>{
  const app=boot();await Promise.resolve();
@@ -71,12 +72,15 @@ test("preload exposes only allowlisted native operations, never require or files
   }
  });
  assert.deepEqual(Object.keys(exposure),["RAWNative"]);
- assert.deepEqual(Object.keys(exposure.RAWNative),["openPluginSession","getRuntimeInfo","runAudioV5Diagnostic"]);
+ assert.deepEqual(Object.keys(exposure.RAWNative),["openPluginSession","getRuntimeInfo","runAudioV5Diagnostic","runAudioV5Worker"]);
  assert.equal(exposure.RAWNative.openPluginSession(),"open-plugin-session");
  assert.equal(exposure.RAWNative.getRuntimeInfo(),"raw-runtime-info");
  assert.equal(exposure.RAWNative.runAudioV5Diagnostic("clean"),"raw-v5-diagnostics");
  assert.equal(invocations[2].name,"raw-v5-diagnostics");
  assert.deepEqual(invocations[2].args,["clean"]);
+ assert.equal(exposure.RAWNative.runAudioV5Worker("status"),"raw-v5-worker-command");
+ assert.equal(invocations[3].name,"raw-v5-worker-command");
+ assert.deepEqual(invocations[3].args,["status"]);
 });
 test("test mode prevents launching native studio software",async()=>{
  const app=boot({testMode:true});await Promise.resolve();
@@ -135,5 +139,24 @@ test("V5 diagnostic IPC imports only fixed local test runner and requires truste
  assert.match(main,/if\(!TEST_MODE\|\|!owner\|\|owner\.isDestroyed\(\)\|\|!isLocalAppUrl\(sender\.getURL\(\)\)\)/);
  assert.match(main,/RAW_V5_DIAGNOSTIC_SCENARIOS\.has\(scenario\)/);
  assert.match(main,/import\("\.\/raw-v5-diagnostics-runner-v5\.mjs"\)/);
+ assert.doesNotMatch(preload,/require\(["']node:fs|ipcRenderer\.send|writeFile/);
+});
+
+test("V5.4 worker command denies production, untrusted origin and unsafe actions",()=>{
+ const production=boot({testMode:false});
+ assert.equal(production.worker({sender:{getURL:()=> "file:///fake/raw/index.html"}},"start").code,"LOCAL_TEST_ONLY");
+ const local=boot({testMode:true});
+ assert.equal(local.worker({sender:{getURL:()=> "https://evil.invalid"}},"start").code,"LOCAL_TEST_ONLY");
+ assert.equal(local.worker({sender:local.window.webContents},"../../hardware").code,"INVALID_WORKER_COMMAND");
+ assert.equal(local.worker({sender:local.window.webContents},{action:"start"}).code,"INVALID_WORKER_COMMAND");
+ assert.equal(local.worker({sender:local.window.webContents},"billing").code,"INVALID_WORKER_COMMAND");
+ assert.equal(local.launched,null);
+});
+test("V5.4 main only exposes worker operations through exact test-only allowlist",()=>{
+ assert.match(main,/ipcMain\.handle\("raw-v5-worker-command",\(event,action\)=>/);
+ assert.match(main,/RAW_V5_WORKER_ACTIONS\.has\(action\)/);
+ assert.match(main,/if\(!TEST_MODE\|\|!owner\|\|owner\.isDestroyed\(\)\|\|!isLocalAppUrl\(sender\.getURL\(\)\)\)/);
+ assert.match(main,/raw-v5-audio-worker-thread\.mjs/);
+ assert.match(main,/app\.on\("before-quit",\(\)=>\{rawV5WorkerManager\?\.close\(\);\}\)/);
  assert.doesNotMatch(preload,/require\(["']node:fs|ipcRenderer\.send|writeFile/);
 });
