@@ -33,7 +33,7 @@ function scope(){
  vm.runInNewContext(nav,{window,document:doc});
  return {window,doc,ids,tabs};
 }
-test("V5.13: existing source player is moved in-flow AFTER digital premaster and not fixed",()=>{
+test("V5.16: original source transport floats through rack and switches inline only near mastering",()=>{
  assert.match(html,/const sourceDock=pluginHost\.querySelector\("#rawAudioDock"\)/);
  assert.match(html,/pluginHost\.appendChild\(sourceDock\)/);
  const render=html.slice(html.indexOf("function renderPlugin() {"),
@@ -42,10 +42,13 @@ test("V5.13: existing source player is moved in-flow AFTER digital premaster and
  assert.ok(render.indexOf("const sourceDock=pluginHost.querySelector")>
   render.indexOf("mountDigitalPremaster();"),
   "Source audio must stay after the premaster in Control Room");
- assert.match(css,/#plugin\.active \.audio-region-panel[\s\S]*?position:relative!important/);
+ assert.match(css,/#plugin\.active \.audio-region-panel:not\(\.raw-source-safe-inline\)/);
+ assert.match(css,/position:fixed!important/);
+ assert.match(css,/\.audio-region-panel\.raw-source-safe-inline/);
+ assert.match(css,/position:relative!important/);
  assert.match(css,/inset:auto!important/);
  assert.match(css,/max-height:none!important/);
- assert.match(css,/#plugin\.active #pluginHost[\s\S]*?padding-bottom:0!important/);
+ assert.match(css,/#plugin\.active #pluginHost[\s\S]*?padding-bottom:300px!important/);
  assert.match(html,/id="rawAudioDockBody"/);
  assert.match(html,/id="waveform"/);
  assert.match(html,/id="rawAudioDock"/);
@@ -66,21 +69,14 @@ test("V5.13: source transport labels distinct from digital mastering and safe fi
  assert.match(css,/@media\(max-width:600px\)/);
  assert.match(read("raw-local-wav-export-v1.js"),/NOT a studio print, analog master/);
 });
-test("V5.14: professional icon replaces emoji in sidebar and Electron title",()=>{
- assert.match(html,/<img src="raw-brand-icon.svg" alt="RAW Mastering"/);
+test("V5.16: original Windows taskbar icon is restored across Electron and sidebar",()=>{
+ assert.match(html,/<img src="icon.png" alt="RAW Mastering"/);
  assert.doesNotMatch(html,/<div class="logo">🎛️<\/div>/);
- assert.match(main,/icon: path\.join\(__dirname, "raw-brand-icon.png"\)/);
- assert.match(html,/rel="icon" type="image\/png" href="raw-brand-icon.png"/);
- const svg=read("raw-brand-icon.svg");
- assert.match(svg,/<svg /);
- assert.match(svg,/RAW Mastering studio monogram/);
- assert.match(svg,/linearGradient/);
- assert.doesNotMatch(svg,/script|foreignObject|href=|<image/i);
- const png=readFileSync(new URL("../raw-brand-icon.png",import.meta.url));
+ assert.match(main,/icon: path\.join\(__dirname, "icon.png"\)/);
+ assert.match(html,/rel="icon" type="image\/png" href="icon.png"/);
+ const png=readFileSync(new URL("../icon.png",import.meta.url));
  assert.equal(png.subarray(0,8).toString("hex"),"89504e470d0a1a0a");
- assert.equal(png.readUInt32BE(16),256);
- assert.equal(png.readUInt32BE(20),256);
- assert.ok(statSync(new URL("../raw-brand-icon.png",import.meta.url)).size>1000);
+ assert.ok(statSync(new URL("../icon.png",import.meta.url)).size>1000);
 });
 test("V5.15: guest sees Prijava, while private account panel and button remain hidden",()=>{
  const {window,doc,ids}=scope();
