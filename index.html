@@ -323,6 +323,9 @@ let developerGranted = false;
 let developerAuthEpoch = 0;
 const developerNav = document.getElementById("developerNav");
 const developerScreen = document.getElementById("developer");
+// The rack UI must outlive logout; cache only static LAB UI templates, never
+// gateway credentials or active simulator panels.
+const developerUiTemplates={diagnostics:null,daw:null};
 function developerAllowed() {
   return TEST_MODE && developerGranted && currentUser?.emailVerified === true &&
     String(currentUser?.email||"").trim().toLowerCase() === DEVELOPER_EMAIL;
@@ -350,6 +353,23 @@ function revokeDeveloperLabs(){
   document.getElementById("developerLabHost")?.replaceChildren();
   updateDeveloperUi();
 }
+// Called after a fresh successful owner check, even when the existing rack
+// is preserved for project recall. No rack model is recreated on re-login.
+function mountDeveloperLabs(){
+  if(!developerAllowed()||!pluginHost?.querySelector(".chain-control"))return;
+  window.RAWStudioSim?.attach(developerLabHost,pluginHost);
+  window.RAWStudioGatewayV1?.attach(developerLabHost,pluginHost);
+  window.RAWChainArchiveV1?.attach(developerLabHost,()=>window.RAWDeveloperRackModels?.());
+  if(!developerLabHost.querySelector("#rawDiagnosticsDetails")&&developerUiTemplates.diagnostics){
+    const diag=developerUiTemplates.diagnostics.cloneNode(true);
+    diag.hidden=true;
+    developerLabHost.append(diag);
+  }
+  if(!developerLabHost.querySelector(".raw-daw-toolbar")&&developerUiTemplates.daw){
+    developerLabHost.prepend(developerUiTemplates.daw.cloneNode(true));
+  }
+  window.RAWDawBridge?.refresh();
+}
 async function authorizeDeveloper(user) {
   const attempt=++developerAuthEpoch;
   developerGranted=false;
@@ -365,7 +385,10 @@ async function authorizeDeveloper(user) {
       activeUid:auth.currentUser?.uid
     })===true;
   }catch(error){console.warn("RAW developer LAB token verification unavailable",error);}
-  if(attempt===developerAuthEpoch)updateDeveloperUi();
+  if(attempt===developerAuthEpoch){
+    updateDeveloperUi();
+    if(developerAllowed())mountDeveloperLabs();
+  }
 }
 window.checkDeveloperAccess=async function(){
   const user=auth.currentUser;
@@ -525,6 +548,18 @@ window.goTo = function(screenId) {
   document.querySelectorAll(".tab").forEach(t => {
     t.classList.toggle("active", t.dataset.screen === screenId);
   });
+  // Explicitly hide the viewport-fixed audio dock outside Control Room.
+  // Prevent stale compositor layers from blocking the login inputs.
+  const audioDock=pluginHost.querySelector("#rawAudioDock");
+  if(audioDock)audioDock.hidden=screenId!=="plugin";
+  if(screenId==="login"){
+    const emailInput=document.getElementById("loginEmail");
+    emailInput?.focus({preventScroll:true});
+    window.requestAnimationFrame?.(()=>{
+      if(document.getElementById("login")?.classList.contains("active"))
+        emailInput?.focus({preventScroll:true});
+    });
+  }
 
   if ((screenId === "projects" || screenId === "developer") &&
       activeSessionId && !projectsHost.querySelector(".raw-library-panel")) renderPlugin();
@@ -660,6 +695,7 @@ onAuthStateChanged(auth, async (user) => {
     revokeDeveloperLabs();
     currentUser = null;
     currentUserData = null;
+    updateUserPanel();
     window.goTo("login");
     return;
   }
@@ -1363,6 +1399,12 @@ function renderPlugin() {
       </div>
     </div>
   `;
+
+// Only static markup is cached. Logout always destroys the live LAB panels.
+const diagnosticsTemplate=pluginHost.querySelector("#rawDiagnosticsDetails");
+const dawTemplate=pluginHost.querySelector(".raw-daw-toolbar");
+if(diagnosticsTemplate)developerUiTemplates.diagnostics=diagnosticsTemplate.cloneNode(true);
+if(dawTemplate)developerUiTemplates.daw=dawTemplate.cloneNode(true);
 
 attachKnobs();
 attachChainSwitches();
