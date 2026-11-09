@@ -1309,6 +1309,11 @@ function mountDigitalPremaster(){
    !window.RAWStudioSim?.reconnecting?.()&&
    !window.RAWDawBridge?.isActive?.()
  });
+ // Also handle the case when owner verification happens AFTER the rack
+ // was already rendered: keep SOURCE TRANSPORT last, below digital A/B.
+ const sourceDock=pluginHost.querySelector("#rawAudioDock");
+ if(sourceDock&&sourceDock.parentElement===pluginHost)
+  pluginHost.appendChild(sourceDock);
 }
 function renderPlugin() {
   window.RAWDigitalPremasterV59UI?.detach?.();
