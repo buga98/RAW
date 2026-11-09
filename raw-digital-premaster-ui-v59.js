@@ -108,9 +108,22 @@ async function process(){
     global.RAWProfessionalLoudnessV517.measure(out.channels,out.sampleRate,meterOptions)
   ]);
   if(token.cancelled||current!==generation||!allowed())return;
+  status("MEASURING 4x INTERSAMPLE TRUE-PEAK ESTIMATE · LOCAL ONLY");
+  const [sourceTruePeak,digitalTruePeak]=await Promise.all([
+    global.RAWProfessionalLoudnessV517.estimateTruePeak(
+      [audio.getChannelData(0),audio.getChannelData(1)],out.sampleRate,meterOptions),
+    global.RAWProfessionalLoudnessV517.estimateTruePeak(
+      out.channels,out.sampleRate,meterOptions)
+  ]);
+  if(token.cancelled||current!==generation||!allowed())return;
+  const overPeak=typeof digitalTruePeak.estimatedTruePeakDbtp==="number"&&
+    digitalTruePeak.estimatedTruePeakDbtp>out.settings.ceilingDb+0.1;
   const qc=Object.freeze({...rawQc,
     digitalLoudness:Object.freeze({source:sourceLufs,output:digitalLufs}),
-    loudnessReferenceCertified:false,deviceMasterCertified:false
+    intersamplePeakEstimate:Object.freeze({source:sourceTruePeak,output:digitalTruePeak}),
+    estimatedIntersampleOverCeiling:overPeak,
+    loudnessReferenceCertified:false,truePeakReferenceCertified:false,
+    deviceMasterCertified:false
   });
   rendered={blob,out,file,qc};
   // V5.12 monitoring: attenuate ONLY the louder side to the quieter
@@ -135,7 +148,11 @@ async function process(){
    "BS.1770-5 GATED INTEGRATED LUFS (REFERENCE VALIDATION PENDING): "+
    "INPUT "+(sourceLufs.integratedLufs?.toFixed(2)??"BELOW GATE")+
    " / OUTPUT "+(digitalLufs.integratedLufs?.toFixed(2)??"BELOW GATE")+
-   "\nTRUE PEAK NOT MEASURED · SAMPLE-PEAK CEILING ONLY. Not Bettermaker/WesAudio processing."+
+   "\n4x INTERSAMPLE TRUE-PEAK ESTIMATE (NOT CERTIFIED): INPUT "+
+   (sourceTruePeak.estimatedTruePeakDbtp?.toFixed(2)??"—")+
+   " dBTP / OUTPUT "+(digitalTruePeak.estimatedTruePeakDbtp?.toFixed(2)??"—")+
+   " dBTP · "+(overPeak?"REVIEW ESTIMATED OVER-CEILING":"NO ESTIMATED OVER-CEILING")+
+   "\nSAMPLE-PEAK CEILING IS NOT A TRUE-PEAK LIMITER. Not Bettermaker/WesAudio processing."+
    "\nA/B RMS MONITOR ONLY: A ×"+monitorVolumes.original.toFixed(3)+
    " · B ×"+monitorVolumes.digital.toFixed(3)+" (NOT LUFS MATCHED)"+
    "\nDIGITAL QC: "+qc.overall+" · SHA-256: "+qc.sha256+
