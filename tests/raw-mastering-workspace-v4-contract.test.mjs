@@ -35,6 +35,38 @@ test("hidden initial render never collapses rack size and activation recalculate
  assert.ok(Number.parseInt(wrapper.style.height,10)>0,"visible rack reserves its height");
  assert.match(rack.style.transform,/^scale\(/);
 });
+test("MEQ details open/close reserves new scaled rack height without RACK SIZE click",()=>{
+ const fit=html.match(/function fitRackDevices\\(\\) \\{[\\s\\S]*?\\n\\}/)?.[0];
+ const bind=html.match(/function bindRackExpansionFit\\(\\) \\{[\\s\\S]*?\\n\\}/)?.[0];
+ assert.ok(fit&&bind,"rack expansion handler must exist");
+ assert.match(html,/bindRackExpansionFit\\(\\);\\s*fitRackDevices\\(\\);/);
+ let naturalHeight=500,active=true,onToggle;
+ const rack={dataset:{designWidth:"1380"},get offsetHeight(){return naturalHeight},style:{}};
+ const wrapper={clientWidth:1000,style:{},querySelector:()=>rack};
+ const details={addEventListener:(event,callback)=>{
+  assert.equal(event,"toggle");onToggle=callback;
+ }};
+ const sandbox={
+  rackSizePercent:80,
+  pluginHost:{querySelectorAll:selector=>selector==="[data-rack-fit] details"?[details]:[]},
+  document:{
+   querySelectorAll:selector=>selector==="[data-rack-fit]"?[wrapper]:[],
+   getElementById:id=>id==="plugin"?{classList:{contains:cls=>active&&cls==="active"}}:null
+  },
+  requestAnimationFrame:callback=>callback()
+ };
+ vm.runInNewContext(fit+"\\n"+bind+"\\nfitRackDevices();bindRackExpansionFit();",sandbox);
+ const initial=wrapper.style.height;
+ assert.ok(Number.parseInt(initial,10)>0);
+ assert.equal(typeof onToggle,"function");
+ naturalHeight=900;onToggle();
+ assert.ok(Number.parseInt(wrapper.style.height,10)>Number.parseInt(initial,10),
+  "expanded controls must push the next device down");
+ naturalHeight=500;onToggle();
+ assert.equal(wrapper.style.height,initial,"collapsing reclaims the space");
+ active=false;naturalHeight=900;onToggle();
+ assert.equal(wrapper.style.height,initial,"hidden screen must not relayout");
+});
 test("professional desk ships independently of original device displays/knobs",()=>{
  assert.match(html,/raw-console-hero/);
  assert.match(html,/MASTERING DESK/);
