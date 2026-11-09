@@ -333,3 +333,20 @@ test("V5.7: simulated pong keeps healthy link alive; untrusted pong cannot clear
  assert.equal(good.window.RAWStudioSim.recoveryState().phase,"READY");
  assert.equal(good.sockets.length,1);
 });
+
+test("V5.7: retry exhaustion offers one-click explicit manual restart",()=>{
+ const h=harness(),first=h.connect();
+ first.close();
+ for(const delay of [350,700,1400]){
+  h.tick(delay);
+  const next=h.latest();
+  assert.equal(h.window.RAWStudioSim.recoveryState().phase,"CONNECTING");
+  next.close();
+ }
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"BLOCKED");
+ const before=h.sockets.length;
+ assert.equal(h.root.panel.querySelector("#rawSimConnect").textContent,"CONNECT + CLAIM SIM");
+ h.root.panel.querySelector("#rawSimConnect").click();
+ assert.equal(h.sockets.length,before+1);
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"CONNECTING");
+});
