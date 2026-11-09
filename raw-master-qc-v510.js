@@ -67,7 +67,19 @@ async function inspect({result,blob,sourceName="",cryptoRef=global.crypto,
  if(offset!==compare.length)fail("WAV_MISMATCH","Digital WAV is truncated");
  const sha256=hex(await cryptoRef.subtle.digest("SHA-256",bytes));
  if(!/^[a-f0-9]{64}$/.test(sha256))fail("HASH_INVALID","WAV checksum failed");
- const input=result.inputMeter,output=result.outputMeter;
+ if(!global.RAWDigitalPremasterV59?.analyze||!Array.isArray(result.channels)||
+    result.channels.length!==2||
+    !result.channels.every(channel=>channel instanceof Float32Array&&
+     channel.length===result.frames))
+  fail("METER_INVALID","Original DSP PCM arrays are unavailable for remeasurement");
+ const input=result.inputMeter;
+ const output=global.RAWDigitalPremasterV59.analyze(result.channels,result.sampleRate);
+ const expected=result.outputMeter;
+ const drift=(x,y)=>x===null&&y===null?0:finite(x)&&finite(y)?Math.abs(x-y):Infinity;
+ if(drift(expected.peakDbfs,output.peakDbfs)>0.01||
+    drift(expected.rmsDbfs,output.rmsDbfs)>0.01||
+    expected.clippedFrames!==output.clippedFrames)
+  fail("METER_MISMATCH","Digital DSP output meter does not match measured PCM");
  const diagnostics=[];
  const add=(code,status,description)=>diagnostics.push(Object.freeze({code,status,description}));
  const measured=output.peakDbfs;
