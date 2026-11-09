@@ -113,6 +113,7 @@ function stop(){
  ++epoch;
  if(pulse!==null){global.clearInterval(pulse);pulse=null;}
  service?.close();
+ panel?.remove?.();
  service=null;panel=null;currentUser=null;currentSession=null;
  captureFn=null;guardFn=()=>false;lastState=null;
  const tag=global.document?.getElementById("rawAutosaveConsoleStatus");
