@@ -17,3 +17,14 @@
 .raw-sim-compare-title{margin-top:14px;font:700 11px/1.4 Arial,sans-serif;color:#a9dbe3;letter-spacing:.65px}
 #rawSimCompared{max-height:160px;border:1px solid #326076;background:#071724;color:#c2e4e3;line-height:1.75}
 #rawSimReadback{max-height:110px;color:#9aadc3}
+
+/* V5.7: automatic recovery is transport-only, with mandatory simulated readback. */
+.raw-sim-reconnect-status{
+ margin:10px 0;padding:9px 12px;border-radius:7px;
+ background:rgba(20,71,75,.3);border:1px solid rgba(118,197,187,.22);
+ color:#b6e2d8;font:700 11px/1.6 Consolas,monospace;
+ overflow-wrap:anywhere
+}
+.raw-sim-toolbar #rawSimDropLink{border:1px solid rgba(226,181,116,.42);
+ color:#f5d8aa;background:rgba(75,50,31,.4)}
+.raw-sim-toolbar #rawSimDropLink:disabled{opacity:.38;cursor:not-allowed}
