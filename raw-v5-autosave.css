@@ -65,3 +65,19 @@
 }
 .raw-v55-autosave [data-autosave-undo][hidden]{display:none!important}
 .raw-v55-autosave [data-autosave-restore]:disabled{opacity:.42;cursor:not-allowed}
+
+/* V5.8: read-only saved knob inspection before starting a local test session. */
+.raw-v55-discovery-show {
+ display:inline-flex;align-items:center;justify-content:center;min-height:36px;
+ margin:12px 0 2px;padding:8px 14px;border:1px solid rgba(131,219,199,.5);
+ border-radius:8px;background:#173a36;color:#e4faf3;cursor:pointer;
+ font-size:11px;font-weight:800;letter-spacing:.02em
+}
+.raw-v55-discovery-show:hover{background:#205048}
+.raw-v55-discovery-show:disabled{opacity:.5;cursor:wait}
+.raw-v55-discovery-show[hidden],.raw-v55-discovery-values[hidden]{display:none!important}
+.raw-v55-discovery-values{
+ white-space:pre-wrap;overflow-wrap:anywhere;max-height:420px;overflow-y:auto;
+ padding:14px;border-radius:8px;border:1px solid rgba(130,193,187,.22);
+ color:#bed9d4;background:rgba(6,23,30,.75);font:11px/1.7 Consolas,monospace
+}
