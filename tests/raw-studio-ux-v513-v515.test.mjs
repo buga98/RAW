@@ -60,7 +60,7 @@ test("V5.13: source transport labels distinct from digital mastering and safe fi
  assert.match(css,/\.raw-source-identity/);
  assert.match(css,/\.raw-source-utilities/);
  assert.match(css,/@media\(max-width:600px\)/);
- assert.match(read("raw-local-wav-export-v1.js"),/NOT an analog master/);
+ assert.match(read("raw-local-wav-export-v1.js"),/NOT a studio print, analog master/);
 });
 test("V5.14: professional icon replaces emoji in sidebar and Electron title",()=>{
  assert.match(html,/<img src="raw-brand-icon.svg" alt="RAW Mastering"/);
