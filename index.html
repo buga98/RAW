@@ -263,6 +263,7 @@
   <script src="raw-audio-route-v4.js"></script>
   <script src="raw-workspace-project-status-v4.js"></script>
   <script src="raw-v5-autosave-recovery-v55.js"></script>
+  <script src="raw-v5-autosave-restore-v56.js"></script>
   <script src="raw-v5-autosave-panel-v55.js"></script>
   <script src="raw-portable-project-v1.js"></script>
   <script src="raw-portable-project-panel-v1.js"></script>
@@ -1547,7 +1548,7 @@ window.RAWWorkspaceStatusMonitor={
     pluginHost.removeEventListener("change",queueProjectStatusRefresh);
   }
 };
-const recall=window.RAWProjectRecallV3?.create({
+const localRackRecallOptions={
   capture:rawProjectUiOptions.readArchive,
   models:()=>({
     meq:rawBm3Model,manual:window.RAWMEQManualModel,
@@ -1564,7 +1565,11 @@ const recall=window.RAWProjectRecallV3?.create({
     if(window.RAWNgTubeCompV1Model && window.RAWNgTubeCompV1LocalRefresh?.()!==true)return false;
     return true;
   }
-});
+};
+const recall=window.RAWProjectRecallV3?.create(localRackRecallOptions);
+// Independent transaction: Manual Project Recall preview/undo stays separate
+// from AutoSave recovery preview/undo, even within the same LOCAL TEST rack.
+const recoveryRecall=window.RAWProjectRecallV3?.create(localRackRecallOptions);
 projectsHost.replaceChildren();
 window.RAWPortableProjectPanelV1?.attach(projectsHost, rawProjectUiOptions);
 window.RAWLocalProjectLibraryPanelV2?.attach(projectsHost, {
@@ -1582,7 +1587,11 @@ if(activeSessionId&&currentUser?.uid){
       ...window.RAWDeveloperRackModels?.(),label:"RAW AutoSave local control models"
     }),
     canWrite:()=>TEST_MODE===true&&currentUser?.uid===ownerUidForAutoSave&&
-      activeSessionId===sessionIdForAutoSave
+      activeSessionId===sessionIdForAutoSave,
+    recoveryRecall,
+    canRestore:()=>TEST_MODE===true&&currentUser?.uid===ownerUidForAutoSave&&
+      activeSessionId===sessionIdForAutoSave&&
+      localRackRecallOptions.canRestore()===true
   });
 }
 projectStatus?.evaluate();
