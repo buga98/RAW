@@ -32,8 +32,8 @@ function baseFixture(t){
  const services=[];
  const service=(userId="owner-uid")=>{
   const x=w.RAWAutoSaveRecoveryV55.create({
-   userId,capture,backend,archive:w.RAWChainArchiveV1,cryptoRef:webcrypto,
-   timers:{setTimeout,clearTimeout}
+   userId,capture,canWrite:()=>true,backend,archive:w.RAWChainArchiveV1,
+   cryptoRef:webcrypto,timers:{setTimeout,clearTimeout}
   });
   services.push(x);return x;
  };
