@@ -51,3 +51,17 @@
 #rawAutosaveConsoleStatus[data-state='CORRUPT']{color:#f1a99f;border-color:rgba(241,127,111,.4)}
 
 #rawAutosaveConsoleStatus[hidden]{display:none!important}
+
+/* V5.6 confirmed recovery and explicit one-step UNDO. */
+.raw-v55-autosave [data-autosave-restore]{
+ background:#1e4b41;border-color:rgba(137,226,185,.65);color:#dcfff0;
+}
+.raw-v55-autosave [data-autosave-undo]{
+ display:inline-flex;align-items:center;justify-content:center;
+ margin:8px 0;min-height:35px;padding:8px 12px;cursor:pointer;
+ border-radius:7px;border:1px solid rgba(229,185,125,.48);
+ background:rgba(76,57,36,.42);color:#f6dfb9;
+ font-size:11px;font-weight:800;
+}
+.raw-v55-autosave [data-autosave-undo][hidden]{display:none!important}
+.raw-v55-autosave [data-autosave-restore]:disabled{opacity:.42;cursor:not-allowed}
