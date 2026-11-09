@@ -36,8 +36,12 @@ function scope(){
 test("V5.13: existing source player is moved in-flow AFTER digital premaster and not fixed",()=>{
  assert.match(html,/const sourceDock=pluginHost\.querySelector\("#rawAudioDock"\)/);
  assert.match(html,/pluginHost\.appendChild\(sourceDock\)/);
- assert.ok(html.indexOf("mountDigitalPremaster();",html.indexOf("fitRackDevices();"))<
-  html.indexOf("const sourceDock=pluginHost.querySelector",html.indexOf("fitRackDevices();")));
+ const render=html.slice(html.indexOf("function renderPlugin() {"),
+  html.indexOf("window.renderSessions = async function"));
+ assert.ok(render.indexOf("mountDigitalPremaster();")>=0);
+ assert.ok(render.indexOf("const sourceDock=pluginHost.querySelector")>
+  render.indexOf("mountDigitalPremaster();"),
+  "Source audio must stay after the premaster in Control Room");
  assert.match(css,/#plugin\.active \.audio-region-panel[\s\S]*?position:relative!important/);
  assert.match(css,/inset:auto!important/);
  assert.match(css,/max-height:none!important/);
