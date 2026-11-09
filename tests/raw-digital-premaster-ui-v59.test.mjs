@@ -9,7 +9,7 @@ const engine=read("raw-digital-premaster-v59.js");
 const ui=read("raw-digital-premaster-ui-v59.js");
 const qcModule=read("raw-master-qc-v510.js");
 const html=read("index.html");
-function harness({frames=4096}={}){
+function harness({frames=4096,withPresets=false}={}){
  const settings={lowCutHz:25,lowShelfDb:0,presenceDb:0,airDb:0,
  thresholdDb:-18,ratio:1,attackMs:20,releaseMs:180,
  makeupDb:0,ceilingDb:-1,bits:24,dither:true};
@@ -27,6 +27,7 @@ function harness({frames=4096}={}){
   addEventListener(name,fn){this.handlers[name]=fn;}
   click(){this.handlers.click?.();}
   append(...items){this.children.push(...items);}
+  replaceChildren(...items){this.children=[...items];}
   remove(){this.removed=true;}
   pause(){this.paused=true;}
   load(){}
@@ -65,7 +66,25 @@ function harness({frames=4096}={}){
   async decodeAudioData(){return decoded;}
   async close(){}
  }
+ let enteredName="Vocal pop",confirmed=true;
+ const storedPresets=[],storedOps=[];
+ const fakeStore={
+  list:async()=>storedPresets.map(p=>({...p})),
+  save:async(name,settings)=>{
+   const item={id:"aaaaaaaa-aaaa-4aaa-8aaa-"+String(storedPresets.length+1).padStart(12,"0"),
+    name,settings:{...settings}};
+   storedPresets.push(item);storedOps.push("save");return item;
+  },
+  load:async id=>{const item=storedPresets.find(p=>p.id===id);
+   if(!item)throw new Error("Missing preset");storedOps.push("load");return item;},
+  remove:async(id,{confirmed})=>{if(!confirmed)throw Error("Confirmation required");
+   const i=storedPresets.findIndex(p=>p.id===id);
+   if(i>=0)storedPresets.splice(i,1);storedOps.push("delete");return {deletedId:id};},
+  close(){storedOps.push("close");}
+ };
  const window={document:doc,URL,AudioContext:FakeAudioContext,crypto:webcrypto,
+  ...(withPresets?{RAWDigitalPresetsV511:{create:()=>fakeStore}}:{}),
+  prompt:()=>enteredName,confirm:()=>confirmed,
   setTimeout:(fn,delay)=>{
    const timer=setTimeout(fn,delay);if(delay>=1000)timer.unref?.();return timer;
   },clearTimeout,
@@ -74,11 +93,13 @@ function harness({frames=4096}={}){
   TextEncoder,Blob,setTimeout,clearTimeout};
  vm.runInNewContext(engine,context);vm.runInNewContext(qcModule,context);
  vm.runInNewContext(ui,context);
- return {window,doc,host,file,decoded,URL,createdUrls,revoked,
+ return {window,doc,host,file,decoded,URL,createdUrls,revoked,storedPresets,storedOps,
+  setPresetName:name=>{enteredName=name;},confirm:yes=>{confirmed=yes;},
   get panel(){return panel;},
   get clicks(){return clicks;},
   attach:()=>window.RAWDigitalPremasterV59UI.attach(host,{
-   getFile:()=>currentFile,canUse:()=>authorized
+   getFile:()=>currentFile,canUse:()=>authorized,
+   ...(withPresets?{presetUserId:"owner-test"}:{})
   }),
   allow:yes=>authorized=yes,
   changeFile:x=>currentFile=x,
@@ -204,4 +225,42 @@ test("V5.10: local DSP exposes verified QC metadata and separate JSON receipt",a
  assert.equal(receipt.hardwareProcessed,false);
  assert.equal(receipt.masterAvailable,false);
  h.window.RAWDigitalPremasterV59UI.detach();
+});
+
+test("V5.11: local mastering preset buttons save, load, then confirm delete",async()=>{
+ const h=harness({withPresets:true});h.attach();await settle();
+ h.select("airDb",3);
+ h.button("preset-save").click();
+ for(let i=0;i<6;i++)await settle();
+ assert.equal(h.storedPresets.length,1);
+ assert.equal(h.storedPresets[0].name,"Vocal pop");
+ assert.equal(h.storedPresets[0].settings.airDb,3);
+ const selector=h.button("preset-select");
+ assert.equal(selector.value,h.storedPresets[0].id);
+ h.select("airDb",-1);
+ h.button("preset-load").click();
+ for(let i=0;i<6;i++)await settle();
+ assert.equal(h.panel.querySelector('[data-v59-setting="airDb"]').value,"3");
+ assert.match(h.button("status").textContent,/PRESET LOADED/);
+ assert.equal(h.button("download").disabled,true);
+ h.confirm(false);
+ h.button("preset-delete").click();
+ for(let i=0;i<4;i++)await settle();
+ assert.equal(h.storedPresets.length,1);
+ h.confirm(true);
+ h.button("preset-delete").click();
+ for(let i=0;i<6;i++)await settle();
+ assert.equal(h.storedPresets.length,0);
+ assert.ok(h.storedOps.includes("delete"));
+ h.window.RAWDigitalPremasterV59UI.detach();
+ assert.ok(h.storedOps.includes("close"));
+});
+test("V5.11: digital presets are only mounted for a scoped owner and never applied to hardware",()=>{
+ const css=read("raw-digital-premaster-v59.css");
+ assert.match(html,/src="raw-digital-presets-v511\.js"/);
+ assert.match(html,/presetUserId:ownerForPremaster/);
+ assert.match(ui,/global\.RAWDigitalPresetsV511\.create/);
+ assert.match(css,/\.raw-dpm-presets/);
+ assert.match(ui,/RACK UNCHANGED/);
+ assert.match(ui,/NO AUDIO \/ HARDWARE/);
 });
