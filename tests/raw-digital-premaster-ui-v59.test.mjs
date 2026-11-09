@@ -298,12 +298,16 @@ test("V5.17: Digital Premaster exposes real gated LUFS and includes it in the QC
  h.attach();h.button("start").click();await waitReady(h);
  assert.match(h.button("metrics").textContent,/BS\.1770-5 GATED INTEGRATED LUFS/);
  assert.match(h.button("metrics").textContent,/REFERENCE VALIDATION PENDING/);
- assert.match(h.button("metrics").textContent,/TRUE PEAK NOT MEASURED/);
+ assert.match(h.button("metrics").textContent,/4x INTERSAMPLE TRUE-PEAK ESTIMATE/);
+ assert.match(h.button("metrics").textContent,/NOT CERTIFIED/);
  h.button("qc").click();
  const report=JSON.parse(await h.createdUrls.at(-1).value.text());
  assert.equal(report.digitalLoudness.source.method,"BS1770_5_STEREO_K_WEIGHTED_GATED");
  assert.equal(report.digitalLoudness.output.referenceCertified,false);
  assert.equal(report.loudnessReferenceCertified,false);
+ assert.equal(report.truePeakReferenceCertified,false);
+ assert.equal(report.intersamplePeakEstimate.output.standardCertified,false);
+ assert.equal(report.intersamplePeakEstimate.output.oversamplingFactor,4);
  assert.equal(report.deviceMasterCertified,false);
  assert.equal(report.verifiedAnalogMaster,false);
  h.window.RAWDigitalPremasterV59UI.detach();
