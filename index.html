@@ -1327,9 +1327,7 @@ function renderPlugin() {
   window.RAWDigitalPremasterV59UI?.detach?.();
   const devices = getActiveChainDevices();
   const firstAudioFile = uploadedFiles[0];
-  const regionFileName=String(firstAudioFile?.name||"Nema učitanog filea")
-    .replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",
-      '"':"&quot;","'":"&#39;"}[ch]));
+
   window.RAWWorkspaceStatusMonitor?.disconnect?.();
   window.RAWWorkspaceActiveProjectStatus=null;
   let audioRoute=null;
@@ -1441,25 +1439,21 @@ function renderPlugin() {
         ${devices.map((device, index) => renderChainDeviceModule(device, index)).join("")}
       </div>
 
-      <div class="audio-region-panel raw-source-transport-v513" id="rawAudioDock" aria-label="Originalni audio transport — bez analogne obrade">
+      <div class="audio-region-panel" id="rawAudioDock" aria-label="Audio transport — uvijek dostupan">
         <div class="audio-region-head">
-          <div class="raw-source-identity">
-            <span class="raw-source-icon" aria-hidden="true">♫</span>
-            <div class="raw-source-copy">
-              <small class="raw-source-kicker">ORIGINAL AUDIO · SOURCE TRANSPORT</small>
-              <strong>AUDIO REGION</strong>
-              <span class="file-pill" title="${regionFileName}">${regionFileName}</span>
-            </div>
+          <div>
+            <strong>AUDIO REGION</strong>
+            <span class="file-pill">♫ ${String(firstAudioFile?.name||"Nema učitanog filea").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]))}</span>
           </div>
-          <button class="ghost-btn raw-source-collapse" type="button" onclick="toggleRawAudioDock()" id="rawDockToggle" aria-expanded="true" aria-controls="rawAudioDockBody">− SAŽMI</button>
+          <div class="audio-dock-actions">
+            <select id="rawLocalExportBits" class="raw-local-export-select" title="PCM WAV bit depth" aria-label="Local WAV bit depth"><option value="24">24-bit WAV</option><option value="16">16-bit WAV</option></select>
+            <button class="ghost-btn raw-local-export-button" type="button" id="rawLocalExportButton" onclick="downloadLocalSourceRegionWav()" title="Downloads only the local source audio region, NOT an analog-processed master">↓ EXPORT SOURCE WAV</button>
+
+            <button class="ghost-btn" type="button" onclick="toggleRawAudioDock()" id="rawDockToggle" aria-expanded="true">− MINIMIZE</button>
+            <button class="ghost-btn" onclick="goTo('upload')">CHANGE FILE</button>
+          </div>
         </div>
-        <div class="raw-source-utilities">
-          <label for="rawLocalExportBits">EXPORT FORMAT</label>
-          <select id="rawLocalExportBits" class="raw-local-export-select" title="PCM WAV bit depth" aria-label="Local source WAV bit depth"><option value="24">24-bit WAV</option><option value="16">16-bit WAV</option></select>
-          <button class="ghost-btn raw-local-export-button" type="button" id="rawLocalExportButton" onclick="downloadLocalSourceRegionWav()" title="Izvozi izvorni audio segment, bez obrade kroz analogne uređaje">↓ IZVEZI IZVORNI WAV</button>
-          <button class="ghost-btn" type="button" onclick="goTo('upload')">PROMIJENI DATOTEKU</button>
-        </div>
-        <div id="rawLocalExportStatus" class="raw-local-export-status" role="status" aria-live="polite">IZVORNI AUDIO · bez digitalne/analogne master obrade · NOT A MASTER</div>
+        <div id="rawLocalExportStatus" class="raw-local-export-status" role="status" aria-live="polite">LOCAL SOURCE EXPORT · no analog hardware processing · NOT A MASTER</div>
 
         <div id="rawAudioDockBody">
         <div id="waveTimeline" class="wave-timeline"></div>
@@ -2327,7 +2321,7 @@ window.toggleRawAudioDock = function() {
   if (button) {
     const expanded = !dock.classList.contains("minimized");
     button.setAttribute("aria-expanded", String(expanded));
-    button.textContent = expanded ? "− SAŽMI" : "+ PROŠIRI";
+    button.textContent = expanded ? "− MINIMIZE" : "+ EXPAND";
   }
 };
 window.addEventListener("resize", fitRackDevices);
