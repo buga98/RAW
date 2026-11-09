@@ -10,6 +10,14 @@ const lib=read("raw-local-project-library-panel-v2.js");
 const routes=read("raw-audio-route-v4.js");
 const project=read("raw-workspace-project-status-v4.js");
 const audio=read("audio-diagnostics.js");
+test("sidebar toggle has dedicated non-overlapping row above RAW MASTERING brand",()=>{
+ assert.match(html,/class="sidebar-toggle"/);
+ assert.match(html,/class="brand"/);
+ assert.ok(html.indexOf('class="sidebar-toggle"') < html.indexOf('class="brand"'));
+ assert.match(css,/\.sidebar\.glass > \.sidebar-toggle\s*\{\s*position:\s*static;/);
+ assert.match(css,/\.sidebar\.glass \.brand\s*\{[\s\S]*?padding:\s*0 0 18px;/);
+ assert.match(css,/body\.sidebar-collapsed \.sidebar\.glass > \.sidebar-toggle\s*\{[\s\S]*?align-self:\s*center;/);
+});
 test("professional desk ships independently of original device displays/knobs",()=>{
  assert.match(html,/raw-console-hero/);
  assert.match(html,/MASTERING DESK/);
