@@ -219,3 +219,44 @@ test('recovery store never uses network, session, manual revision or real hardwa
  assert.match(code,/const DB="RAW_LOCAL_RACK_RECOVERY_V55"/);
  assert.match(code,/originalAudioIncluded:false,hardwareApplied:false,masterAvailable:false/);
 });
+
+test('login can discover a verified recovery BEFORE starting a new rack session',async t=>{
+ const backend=fakeBackend(),h=using(t,backend,'owner-uid');
+ const live=h.create();
+ await live.open();
+ h.eq.set('eq1Gain',7);
+ await live.flush();live.close();
+ const n=backend.writes.length;
+ const found=await h.w.RAWAutoSaveRecoveryV55.inspect({
+  userId:'owner-uid',backend,archive:h.w.RAWChainArchiveV1,cryptoRef:webcrypto
+ });
+ assert.equal(found.phase,'RECOVERY_AVAILABLE');
+ assert.equal(found.sequence,1);
+ assert.equal(found.pendingRecovery,true);
+ assert.equal(found.originalAudioIncluded,false);
+ assert.equal(backend.writes.length,n,'pre-session inspection must not write');
+ assert.equal(backend.clears.length,0);
+});
+test('pre-session recovery discovery isolates accounts and reports missing copy',async t=>{
+ const backend=fakeBackend(),h=using(t,backend,'owner-uid');
+ const save=h.create();await save.open();await save.flush();save.close();
+ const missing=await h.w.RAWAutoSaveRecoveryV55.inspect({
+  userId:'other-uid',backend,archive:h.w.RAWChainArchiveV1,cryptoRef:webcrypto
+ });
+ assert.equal(missing.phase,'ACTIVE');
+ assert.equal(missing.pendingRecovery,false);
+ assert.equal(backend.writes.length,1);
+ assert.equal(backend.rows.size,1);
+});
+test('pre-session discovery flags corrupt copies and never overwrites them',async t=>{
+ const backend=fakeBackend(),h=using(t,backend,'owner-uid');
+ const save=h.create();await save.open();await save.flush();save.close();
+ for(const row of backend.rows.values())row.sha256='f'.repeat(64);
+ const state=await h.w.RAWAutoSaveRecoveryV55.inspect({
+  userId:'owner-uid',backend,archive:h.w.RAWChainArchiveV1,cryptoRef:webcrypto
+ });
+ assert.equal(state.phase,'CORRUPT');
+ assert.equal(backend.rows.size,1);
+ assert.equal(backend.writes.length,1);
+ assert.equal(backend.clears.length,0);
+});
