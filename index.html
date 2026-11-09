@@ -388,6 +388,7 @@ function mountDeveloperLabs(){
   window.RAWDawBridge?.refresh();
   window.RAWAudioV5Lab?.attach?.(developerLabHost,developerAllowed);
   window.RAWAudioWorkerV54Lab?.attach?.(developerLabHost,developerAllowed);
+  mountDigitalPremaster();
 }
 async function authorizeDeveloper(user) {
   const attempt=++developerAuthEpoch;
@@ -1245,6 +1246,23 @@ function getActiveChainDevices() {
   return getChainDeviceObjects();
 }
 
+function mountDigitalPremaster(){
+ if(!TEST_MODE||!activeSessionId||!currentUser?.uid||
+    !developerAllowed()||!pluginHost?.querySelector(".chain-control")||
+    pluginHost.querySelector("#rawDigitalPremasterV59"))return;
+ const ownerForPremaster=currentUser.uid;
+ const sessionForPremaster=activeSessionId;
+ window.RAWDigitalPremasterV59UI?.attach?.(pluginHost,{
+  getFile:()=>uploadedFiles[0]||null,
+  canUse:()=>TEST_MODE===true&&developerAllowed()&&
+   currentUser?.uid===ownerForPremaster&&
+   activeSessionId===sessionForPremaster&&
+   !window.RAWStudioGatewayV1?.interceptsControls?.()&&
+   !window.RAWStudioSim?.interceptsControls?.()&&
+   !window.RAWStudioSim?.reconnecting?.()&&
+   !window.RAWDawBridge?.isActive?.()
+ });
+}
 function renderPlugin() {
   window.RAWDigitalPremasterV59UI?.detach?.();
   const devices = getActiveChainDevices();
@@ -1619,20 +1637,7 @@ projectStatus?.evaluate();
 window.RAWDawBridge?.refresh();
 bindRackExpansionFit();
 fitRackDevices();
-if(TEST_MODE&&activeSessionId&&currentUser?.uid&&developerAllowed()){
- const ownerForPremaster=currentUser.uid;
- const sessionForPremaster=activeSessionId;
- window.RAWDigitalPremasterV59UI?.attach?.(pluginHost,{
-  getFile:()=>uploadedFiles[0]||null,
-  canUse:()=>TEST_MODE===true&&developerAllowed()&&
-   currentUser?.uid===ownerForPremaster&&
-   activeSessionId===sessionForPremaster&&
-   !window.RAWStudioGatewayV1?.interceptsControls?.()&&
-   !window.RAWStudioSim?.interceptsControls?.()&&
-   !window.RAWStudioSim?.reconnecting?.()&&
-   !window.RAWDawBridge?.isActive?.()
- });
-}
+mountDigitalPremaster();
 initWaveform(firstAudioFile);
 }
 window.renderSessions = async function() {
