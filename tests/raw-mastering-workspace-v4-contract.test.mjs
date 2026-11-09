@@ -10,6 +10,14 @@ const lib=read("raw-local-project-library-panel-v2.js");
 const routes=read("raw-audio-route-v4.js");
 const project=read("raw-workspace-project-status-v4.js");
 const audio=read("audio-diagnostics.js");
+test("developer startup does not launch legacy Firestore billing watchdog",()=>{
+ const launcher=read("start-all.mjs");
+ const isolated=read("launch-local-demo.mjs");
+ assert.doesNotMatch(launcher,/startProcess\(["']WATCHDOG["']/);
+ assert.match(launcher,/WATCHDOG\] DISABLED in developer launcher/);
+ assert.match(isolated,/RAW_TEST_MODE: "1"/);
+ assert.doesNotMatch(isolated,/session-watchdog\.mjs/);
+});
 test("sidebar toggle has dedicated non-overlapping row above RAW MASTERING brand",()=>{
  assert.match(html,/class="sidebar-toggle"/);
  assert.match(html,/class="brand"/);
