@@ -3,7 +3,8 @@ import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import vm from "node:vm";
 
-const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
+// Normalize Windows CRLF for exact source-order assertions.
+const html=readFileSync(new URL("../index.html",import.meta.url),"utf8").replace(/\r\n/g,"\n");
 const audio=readFileSync(new URL("../raw-local-wav-export-v1.js",import.meta.url),"utf8");
 const archive=readFileSync(new URL("../raw-chain-archive-v1.js",import.meta.url),"utf8");
 const packageInfo=JSON.parse(readFileSync(new URL("../package.json",import.meta.url),"utf8"));
