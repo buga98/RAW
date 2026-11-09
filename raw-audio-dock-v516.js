@@ -6,9 +6,9 @@
  */
 (function(global){
 "use strict";
-let cleanup=()=>{};
+let cleanup=()=>{},latestUpdate=()=>{};
 function bind({dock,mastering,viewport=global,scroller}={}){
- cleanup();
+ cleanup();latestUpdate=()=>{};
  if(!dock||typeof dock.getBoundingClientRect!=="function"||
     !viewport||typeof viewport.addEventListener!=="function")return false;
  const trigger=()=>{
@@ -38,6 +38,7 @@ function bind({dock,mastering,viewport=global,scroller}={}){
  viewport.addEventListener("resize",refresh);
  viewport.addEventListener("scroll",refresh,{passive:true});
  owner?.addEventListener("scroll",refresh,{passive:true});
+ latestUpdate=refresh;
  refresh();
  cleanup=()=>{
   stopped=true;
@@ -48,5 +49,5 @@ function bind({dock,mastering,viewport=global,scroller}={}){
  };
  return Object.freeze({update:refresh,checkNow:trigger,close:()=>cleanup()});
 }
-global.RAWAudioDockV516=Object.freeze({bind,stop:()=>cleanup()});
+global.RAWAudioDockV516=Object.freeze({bind,update:()=>latestUpdate(),stop:()=>{cleanup();latestUpdate=()=>{};}});
 })(typeof window!=="undefined"?window:globalThis);
