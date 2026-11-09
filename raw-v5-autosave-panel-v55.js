@@ -4,6 +4,7 @@
 (function(global){
 "use strict";
 let service=null,panel=null,currentUser=null,currentSession=null,restoreCtrl=null;
+let discovery=null,discoverySerial=0;
 let captureFn=null,guardFn=()=>false,pulse=null,lastState=null,epoch=0;
 const ready=()=>{try{return guardFn()===true;}catch{return false;}};
 function setText(selector,value){
@@ -17,7 +18,9 @@ function paint(state){
  const date=state.lastSavedAt?new Date(state.lastSavedAt).toLocaleString("hr-HR"):"—";
  const captions={
   STARTING:"Checking for an existing verified local draft…",
-  ACTIVE:state.lastSavedAt?"AUTO SAVE ACTIVE · "+date:"AUTO SAVE ACTIVE · first checkpoint pending",
+  ACTIVE:state.lastSavedAt?
+    "AUTO SAVE SAVED · #"+state.sequence+" · "+date:
+    "AUTO SAVE ACTIVE · first checkpoint pending",
   RECOVERY_AVAILABLE:"RECOVERABLE COPY FOUND · "+date,
   CORRUPT:"RECOVERY COPY FAILED INTEGRITY CHECK",
   ERROR:"AUTO SAVE ERROR",
@@ -49,7 +52,7 @@ function paint(state){
  const top=global.document.getElementById("rawAutosaveConsoleStatus");
  if(top){
   top.textContent=state.phase==="ACTIVE"?
-   (state.lastSavedAt?"AUTO SAVE · SAVED":"AUTO SAVE · READY"):
+   (state.lastSavedAt?"AUTO SAVE · SAVED #"+state.sequence:"AUTO SAVE · NO CHECKPOINT YET"):
    state.phase==="RECOVERY_AVAILABLE"?"RECOVERY COPY FOUND":
    state.phase==="CORRUPT"?"RECOVERY WARNING":
    state.phase==="ERROR"?"AUTO SAVE ERROR":"AUTO SAVE · CHECKING";
@@ -159,8 +162,60 @@ function build(host){
  section.querySelector("[data-autosave-discard]").addEventListener("click",()=>{void discard();});
  return section;
 }
+function clearDiscovery(){
+ ++discoverySerial;
+ discovery?.remove?.();
+ discovery=null;
+}
+// Read-only entry point available from Moji projekti BEFORE the user opens a
+// new LOCAL TEST chain. Never creates a rack or writes new saved data.
+function discoverBeforeSession(host,{userId,canRead}={}){
+ if(!host||typeof userId!=="string"||!userId||
+   typeof canRead!=="function"||canRead()!==true||
+   !global.RAWAutoSaveRecoveryV55?.inspect||service)return false;
+ clearDiscovery();
+ const token=discoverySerial;
+ const note=global.document.createElement("section");
+ note.className="raw-v55-autosave raw-v55-discovery";
+ const heading=global.document.createElement("strong");
+ heading.textContent="RACK RECOVERY · LOCAL";
+ const status=global.document.createElement("p");
+ status.setAttribute("role","status");
+ status.textContent="CHECKING SAVED RACK · local-only read";
+ const detail=global.document.createElement("p");
+ detail.textContent="Provjeravam postoji li sigurnosna kopija na ovom računalu. Nijedna kontrola neće se promijeniti.";
+ note.append(heading,status,detail);
+ host.prepend(note);
+ discovery=note;
+ const owner=userId;
+ void global.RAWAutoSaveRecoveryV55.inspect({userId:owner}).then(state=>{
+  if(token!==discoverySerial||discovery!==note||canRead()!==true)return;
+  if(state.phase==="RECOVERY_AVAILABLE"){
+   status.textContent="RECOVERABLE COPY FOUND";
+   detail.textContent="Spremljena lokalna kopija #"+state.sequence+" · "+
+     new Date(state.lastSavedAt).toLocaleString("hr-HR")+
+     ". Pokreni novu LOCAL TEST sesiju s istim rackom, pa se vrati u Moji projekti za PREVIEW i RESTORE. Kopija nije automatski primijenjena.";
+  }else if(state.phase==="CORRUPT"){
+   status.textContent="RECOVERY COPY CORRUPT";
+   detail.textContent=state.warning||"Postoji neispravna kopija. Nije obrisana niti prepisana.";
+  }else if(state.phase==="ACTIVE"){
+   status.textContent="NO LOCAL RECOVERY COPY";
+   detail.textContent="Nema potvrđene spremljene kopije za ovaj račun. Pokreni LOCAL TEST sesiju, promijeni rack i provjeri AUTO SAVE SAVED prije zatvaranja.";
+  }else{
+   status.textContent="RECOVERY CHECK FAILED";
+   detail.textContent=state.warning||"Recovery storage nije dostupan; kopija nije brisana.";
+  }
+ }).catch(error=>{
+  if(token!==discoverySerial||discovery!==note||canRead()!==true)return;
+  status.textContent="RECOVERY CHECK FAILED";
+  detail.textContent="Spremište nije moguće provjeriti: "+
+    String(error?.message||error).slice(0,140);
+ });
+ return true;
+}
 function stop(){
  ++epoch;
+ clearDiscovery();
  if(pulse!==null){global.clearInterval(pulse);pulse=null;}
  restoreCtrl?.clear?.();
  restoreCtrl=null;
@@ -178,6 +233,7 @@ function mount(host,{userId,sessionId,capture,canWrite,recoveryRecall,canRestore
    !global.RAWAutoSaveRecoveryV55)return false;
  if(canWrite()!==true)return false;
  if(currentUser!==userId||currentSession!==sessionId)stop();
+ clearDiscovery();
  currentUser=userId;currentSession=sessionId;captureFn=capture;guardFn=canWrite;
  if(service){
   panel?.remove?.();
@@ -187,10 +243,16 @@ function mount(host,{userId,sessionId,capture,canWrite,recoveryRecall,canRestore
  }
  panel=build(host);
  const localEpoch=epoch;
- service=global.RAWAutoSaveRecoveryV55.create({
-  userId,capture:()=>captureFn(),canWrite:()=>ready(),
-  onChange:state=>{if(localEpoch===epoch)paint(state);}
- });
+ try{
+  service=global.RAWAutoSaveRecoveryV55.create({
+   userId,capture:()=>captureFn(),canWrite:()=>ready(),
+   onChange:state=>{if(localEpoch===epoch)paint(state);}
+  });
+ }catch(error){
+  paint({phase:"ERROR",sequence:0,lastSavedAt:null,
+   warning:"AutoSave startup failed: "+String(error?.message||error).slice(0,140)});
+  return false;
+ }
  if(recoveryRecall&&typeof canRestore==="function"&&global.RAWAutoSaveRestoreV56){
    restoreCtrl=global.RAWAutoSaveRestoreV56.create({
      service,recall:recoveryRecall,
@@ -198,9 +260,18 @@ function mount(host,{userId,sessionId,capture,canWrite,recoveryRecall,canRestore
    });
  }
  paint(service.snapshot());
- void service.open().catch(error=>{
-  if(localEpoch===epoch)setText("[data-autosave-detail]",
-   "AutoSave initialization failed: "+String(error?.message||error).slice(0,110));
+ const ownService=service;
+ void ownService.open().then(async state=>{
+  // Commit an initial checkpoint as soon as a truly empty journal opens,
+  // so closing the first session does not depend on a later UI event.
+  // NEVER flush if a previously saved copy or corruption was found.
+  if(localEpoch!==epoch||ownService!==service)return;
+  if(state.phase==="ACTIVE"&&state.sequence===0&&ready())
+   await ownService.flush();
+ }).catch(error=>{
+  if(localEpoch===epoch&&ownService===service)
+   setText("[data-autosave-detail]",
+    "AutoSave initialization failed: "+String(error?.message||error).slice(0,140));
  });
  pulse=global.setInterval(()=>{if(ready())service?.schedule();},2400);
  return true;
@@ -210,5 +281,8 @@ async function flush(){
  if(!service||!ready())return false;
  return service.flush();
 }
-global.RAWAutoSaveV55UI=Object.freeze({mount,notifyChanged,flush,stop,getStatus:()=>service?.snapshot()||null});
+global.RAWAutoSaveV55UI=Object.freeze({
+ mount,discoverBeforeSession,notifyChanged,flush,stop,
+ getStatus:()=>service?.snapshot()||null
+});
 })(typeof window!=="undefined"?window:globalThis);
