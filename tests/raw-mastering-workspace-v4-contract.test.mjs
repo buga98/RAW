@@ -18,6 +18,23 @@ test("sidebar toggle has dedicated non-overlapping row above RAW MASTERING brand
  assert.match(css,/\.sidebar\.glass \.brand\s*\{[\s\S]*?padding:\s*0 0 18px;/);
  assert.match(css,/body\.sidebar-collapsed \.sidebar\.glass > \.sidebar-toggle\s*\{[\s\S]*?align-self:\s*center;/);
 });
+test("hidden initial render never collapses rack size and activation recalculates height",()=>{
+ const source=html.match(/function fitRackDevices\(\) \{[\s\S]*?\n\}/)?.[0];
+ assert.ok(source,"rack fit function must exist");
+ const rack={dataset:{designWidth:"1380"},offsetHeight:500,style:{}};
+ const wrapper={clientWidth:0,style:{},querySelector:()=>rack};
+ const buttons=[70,80,90,100].map(n=>({
+  dataset:{rackSize:String(n)},classList:{toggle(){}},setAttribute(){}
+ }));
+ const sandbox={rackSizePercent:90,document:{querySelectorAll:selector=>
+  selector==="[data-rack-fit]"?[wrapper]:selector===".rack-size-btn"?buttons:[]}};
+ vm.runInNewContext(source+";fitRackDevices();",sandbox);
+ assert.equal(wrapper.style.height,undefined,"no invalid 0px height while hidden");
+ wrapper.clientWidth=1000;
+ vm.runInNewContext(source+";fitRackDevices();",sandbox);
+ assert.ok(Number.parseInt(wrapper.style.height,10)>0,"visible rack reserves its height");
+ assert.match(rack.style.transform,/^scale\(/);
+});
 test("professional desk ships independently of original device displays/knobs",()=>{
  assert.match(html,/raw-console-hero/);
  assert.match(html,/MASTERING DESK/);
