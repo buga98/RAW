@@ -142,10 +142,10 @@ test("V5 diagnostic IPC imports only fixed local test runner and requires truste
  assert.doesNotMatch(preload,/require\(["']node:fs|ipcRenderer\.send|writeFile/);
 });
 
-test("V5.4 worker command denies production, untrusted origin and unsafe actions",()=>{
- const production=boot({testMode:false});
- assert.equal(production.worker({sender:{getURL:()=> "file:///fake/raw/index.html"}},"start").code,"LOCAL_TEST_ONLY");
- const local=boot({testMode:true});
+test("V5.4 worker command denies production, untrusted origin and unsafe actions",async()=>{
+ const production=boot({testMode:false});await Promise.resolve();
+ assert.equal(production.worker({sender:production.window.webContents},"start").code,"LOCAL_TEST_ONLY");
+ const local=boot({testMode:true});await Promise.resolve();
  assert.equal(local.worker({sender:{getURL:()=> "https://evil.invalid"}},"start").code,"LOCAL_TEST_ONLY");
  assert.equal(local.worker({sender:local.window.webContents},"../../hardware").code,"INVALID_WORKER_COMMAND");
  assert.equal(local.worker({sender:local.window.webContents},{action:"start"}).code,"INVALID_WORKER_COMMAND");
