@@ -12,7 +12,7 @@ const KEYS={
 };
 const NAMES={bettermaker_eq:"Bettermaker MEQ",ngbuscomp:"ngBusComp",ngtubecomp:"ngTubeComp"};
 let ws=null,active=false,owned=false,epoch=null,seq=0,nextId=0,sessionId=null;
-let root=null,panel=null,observer=null,heartbeat=null,sendTimer=null;
+let root=null,panel=null,observer=null,heartbeat=null,pongTimer=null,sendTimer=null;
 let queue=new Map(),online={bettermaker_eq:true,ngbuscomp:true,ngtubecomp:true};
 let recent=[],last="LOCAL PREVIEW ONLY",pending=new Map(),simSnapshot=null,auditEntries=[];
 let supervisor=null;
@@ -111,6 +111,7 @@ function draw(){
 }
 function resetTimers(){
  if(heartbeat!==null){clearInterval(heartbeat);heartbeat=null;}
+ if(pongTimer!==null){clearTimeout(pongTimer);pongTimer=null;}
  if(sendTimer!==null){clearTimeout(sendTimer);sendTimer=null;}
  queue.clear();for(const item of pending.values())clearTimeout(item.timeout);
  pending.clear();
@@ -163,10 +164,24 @@ function openSimulatorSocket(){
    if(heartbeat!==null){clearInterval(heartbeat);heartbeat=null;}
    heartbeat=setInterval(()=>{
     if(!owned||global.RAWStudioSimSession?.()!==sessionId){disconnect();return;}
-    send({type:"studio-sim-ping",sessionId});
+    if(pongTimer!==null)return;
+    if(!send({type:"studio-sim-ping",sessionId})){
+     socket.close();return;
+    }
+    pongTimer=setTimeout(()=>{
+     pongTimer=null;
+     if(ws!==socket||!owned)return;
+     add("SIMULATOR HEARTBEAT TIMEOUT · pausing commands");
+     socket.close();
+    },4000);
    },10000);
    add("CLAIMED FRESH TEST LEASE #"+epoch+" · verifying snapshot before new controls");
    send({type:"studio-sim-snapshot"});
+  }else if(m.type==="studio-sim-pong"){
+   if(m.simulated===true&&m.hardwareVerified===false&&
+      m.leaseEpoch===epoch&&pongTimer!==null){
+    clearTimeout(pongTimer);pongTimer=null;
+   }
   }else if(m.type==="studio-sim-state"){
    if(m.status==="occupied"){
     blockUnsafe("OCCUPIED");return;
