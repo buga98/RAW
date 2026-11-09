@@ -35,9 +35,10 @@
     "studio:library:check": "node --test tests/raw-local-project-library-v2.test.mjs tests/raw-local-project-library-panel-v2.test.mjs tests/raw-local-project-library-ui-contract-v2.test.mjs",
     "studio:workspace:check": "node --test tests/raw-project-recall-v3.test.mjs tests/raw-developer-labs-access-v1.test.mjs tests/raw-local-project-library-panel-v2.test.mjs tests/raw-vm-context-contract-v1.test.mjs tests/raw-project-recall-navigation-v3.test.mjs tests/raw-audio-route-v4.test.mjs tests/raw-workspace-project-status-v4.test.mjs tests/raw-mastering-workspace-v4-contract.test.mjs tests/raw-studio-audio-job-v4.test.mjs",
     "studio:workspace:v4:check": "node --test tests/raw-audio-route-v4.test.mjs tests/raw-workspace-project-status-v4.test.mjs tests/raw-mastering-workspace-v4-contract.test.mjs tests/raw-project-recall-v3.test.mjs tests/raw-developer-labs-access-v1.test.mjs tests/raw-project-recall-navigation-v3.test.mjs tests/raw-studio-audio-job-v4.test.mjs",
-    "studio:audio:v5:check": "node --test tests/raw-virtual-audio-loopback-v5.test.mjs tests/raw-virtual-pcm-block-engine-v5.test.mjs tests/raw-virtual-pcm-integrity-v5.test.mjs",
+    "studio:audio:v5:check": "node --test tests/raw-virtual-audio-loopback-v5.test.mjs tests/raw-virtual-pcm-block-engine-v5.test.mjs tests/raw-virtual-pcm-integrity-v5.test.mjs tests/raw-v5-diagnostics-runner-v5.test.mjs tests/raw-v5-diagnostics-ui-v5.test.mjs tests/electron-preload-security-v1.test.mjs",
     "studio:audio:v5:blocks:check": "node --test tests/raw-virtual-pcm-block-engine-v5.test.mjs",
-    "studio:audio:v5:integrity:check": "node --test tests/raw-virtual-pcm-integrity-v5.test.mjs"
+    "studio:audio:v5:integrity:check": "node --test tests/raw-virtual-pcm-integrity-v5.test.mjs",
+    "studio:audio:v5:diagnostics:check": "node --test tests/raw-v5-diagnostics-runner-v5.test.mjs tests/raw-v5-diagnostics-ui-v5.test.mjs tests/electron-preload-security-v1.test.mjs"
   },
   "keywords": [],
   "author": "",
