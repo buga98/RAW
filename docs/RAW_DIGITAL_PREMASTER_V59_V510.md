@@ -59,3 +59,11 @@ In the DIGITAL PREMASTER panel, `SAVE PRESET` prompts for a new short name; `LOA
 Offline regression: `npm run studio:digital-premaster:v59:check`, `npm run test:smoke`. Manual test: save settings named e.g. `Pop clean`; change EQ/ratio; load saved preset and confirm restoration. Sign out/in on same computer and verify same presets are available. Different owner account must see none of the original owner's stored entries. Repeat on a different machine only to confirm no cloud sync occurred.
 
 **Known limitation:** a user with local machine access and developer tools can inspect the same-origin IndexedDB. The SHA-256 is a corruption/integrity check, **not cryptographic authentication or encryption**. Production multiuser privacy must be enforced by trusted authorization and per-user secure storage, not only by scope hashing.
+
+## V5.12 — non-destructive A/B RMS match (monitor only)
+
+The DIGITAL PREMASTER player now has a default-on `A/B MONITOR: MATCH UNWEIGHTED RMS` toggle. For an equal-duration source/processed comparison it attenuates **only the louder playback side**, using the measured unweighted RMS power from the same input/output PCM. This works through `HTMLAudioElement.volume`, never alters exported PCM, saved presets, DSP parameters, QC hashes or downloads. Turning the option off sets monitoring volume to 1. Both A and B remain the same local source/processed audio files.
+
+**This is NOT standardized perceptual loudness matching or EBU R128 / LUFS comparison.** It may still sound different because of tonal changes, time variation, transients or AudioContext decode details. Future versions need BS.1770 loudness measurement and a more precise perceptual monitoring match.
+
+QA: after rendering with +6 dB makeup gain, selecting B must reduce its monitoring volume versus A. Switching A/B preserves one player's approximate time; disabling matching sets volume back to 1; WAV bytes and QC SHA remain unchanged.
