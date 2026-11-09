@@ -56,14 +56,14 @@ function fixture(runAudioV5Diagnostic=async scenario=>({
    grant(){allowed=true;},revoke(){allowed=false;},isAllowed(){return allowed;}};
 }
 test('developer V5 panel is loaded before main module, within developer screen only',()=>{
- assert.match(html,/id="rawV5DiagnosticsToggle" onclick="toggleRawV5Diagnostics\\(\\)"/);
+ assert.match(html,/id="rawV5DiagnosticsToggle" onclick="toggleRawV5Diagnostics\(\)"/);
  assert.ok(html.indexOf('src="raw-v5-diagnostics-ui.js"')<html.indexOf('<script type="module">'));
  assert.ok(html.indexOf('href="raw-v5-diagnostics.css"')<html.indexOf('<script type="module">'));
- assert.match(html,/window\\.RAWAudioV5Lab\\?\\.attach\\?\\.\\(developerLabHost,developerAllowed\\)/);
- assert.match(html,/window\\.RAWAudioV5Lab\\?\\.detach\\?\\.\\(\\)/);
+ assert.match(html,/window\.RAWAudioV5Lab\?\.attach\?\.\(developerLabHost,developerAllowed\)/);
+ assert.match(html,/window\.RAWAudioV5Lab\?\.detach\?\.\(\)/);
  assert.match(html,/id="developer" class="screen"[^>]*hidden/);
- assert.match(css,/#developer \\.raw-v5-diagnostics\\[hidden\\]/);
- assert.doesNotMatch(ui,/fetch\\(|WebSocket\\(|ipcRenderer\\.|require\\(|localStorage|sessionStorage/);
+ assert.match(css,/#developer \.raw-v5-diagnostics\[hidden\]/);
+ assert.doesNotMatch(ui,/fetch\(|WebSocket\(|ipcRenderer\.|require\(|localStorage|sessionStorage/);
  assert.doesNotThrow(()=>new vm.Script(ui));
 });
 test('unverified user cannot attach, open or click offline V5 panel',()=>{
