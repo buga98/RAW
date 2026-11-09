@@ -287,6 +287,7 @@
   <script src="raw-master-qc-v510.js"></script>
   <script src="raw-digital-premaster-ui-v59.js"></script>
   <script src="raw-auth-navigation-v515.js"></script>
+  <script src="raw-audio-dock-v516.js"></script>
   <script src="raw-chain-archive-v1.js"></script>
   <script src="raw-chain-recall-planner-v2.js"></script>
   <script src="raw-local-rack-transaction-v3.js"></script>
@@ -611,6 +612,7 @@ window.goTo = function(screenId) {
   // Prevent stale compositor layers from blocking the login inputs.
   const audioDock=pluginHost.querySelector("#rawAudioDock");
   if(audioDock)audioDock.hidden=screenId!=="plugin";
+  window.RAWAudioDockV516?.update?.();
   if(screenId==="login"){
     const emailInput=document.getElementById("loginEmail");
     emailInput?.focus({preventScroll:true});
@@ -1314,8 +1316,13 @@ function mountDigitalPremaster(){
  const sourceDock=pluginHost.querySelector("#rawAudioDock");
  if(sourceDock&&sourceDock.parentElement===pluginHost)
   pluginHost.appendChild(sourceDock);
+ window.RAWAudioDockV516?.bind?.({
+   dock:sourceDock,mastering:pluginHost.querySelector("#rawDigitalPremasterV59"),
+   scroller:document.querySelector(".main")
+ });
 }
 function renderPlugin() {
+  window.RAWAudioDockV516?.stop?.();
   window.RAWDigitalPremasterV59UI?.detach?.();
   const devices = getActiveChainDevices();
   const firstAudioFile = uploadedFiles[0];
@@ -1701,6 +1708,10 @@ mountDigitalPremaster();
 // never as a viewport-fixed overlay on top of the QC/audio controls.
 const sourceDock=pluginHost.querySelector("#rawAudioDock");
 if(sourceDock&&sourceDock.parentElement!==pluginHost)pluginHost.appendChild(sourceDock);
+window.RAWAudioDockV516?.bind?.({
+ dock:sourceDock,mastering:pluginHost.querySelector("#rawDigitalPremasterV59"),
+ scroller:document.querySelector(".main")
+});
 initWaveform(firstAudioFile);
 }
 window.renderSessions = async function() {
