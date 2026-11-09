@@ -1,0 +1,51 @@
+/* RAW V5.5: unobtrusive local rack AutoSave and recovery notice */
+.raw-v55-autosave{
+ margin:0 0 17px;padding:16px 19px;border:1px solid rgba(141,201,192,.26);
+ background:linear-gradient(140deg,#152630,#0c1923);border-radius:13px;color:#e0eeee;
+}
+.raw-v55-autosave-heading{
+ display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap
+}
+.raw-v55-autosave-heading>div{display:flex;flex-direction:column;gap:5px}
+.raw-v55-autosave-heading strong{font-size:12px;letter-spacing:.08em;color:#d8eee9}
+.raw-v55-autosave-heading small{font-size:10px;letter-spacing:.03em;color:#8daeb7}
+.raw-v55-autosave-heading [data-autosave-status]{
+ font:800 11px Consolas,monospace;color:#91d9be;
+ padding:8px 11px;border:1px solid rgba(139,204,182,.25);border-radius:7px;
+ background:rgba(37,83,75,.22)
+}
+.raw-v55-autosave-heading [data-autosave-status][data-state='RECOVERY_AVAILABLE']{
+ color:#f4d7a6;border-color:rgba(243,198,123,.48);
+ background:rgba(103,76,29,.3)
+}
+.raw-v55-autosave-heading [data-autosave-status][data-state='ERROR'],
+.raw-v55-autosave-heading [data-autosave-status][data-state='CORRUPT']{
+ color:#f4a79b;border-color:rgba(239,127,114,.45)
+}
+.raw-v55-autosave-note{font-size:12px;color:#a7c0c8;line-height:1.6;margin:10px 0}
+.raw-v55-autosave-actions{display:flex;gap:8px;flex-wrap:wrap;margin:13px 0}
+.raw-v55-autosave-actions[hidden]{display:none!important}
+.raw-v55-autosave-actions button{
+ border:1px solid rgba(135,204,192,.35);border-radius:8px;
+ padding:9px 11px;min-height:37px;cursor:pointer;
+ background:#1a3c3c;color:#d5f1ea;font-size:10px;font-weight:850
+}
+.raw-v55-autosave-actions button:last-child{
+ background:#342822;border-color:rgba(242,180,123,.36);color:#f3cea1
+}
+.raw-v55-autosave-actions button:disabled{opacity:.35;cursor:not-allowed}
+.raw-v55-autosave [data-autosave-detail]{
+ margin:8px 0 0;padding:9px 11px;border-radius:7px;
+ background:rgba(8,22,29,.62);color:#a8bfc6;
+ white-space:pre-wrap;overflow-wrap:anywhere;font:11px/1.6 Consolas,monospace;
+}
+#rawAutosaveConsoleStatus{
+ display:inline-flex;align-items:center;padding:8px 11px;border-radius:7px;
+ border:1px solid rgba(109,178,164,.25);color:#a0dac7;
+ background:rgba(18,69,61,.24);font:800 10px Consolas,monospace
+}
+#rawAutosaveConsoleStatus[data-state='RECOVERY_AVAILABLE']{
+ color:#f4d4a2;border-color:rgba(234,188,111,.38)
+}
+#rawAutosaveConsoleStatus[data-state='ERROR'],
+#rawAutosaveConsoleStatus[data-state='CORRUPT']{color:#f1a99f;border-color:rgba(241,127,111,.4)}
