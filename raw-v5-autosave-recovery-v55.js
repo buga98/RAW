@@ -205,6 +205,22 @@ function create({
    fail("NO_RECOVERY","No verified recovery draft available for export");
   return validatedArchive(pending);
  }
+ // V5.6: transition to ACTIVE *only* after the rollback-safe local rack
+ // transaction has independently confirmed matching post-restore readback.
+ // Existing SHA-verified backup remains in IndexedDB until a new write commits.
+ function acceptRecovered(){
+  if(stopped||phase!=="RECOVERY_AVAILABLE"||!pending)
+   fail("NO_RECOVERY","There is no verified pending rack recovery");
+  if(!canWrite())fail("RESTORE_DENIED","Active local owner/session required");
+  const live=validatedArchive(capture());
+  if(fingerprint(live)!==fingerprint(pending))
+   fail("RESTORE_MISMATCH","Current rack does not match saved recovery draft");
+  lastKey=fingerprint(pending);
+  pending=null;
+  update("ACTIVE");
+  schedule();
+  return snapshot();
+ }
  async function discard(){
   if(stopped||!scope||!["RECOVERY_AVAILABLE","CORRUPT"].includes(phase))
    fail("NOT_PENDING","Only explicitly selected old recovery can be discarded");
@@ -220,7 +236,7 @@ function create({
   if(timer!==null){timers.clearTimeout(timer);timer=null;}
   phase="CLOSED";pending=null;
  }
- return Object.freeze({open,schedule,flush,preview,getVerifiedCopy,discard,close,snapshot});
+ return Object.freeze({open,schedule,flush,preview,getVerifiedCopy,acceptRecovered,discard,close,snapshot});
 }
 global.RAWAutoSaveRecoveryV55=Object.freeze({
  create,createIndexedDBBackend,openDB,KIND
