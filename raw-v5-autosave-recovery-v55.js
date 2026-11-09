@@ -248,7 +248,58 @@ async function inspect({userId,backend,archive=global.RAWChainArchiveV1,
  try{return await scanner.open();}
  finally{scanner.close();}
 }
+// V5.8 — verify the owner-scoped local recovery *again* before exposing
+// precise stored knob values in Projects (no rack/session/device needed).
+// This function is read-only. It cannot flush, discard, recover or send commands.
+async function inspectDetails({userId,backend,archive=global.RAWChainArchiveV1,
+ cryptoRef=global.crypto}={}){
+ const scanner=create({userId,backend:backend||createIndexedDBBackend(),
+  archive,cryptoRef,capture:()=>fail("READ_ONLY","Inspect cannot capture rack"),
+  canWrite:()=>false});
+ try{
+  const state=await scanner.open();
+  if(state.phase!=="RECOVERY_AVAILABLE")
+   return Object.freeze({phase:state.phase,sequence:state.sequence,
+    warning:state.warning,devices:Object.freeze([]),readOnly:true});
+  const copy=scanner.getVerifiedCopy();
+  const ids=[
+   ["bettermaker_eq","Bettermaker EQ"],
+   ["ngbuscomp","WesAudio ngBusComp"],
+   ["ngtubecomp","WesAudio ngTubeComp"]
+  ];
+  const devices=ids.map(([id,name])=>{
+   const values=[],node=copy.deviceStates[id];
+   let omitted=0;
+   const maxPerDevice=240;
+   const visit=(value,path,depth)=>{
+    if(depth>15){omitted++;return;}
+    if(value&&typeof value==="object"){
+     if(Array.isArray(value)){
+      for(let i=0;i<value.length;i++)visit(value[i],path+"["+i+"]",depth+1);
+     }else for(const key of Object.keys(value))
+      visit(value[key],path?path+"."+key:key,depth+1);
+     return;
+    }
+    if(values.length>=maxPerDevice){omitted++;return;}
+    // Keep the raw *stored* scalar: no guessed units or conversions.
+    values.push(Object.freeze({
+     parameter:path||"(value)",
+     value:value===null?"null":String(value).slice(0,160)
+    }));
+   };
+   if(node!==null&&node!==undefined)visit(node,"",0);
+   return Object.freeze({id,name,available:node!==null&&node!==undefined,
+    values:Object.freeze(values),truncated:omitted>0});
+  });
+  return Object.freeze({phase:state.phase,sequence:state.sequence,
+   savedAt:state.lastSavedAt,warning:state.warning,
+   chainOrder:Object.freeze([...copy.chainOrder]),
+   devices:Object.freeze(devices),readOnly:true,
+   hardwareApplied:false,physicalReadback:false,originalAudioIncluded:false
+  });
+ }finally{scanner.close();}
+}
 global.RAWAutoSaveRecoveryV55=Object.freeze({
- create,inspect,createIndexedDBBackend,openDB,KIND
+ create,inspect,inspectDetails,createIndexedDBBackend,openDB,KIND
 });
 })(typeof window!=="undefined"?window:globalThis);
