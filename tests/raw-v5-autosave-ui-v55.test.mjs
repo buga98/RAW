@@ -98,7 +98,7 @@ test('previous saved recovery is presented read-only and must not be silently ov
  f.window.RAWAutoSaveV55UI.mount(f.host,f.options());await settle();
  assert.equal(f.registry['[data-autosave-recovery-actions]'].hidden,false);
  assert.equal(f.consoleTag.textContent,'RECOVERY COPY FOUND');
- await f.registry['[data-autosave-preview]'].click();
+ await f.registry['[data-autosave-preview]'].click();await settle();
  assert.match(f.registry['[data-autosave-detail]'].textContent,/VERIFIED READ-ONLY DRAFT/);
  assert.match(f.registry['[data-autosave-detail]'].textContent,/CHANGED VALUES: 3/);
  assert.match(f.registry['[data-autosave-detail]'].textContent,/NO HARDWARE COMMAND/);
