@@ -49,3 +49,13 @@ No audio bytes, settings or report are sent to an external service. No real anal
 - Production access control and offline file handling beyond developer QA; gain staging calibration and physical analog signal capture when hardware arrives.
 
 Real analog hardware authenticity and 1:1 physical control still require vendor documentation, certified hardware drivers and physical readback tests. Do not infer those from digital premaster test success.
+
+## V5.11 — LOCAL DIGITAL PRESET LIBRARY
+
+A separate persistent owner-scoped IndexedDB library now saves and restores **only V5.9 digital DSP settings** (not rack snapshots, imported WAV files or session credentials). At most 20 presets per owner are permitted. Each record includes a SHA-256 bound to the owner scope, record ID, preset name and complete validated DSP configuration. Corrupt records are rejected without deletion or overwrite. The original owner account's saved presets are not enumerated to a different login scope.
+
+In the DIGITAL PREMASTER panel, `SAVE PRESET` prompts for a new short name; `LOAD PRESET` requires confirmation, changes only the digital controls, and invalidates the previous rendered WAV. `DELETE PRESET` requires explicit confirmation and does not affect audio files, AutoSave rack copies or analog devices. The saved library is local to that specific machine, with no cloud sync.
+
+Offline regression: `npm run studio:digital-premaster:v59:check`, `npm run test:smoke`. Manual test: save settings named e.g. `Pop clean`; change EQ/ratio; load saved preset and confirm restoration. Sign out/in on same computer and verify same presets are available. Different owner account must see none of the original owner's stored entries. Repeat on a different machine only to confirm no cloud sync occurred.
+
+**Known limitation:** a user with local machine access and developer tools can inspect the same-origin IndexedDB. The SHA-256 is a corruption/integrity check, **not cryptographic authentication or encryption**. Production multiuser privacy must be enforced by trusted authorization and per-user secure storage, not only by scope hashing.
