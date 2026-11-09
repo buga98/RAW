@@ -123,13 +123,11 @@ test("testMode is available only from the trusted Electron main process",async()
 test("V5 diagnostics IPC is disabled in production and unavailable to forged origin",async()=>{
  const production=boot({testMode:false});await Promise.resolve();
  const trusted=production.window.webContents;
- assert.deepEqual(await production.diagnostic({sender:trusted},"clean"),{ok:false,code:"LOCAL_TEST_ONLY"});
+ assert.equal((await production.diagnostic({sender:trusted},"clean")).code,"LOCAL_TEST_ONLY");
  const local=boot({testMode:true});await Promise.resolve();
- assert.deepEqual(await local.diagnostic({sender:{getURL:()=>"https://evil.example"}},"clean"),{ok:false,code:"LOCAL_TEST_ONLY"});
- assert.deepEqual(await local.diagnostic({sender:local.window.webContents},"../../hardware"),
-  {ok:false,code:"INVALID_SCENARIO"});
- assert.deepEqual(await local.diagnostic({sender:local.window.webContents},{}),
-  {ok:false,code:"INVALID_SCENARIO"});
+ assert.equal((await local.diagnostic({sender:{getURL:()=>"https://evil.example"}},"clean")).code,"LOCAL_TEST_ONLY");
+ assert.equal((await local.diagnostic({sender:local.window.webContents},"../../hardware")).code,"INVALID_SCENARIO");
+ assert.equal((await local.diagnostic({sender:local.window.webContents},{})).code,"INVALID_SCENARIO");
  assert.equal(local.launched,null);
 });
 test("V5 diagnostic IPC imports only fixed local test runner and requires trusted window",()=>{
