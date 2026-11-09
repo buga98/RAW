@@ -47,6 +47,7 @@ function harness({frames=4096,withPresets=false}={}){
     if(option){out.value=String(settings[option]);out.checked=option==="dither";}
     if(sel.includes("download")||sel.includes("qc")||sel.includes("ab-a")||sel.includes("ab-b"))
      out.disabled=true;
+    if(sel.includes("monitor-match"))out.checked=true;
     if(sel.includes("cancel"))out.disabled=true;
     this.fields.set(sel,out);
    }
@@ -263,4 +264,29 @@ test("V5.11: digital presets are only mounted for a scoped owner and never appli
  assert.match(css,/\.raw-dpm-presets/);
  assert.match(ui,/RACK UNCHANGED/);
  assert.match(ui,/NO AUDIO \/ HARDWARE/);
+});
+
+test("V5.12: A/B attenuates only louder RMS preview and never modifies downloadable WAV",async()=>{
+ const h=harness();h.attach();
+ h.select("makeupDb",6);
+ h.button("start").click();
+ await waitReady(h);
+ const player=h.button("player"),original=h.createdUrls[1].str,processed=h.createdUrls[0].str;
+ assert.equal(player.src,processed);
+ assert.ok(player.volume>0&&player.volume<0.75,
+  "Digital louder track must be attenuated during listening");
+ const bytes=(await h.createdUrls[0].value.arrayBuffer()).byteLength;
+ h.button("ab-a").click();
+ assert.equal(player.src,original);
+ assert.equal(player.volume,1);
+ h.button("ab-b").click();
+ assert.ok(player.volume<0.75);
+ const checkbox=h.button("monitor-match");
+ checkbox.checked=false;checkbox.handlers.change();
+ assert.equal(player.volume,1,"Disabling RMS matching restores monitoring volume");
+ assert.equal(h.createdUrls.length,2,"Monitor changes must not re-render audio");
+ assert.equal((await h.createdUrls[0].value.arrayBuffer()).byteLength,bytes);
+ assert.equal(h.button("download").disabled,false);
+ assert.match(h.button("metrics").textContent,/NOT LUFS MATCHED/);
+ h.window.RAWDigitalPremasterV59UI.detach();
 });
