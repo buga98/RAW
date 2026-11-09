@@ -25,4 +25,4 @@ jobs:
         with:
           node-version: '22'
       - name: V5 and V5.1 offline audio regression
-        run: node --test tests/raw-virtual-audio-loopback-v5.test.mjs tests/raw-virtual-pcm-block-engine-v5.test.mjs
+        run: npm run studio:audio:v5:check
