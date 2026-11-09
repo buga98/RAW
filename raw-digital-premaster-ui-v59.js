@@ -6,6 +6,7 @@
 "use strict";
 let panel=null,generation=0,run=null,previewUrl=null,originalUrl=null,rendered=null;
 let fileGetter=()=>null,guard=()=>false,sourceAtMount=null,presetStore=null;
+let monitorVolumes={original:1,digital:1};
 const raw=()=>global.RAWDigitalPremasterV59;
 function allowed(){
  try{return guard()===true&&fileGetter()===sourceAtMount;}catch{return false;}
@@ -18,7 +19,7 @@ function revoke(){
 }
 function resetRender(){
  generation++;if(run)run.cancelled=true;run=null;
- rendered=null;revoke();
+ rendered=null;monitorVolumes={original:1,digital:1};revoke();
  const player=el("[data-v59-player]");
  if(player){try{player.pause();player.removeAttribute("src");player.load();}catch{}}
  for(const selector of ["[data-v59-download]","[data-v59-qc]","[data-v59-ab-a]","[data-v59-ab-b]"]){
@@ -94,6 +95,17 @@ async function process(){
   const qc=await global.RAWMasterQCV510.inspect({result:out,blob,sourceName:file.name});
   if(token.cancelled||current!==generation||!allowed())return;
   rendered={blob,out,file,qc};
+  // V5.12 monitoring: attenuate ONLY the louder side to the quieter
+  // unweighted-RMS level. This never alters PCM exports or QC receipts.
+  const inRms=out.inputMeter.rmsDbfs,processedRms=out.outputMeter.rmsDbfs;
+  if(typeof inRms==="number"&&Number.isFinite(inRms)&&
+     typeof processedRms==="number"&&Number.isFinite(processedRms)){
+   const inLinear=Math.pow(10,inRms/20),outLinear=Math.pow(10,processedRms/20);
+   monitorVolumes={
+    original:Math.min(1,outLinear/inLinear),
+    digital:Math.min(1,inLinear/outLinear)
+   };
+  }else monitorVolumes={original:1,digital:1};
   const output=el("[data-v59-metrics]");
   if(output)output.textContent=
    "INPUT  | "+measure(out.inputMeter)+"\n"+
@@ -103,6 +115,8 @@ async function process(){
    "DIGITAL WAV "+out.outputBits+"-BIT · "+out.frames+" FRAMES · "+
    out.sampleRate+" Hz · "+(out.outputDither?"TPDF DITHER":"NO DITHER")+"\n"+
    "Not a calibrated LUFS/true-peak meter. Not Bettermaker/WesAudio processing."+
+   "\nA/B RMS MONITOR ONLY: A ×"+monitorVolumes.original.toFixed(3)+
+   " · B ×"+monitorVolumes.digital.toFixed(3)+" (NOT LUFS MATCHED)"+
    "\nDIGITAL QC: "+qc.overall+" · SHA-256: "+qc.sha256+
    "\n"+qc.diagnostics.map(entry=>entry.status+" · "+entry.description).join("\n");
   status((qc.downloadAllowed?"DIGITAL PREMASTER READY · QC "+qc.overall:
@@ -111,7 +125,12 @@ async function process(){
   previewUrl=global.URL.createObjectURL(blob);
   originalUrl=global.URL.createObjectURL(file);
   const player=el("[data-v59-player]");
-  if(player){player.src=previewUrl;player.load();}
+  if(player){
+   player.src=previewUrl;
+   player.volume=el("[data-v59-monitor-match]")?.checked===true?
+    monitorVolumes.digital:1;
+   player.load();
+  }
   ["[data-v59-qc]","[data-v59-ab-a]","[data-v59-ab-b]"].forEach(sel=>{
    const b=el(sel);if(b)b.disabled=false;
   });
@@ -153,13 +172,20 @@ function downloadQC(){
  }
  status("DIGITAL QC REPORT DOWNLOADED · SHA-256 "+rendered.qc.sha256.slice(0,12)+"… · LOCAL ONLY");
 }
+function updateMonitorVolume(){
+ const player=el("[data-v59-player]");
+ if(!player||!rendered)return;
+ const chosen=player.src===originalUrl?"original":"digital";
+ const matched=el("[data-v59-monitor-match]")?.checked===true;
+ player.volume=matched?monitorVolumes[chosen]:1;
+}
 function listen(original){
  if(!allowed()||!rendered||!previewUrl||!originalUrl)return;
  const player=el("[data-v59-player]");if(!player)return;
  const wasPaused=player.paused;const oldTime=player.currentTime||0;
  const newUrl=original?originalUrl:previewUrl;
- if(player.src===newUrl)return;
- player.pause();player.src=newUrl;player.load();
+ if(player.src===newUrl){updateMonitorVolume();return;}
+ player.pause();player.src=newUrl;updateMonitorVolume();player.load();
  const keep=()=>{if(!allowed())return;
   try{player.currentTime=Math.min(oldTime,player.duration||oldTime);}catch{}
   if(!wasPaused)void player.play()?.catch?.(()=>{});
@@ -305,6 +331,7 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  '<progress data-v59-progress value="0" max="100"></progress>'+
  '<div data-v59-status role="status" aria-live="polite">READY · local source only · no digital output generated</div>'+
  '<pre data-v59-metrics>RMS, sample peak, stereo correlation and DSP metrics appear after render. No LUFS/true-peak certification.</pre>'+
+ '<label class="raw-dpm-monitor"><input type="checkbox" checked data-v59-monitor-match> A/B MONITOR: MATCH UNWEIGHTED RMS (NOT LUFS) · DOES NOT CHANGE WAV</label>'+
  '<audio data-v59-player controls preload="none" aria-label="Local A/B digital premaster listening"></audio>'+
  '<p class="raw-dpm-footnote">V5.9 sample-peak safety uses transparent whole-file attenuation, NOT a true-peak limiter. Digital settings are independent from the virtual hardware rack. No analog master is available.</p>';
  host.append(section);panel=section;
@@ -316,6 +343,7 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  el("[data-v59-qc]").addEventListener("click",downloadQC);
  el("[data-v59-ab-a]").addEventListener("click",()=>listen(true));
  el("[data-v59-ab-b]").addEventListener("click",()=>listen(false));
+ el("[data-v59-monitor-match]").addEventListener("change",updateMonitorVolume);
  el("[data-v59-preset-save]").addEventListener("click",()=>void savePreset());
  el("[data-v59-preset-load]").addEventListener("click",()=>void loadPreset());
  el("[data-v59-preset-delete]").addEventListener("click",()=>void deletePreset());
