@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="raw-workspace-v4.css" />
   <link rel="stylesheet" href="raw-v5-diagnostics.css" />
   <link rel="stylesheet" href="raw-v5-worker.css" />
+  <link rel="stylesheet" href="raw-digital-premaster-v59.css" />
   <link rel="stylesheet" href="raw-v5-autosave.css" />
 </head>
 <body>
@@ -255,6 +256,8 @@
   <script src="raw-v5-diagnostics-ui.js"></script>
   <script src="raw-v5-worker-ui.js"></script>
   <script src="raw-local-wav-export-v1.js"></script>
+  <script src="raw-digital-premaster-v59.js"></script>
+  <script src="raw-digital-premaster-ui-v59.js"></script>
   <script src="raw-chain-archive-v1.js"></script>
   <script src="raw-chain-recall-planner-v2.js"></script>
   <script src="raw-local-rack-transaction-v3.js"></script>
@@ -363,6 +366,7 @@ function revokeDeveloperLabs(){
   window.RAWDawBridge?.disconnect?.();
   window.RAWAudioV5Lab?.detach?.();
   window.RAWAudioWorkerV54Lab?.detach?.();
+  window.RAWDigitalPremasterV59UI?.detach?.();
   document.getElementById("developerLabHost")?.replaceChildren();
   updateDeveloperUi();
 }
@@ -1242,6 +1246,7 @@ function getActiveChainDevices() {
 }
 
 function renderPlugin() {
+  window.RAWDigitalPremasterV59UI?.detach?.();
   const devices = getActiveChainDevices();
   const firstAudioFile = uploadedFiles[0];
   window.RAWWorkspaceStatusMonitor?.disconnect?.();
@@ -1614,6 +1619,20 @@ projectStatus?.evaluate();
 window.RAWDawBridge?.refresh();
 bindRackExpansionFit();
 fitRackDevices();
+if(TEST_MODE&&activeSessionId&&currentUser?.uid&&developerAllowed()){
+ const ownerForPremaster=currentUser.uid;
+ const sessionForPremaster=activeSessionId;
+ window.RAWDigitalPremasterV59UI?.attach?.(pluginHost,{
+  getFile:()=>uploadedFiles[0]||null,
+  canUse:()=>TEST_MODE===true&&developerAllowed()&&
+   currentUser?.uid===ownerForPremaster&&
+   activeSessionId===sessionForPremaster&&
+   !window.RAWStudioGatewayV1?.interceptsControls?.()&&
+   !window.RAWStudioSim?.interceptsControls?.()&&
+   !window.RAWStudioSim?.reconnecting?.()&&
+   !window.RAWDawBridge?.isActive?.()
+ });
+}
 initWaveform(firstAudioFile);
 }
 window.renderSessions = async function() {
