@@ -32,7 +32,11 @@ function startProcess(name, command, args = []) {
 
 startProcess("UPLOAD", "node", ["upload-server.mjs"]);
 startProcess("CONTROL", "node", ["control-server.mjs"]);
-startProcess("WATCHDOG", "node", ["session-watchdog.mjs"]);
+// The legacy watchdog uses unauthenticated Firestore client writes and computes
+// unbounded charges from old sessions. Never start it with developer services.
+// A separately authenticated, idempotent server-side service is required for production.
+console.log("\n[WATCHDOG] DISABLED in developer launcher (legacy billing unsafe).");
+console.log("[WATCHDOG] For isolated UI testing use: npm run test:local");
 
 // malo čekamo da se serveri dignu prije Electrona
 setTimeout(() => {
