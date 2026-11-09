@@ -3,7 +3,7 @@
  */
 (function(global){
 "use strict";
-let service=null,panel=null,currentUser=null,currentSession=null;
+let service=null,panel=null,currentUser=null,currentSession=null,restoreCtrl=null;
 let captureFn=null,guardFn=()=>false,pulse=null,lastState=null,epoch=0;
 const ready=()=>{try{return guardFn()===true;}catch{return false;}};
 function setText(selector,value){
@@ -33,6 +33,14 @@ function paint(state){
  if(preview)preview.disabled=state.phase!=="RECOVERY_AVAILABLE";
  const download=panel.querySelector("[data-autosave-export]");
  if(download)download.disabled=state.phase!=="RECOVERY_AVAILABLE";
+ const restore=panel.querySelector("[data-autosave-restore]");
+ if(restore)restore.disabled=state.phase!=="RECOVERY_AVAILABLE"||
+    restoreCtrl?.snapshot()?.previewReady!==true;
+ const undo=panel.querySelector("[data-autosave-undo]");
+ if(undo){
+   undo.hidden=restoreCtrl?.snapshot()?.undoAvailable!==true;
+   undo.disabled=!undo.hidden&&!ready();
+ }
  if(state.warning)setText("[data-autosave-detail]",state.warning);
  else if(state.phase==="RECOVERY_AVAILABLE")
   setText("[data-autosave-detail]","Zadnja sigurnosna kopija je provjerena. Nije primijenjena na rack. Pregledaj / izvezi prije odbacivanja.");
@@ -53,6 +61,9 @@ async function preview(){
  try{
   const out=await service.preview();
   if(!panel||!ready())return;
+  const recoveryPlan=restoreCtrl?restoreCtrl.preview():null;
+  const restoreButton=panel.querySelector("[data-autosave-restore]");
+  if(restoreButton)restoreButton.disabled=!recoveryPlan;
   setText("[data-autosave-detail]",
    "VERIFIED READ-ONLY DRAFT · seq "+out.sequence+
    "\nSAVED: "+new Date(out.savedAt).toLocaleString("hr-HR")+
@@ -61,8 +72,42 @@ async function preview(){
    "\nCHAIN MATCH: "+(out.chainMatches?"YES":"NO")+
    "\nCHANGED VALUES: "+out.changes+
    "\n"+out.detail+
-   "\nNO AUTOMATIC APPLY · NO HARDWARE COMMAND");
- }catch(error){setText("[data-autosave-detail]","Preview error: "+String(error?.message||error).slice(0,130));}
+   "\nRESTORE requires explicit confirmation · LOCAL ONLY · NO HARDWARE COMMAND");
+ }catch(error){
+   restoreCtrl?.clear?.();
+   const button=panel?.querySelector("[data-autosave-restore]");
+   if(button)button.disabled=true;
+   setText("[data-autosave-detail]","Preview rejected: "+String(error?.message||error).slice(0,130));
+  }
+}
+function applyRecovery(){
+ if(!service||!ready()||!restoreCtrl||restoreCtrl.snapshot().previewReady!==true)return;
+ if(global.confirm?.("Vratiti automatski spremljene postavke samo na LOKALNE virtualne uređaje? Trenutne postavke će se promijeniti. Studio, DAW i Gateway moraju ostati odspojeni. Nema povrata izvornog WAV-a.")!==true)return;
+ try{
+   const result=restoreCtrl.apply({confirmed:true});
+   paint(service.snapshot());
+   setText("[data-autosave-detail]",
+    "RECOVERED LOCAL RACK · "+result.changed+" promjena · READBACK VERIFIED\n"+
+    "AUDIO / HARDWARE NOT RESTORED · UNDO RECOVERY is available");
+ }catch(error){
+   setText("[data-autosave-detail]",
+    "RESTORE REJECTED · "+String(error?.message||error).slice(0,160)+
+    "\nRack recovery is not considered successful.");
+ }
+}
+function undoRecovery(){
+ if(!restoreCtrl||!ready()||restoreCtrl.snapshot().undoAvailable!==true)return;
+ if(global.confirm?.("Poništiti posljednji lokalni AutoSave restore? Nijedna analogna ili udaljena kontrola neće biti promijenjena.")!==true)return;
+ try{
+   const result=restoreCtrl.undo({confirmed:true});
+   paint(service.snapshot());
+   setText("[data-autosave-detail]",
+    "RECOVERY UNDONE · "+result.changed+" local changes reverted.\n"+
+    "Current rack will be AutoSaved as a new local checkpoint.");
+   service.schedule();
+ }catch(error){
+   setText("[data-autosave-detail]","UNDO REJECTED · "+String(error?.message||error).slice(0,160));
+ }
 }
 function exportCopy(){
  if(!service||!ready())return;
@@ -84,6 +129,7 @@ async function discard(){
  if(consent!==true)return;
  const old=service,localEpoch=epoch;
  try{
+  restoreCtrl?.clear();
   await old.discard();
   if(epoch===localEpoch&&old===service)
    setText("[data-autosave-detail]","Previous recovery cleared by explicit choice. New rack snapshots now auto-save.");
@@ -100,11 +146,15 @@ function build(host){
   'Ručni projekti i verzije ostaju zasebni i netaknuti.</p>'+
   '<div data-autosave-recovery-actions class="raw-v55-autosave-actions" hidden>'+
   '<button type="button" data-autosave-preview>PREVIEW RECOVERY</button>'+
+  '<button type="button" data-autosave-restore disabled>RESTORE SAVED RACK · LOCAL</button>'+
   '<button type="button" data-autosave-export>↓ EXPORT RECOVERY JSON</button>'+
   '<button type="button" data-autosave-discard>DISCARD OLD COPY · START FRESH</button></div>'+
+  '<button type="button" data-autosave-undo hidden>UNDO RECOVERY · LOCAL</button>'+
   '<pre data-autosave-detail aria-live="polite">Checking for recoverable local settings…</pre>';
  host.prepend(section);
  section.querySelector("[data-autosave-preview]").addEventListener("click",()=>{void preview();});
+ section.querySelector("[data-autosave-restore]").addEventListener("click",applyRecovery);
+ section.querySelector("[data-autosave-undo]").addEventListener("click",undoRecovery);
  section.querySelector("[data-autosave-export]").addEventListener("click",exportCopy);
  section.querySelector("[data-autosave-discard]").addEventListener("click",()=>{void discard();});
  return section;
@@ -112,6 +162,8 @@ function build(host){
 function stop(){
  ++epoch;
  if(pulse!==null){global.clearInterval(pulse);pulse=null;}
+ restoreCtrl?.clear?.();
+ restoreCtrl=null;
  service?.close();
  panel?.remove?.();
  service=null;panel=null;currentUser=null;currentSession=null;
@@ -119,7 +171,7 @@ function stop(){
  const tag=global.document?.getElementById("rawAutosaveConsoleStatus");
  if(tag){tag.textContent="AUTO SAVE · INACTIVE";tag.dataset.state="CLOSED";}
 }
-function mount(host,{userId,sessionId,capture,canWrite}={}){
+function mount(host,{userId,sessionId,capture,canWrite,recoveryRecall,canRestore}={}){
  if(!host||typeof userId!=="string"||!userId||
    typeof sessionId!=="string"||!sessionId||
    typeof capture!=="function"||typeof canWrite!=="function"||
@@ -127,13 +179,24 @@ function mount(host,{userId,sessionId,capture,canWrite}={}){
  if(canWrite()!==true)return false;
  if(currentUser!==userId||currentSession!==sessionId)stop();
  currentUser=userId;currentSession=sessionId;captureFn=capture;guardFn=canWrite;
+ if(service){
+  panel?.remove?.();
+  panel=build(host);
+  paint(lastState||service.snapshot());
+  return true;
+ }
  panel=build(host);
- if(service){paint(lastState||service.snapshot());return true;}
  const localEpoch=epoch;
  service=global.RAWAutoSaveRecoveryV55.create({
   userId,capture:()=>captureFn(),canWrite:()=>ready(),
   onChange:state=>{if(localEpoch===epoch)paint(state);}
  });
+ if(recoveryRecall&&typeof canRestore==="function"&&global.RAWAutoSaveRestoreV56){
+   restoreCtrl=global.RAWAutoSaveRestoreV56.create({
+     service,recall:recoveryRecall,
+     canRestore:()=>ready()&&canRestore()===true
+   });
+ }
  paint(service.snapshot());
  void service.open().catch(error=>{
   if(localEpoch===epoch)setText("[data-autosave-detail]",
