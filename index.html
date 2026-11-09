@@ -1254,7 +1254,7 @@ function renderPlugin() {
           <div><h3>MASTERING DESK</h3><p>Virtual analog-inspired controls · original audio · saved project recall</p></div>
           <div class="raw-console-hero-actions">
             <span class="raw-console-mode">LOCAL DIGITAL PREVIEW</span>
-            <span id="rawAutosaveConsoleStatus" role="status">AUTO SAVE · CHECKING</span>
+            <span id="rawAutosaveConsoleStatus" role="status" ${TEST_MODE ? "" : "hidden"}>AUTO SAVE · CHECKING</span>
             <button class="raw-console-project-btn" type="button" onclick="goTo('projects')">MY PROJECTS <span aria-hidden="true">↗</span></button>
           </div>
         </div>
