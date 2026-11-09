@@ -12,11 +12,11 @@ function create({masterTop=1300,height=215,viewportHeight=800,premaster=true}={}
   requestAnimationFrame:fn=>fn()
  };
  const context={window};vm.runInNewContext(source,context);
- let top=masterTop,connected=premaster;
+ let top=masterTop,connected=premaster,actualHeight=height;
  const classes=new Set();
  const dock={
-  hidden:false,offsetHeight:height,
-  getBoundingClientRect:()=>({height}),
+  hidden:false,get offsetHeight(){return actualHeight;},
+  getBoundingClientRect:()=>({height:actualHeight}),
   classList:{
    add:name=>classes.add(name),remove:name=>classes.delete(name),
    toggle(name,enabled){if(enabled)classes.add(name);else classes.delete(name);},
@@ -29,7 +29,7 @@ function create({masterTop=1300,height=215,viewportHeight=800,premaster=true}={}
  const controller=api.bind({dock,mastering:premaster?mastering:null,viewport:window,scroller});
  return {controller,window,dock,api,classes,listeners,scroll(){
   for(const fn of [...listeners.scroll||[]])fn();
- },setTop:v=>top=v,setConnected:v=>connected=v};
+ },setTop:v=>top=v,setConnected:v=>connected=v,setHeight:v=>actualHeight=v};
 }
 test("V5.16: transport follows rack view as floating player",()=>{
  const s=create();
@@ -87,4 +87,17 @@ test("V5.16: safe switch alters CSS only and never touches audio runtime",()=>{
  const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
  assert.match(html,/window\.RAWAudioDockV516\?\.bind\?\.\(/);
  assert.match(html,/window\.RAWAudioDockV516\?\.stop\?\.\(\)/);
+});
+
+test("V5.16: inline resizing never makes the floating dock overlap the last mastering section",()=>{
+ const s=create({masterTop:540,height:210,viewportHeight:800});
+ assert.equal(s.classes.has("raw-source-safe-inline"),true);
+ s.setHeight(430);
+ s.scroll();
+ assert.equal(s.classes.has("raw-source-safe-inline"),true,
+  "Inline layout height must not re-enable fixed dock and cause jitter");
+ s.setTop(1200);
+ s.scroll();
+ assert.equal(s.classes.has("raw-source-safe-inline"),false);
+ s.api.stop();
 });
