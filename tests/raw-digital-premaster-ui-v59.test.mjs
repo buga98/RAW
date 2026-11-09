@@ -8,6 +8,7 @@ const read=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
 const engine=read("raw-digital-premaster-v59.js");
 const ui=read("raw-digital-premaster-ui-v59.js");
 const qcModule=read("raw-master-qc-v510.js");
+const loudnessModule=read("raw-professional-loudness-v517.js");
 const html=read("index.html");
 function harness({frames=4096,withPresets=false}={}){
  const settings={lowCutHz:25,lowShelfDb:0,presenceDb:0,airDb:0,
@@ -93,7 +94,7 @@ function harness({frames=4096,withPresets=false}={}){
  const context={window,document:doc,Float32Array,Uint8Array,ArrayBuffer,DataView,
   TextEncoder,Blob,setTimeout,clearTimeout};
  vm.runInNewContext(engine,context);vm.runInNewContext(qcModule,context);
- vm.runInNewContext(ui,context);
+ vm.runInNewContext(loudnessModule,context);vm.runInNewContext(ui,context);
  return {window,doc,host,file,decoded,URL,createdUrls,revoked,storedPresets,storedOps,
   setPresetName:name=>{enteredName=name;},confirm:yes=>{confirmed=yes;},
   get panel(){return panel;},
@@ -124,6 +125,7 @@ test("V5.9: digital mastering is separate from the virtual hardware rack",()=>{
  assert.match(html,/src="raw-digital-premaster-v59\.js"/);
  assert.match(html,/src="raw-digital-premaster-ui-v59\.js"/);
  assert.match(html,/src="raw-master-qc-v510\.js"/);
+ assert.match(html,/src="raw-professional-loudness-v517\.js"/);
  assert.match(html,/raw-digital-premaster-v59\.css/);
  assert.match(html,/function mountDigitalPremaster/);
  assert.match(html,/window\.RAWDigitalPremasterV59UI\?\.detach\?\.\(\)/);
@@ -288,5 +290,21 @@ test("V5.12: A/B attenuates only louder RMS preview and never modifies downloada
  assert.equal((await h.createdUrls[0].value.arrayBuffer()).byteLength,bytes);
  assert.equal(h.button("download").disabled,false);
  assert.match(h.button("metrics").textContent,/NOT LUFS MATCHED/);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+
+test("V5.17: Digital Premaster exposes real gated LUFS and includes it in the QC receipt",async()=>{
+ const h=harness({frames:48000});
+ h.attach();h.button("start").click();await waitReady(h);
+ assert.match(h.button("metrics").textContent,/BS\.1770-5 GATED INTEGRATED LUFS/);
+ assert.match(h.button("metrics").textContent,/REFERENCE VALIDATION PENDING/);
+ assert.match(h.button("metrics").textContent,/TRUE PEAK NOT MEASURED/);
+ h.button("qc").click();
+ const report=JSON.parse(await h.createdUrls.at(-1).value.text());
+ assert.equal(report.digitalLoudness.source.method,"BS1770_5_STEREO_K_WEIGHTED_GATED");
+ assert.equal(report.digitalLoudness.output.referenceCertified,false);
+ assert.equal(report.loudnessReferenceCertified,false);
+ assert.equal(report.deviceMasterCertified,false);
+ assert.equal(report.verifiedAnalogMaster,false);
  h.window.RAWDigitalPremasterV59UI.detach();
 });
