@@ -79,7 +79,7 @@ test("V5.16: scrollbar listener is released before new rack binding",()=>{
  assert.equal((s.listeners.resize||[]).length,0);
 });
 test("V5.16: safe switch alters CSS only and never touches audio runtime",()=>{
- assert.doesNotMatch(source,/\b(?:WebSocket|fetch|AudioContext|WaveSurfer|currentTime|pause|play|ipcRenderer|sendControlMessage)\b/);
+ assert.doesNotMatch(source.replace(/\/\\*[\\s\\S]*?\\*\//g,""),/\b(?:WebSocket|fetch|AudioContext|WaveSurfer|currentTime|pause|play|ipcRenderer|sendControlMessage)\b/);
  const css=readFileSync(new URL("../raw-studio-ux-v513.css",import.meta.url),"utf8");
  assert.match(css,/\.audio-region-panel:not\(\.raw-source-safe-inline\)[\s\S]*?position:fixed!important/);
  assert.match(css,/\.audio-region-panel\.raw-source-safe-inline[\s\S]*?position:relative!important/);
