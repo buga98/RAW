@@ -78,6 +78,30 @@ ipcMain.handle("raw-v5-diagnostics",async(event,scenario)=>{
     return {ok:false,code:"DIAGNOSTIC_UNAVAILABLE"};
   }
 });
+// V5.4: virtual PCM thread manager. NO hardware control, remote network or billing.
+const RAW_V5_WORKER_ACTIONS=new Set(["start","status","cancel","reset","crash","hang"]);
+let rawV5WorkerManager=null;
+ipcMain.handle("raw-v5-worker-command",(event,action)=>{
+  const sender=event?.sender;
+  const owner=sender?BrowserWindow.fromWebContents(sender):null;
+  if(!TEST_MODE||!owner||owner.isDestroyed()||!isLocalAppUrl(sender.getURL()))
+    return {ok:false,code:"LOCAL_TEST_ONLY"};
+  if(typeof action!=="string"||!RAW_V5_WORKER_ACTIONS.has(action))
+    return {ok:false,code:"INVALID_WORKER_COMMAND"};
+  try{
+    if(!rawV5WorkerManager){
+      const {createVirtualAudioWorkerManager}=require("./raw-v5-audio-worker-manager.cjs");
+      rawV5WorkerManager=createVirtualAudioWorkerManager({
+        workerUrl:pathToFileURL(path.join(__dirname,"raw-v5-audio-worker-thread.mjs"))
+      });
+    }
+    return rawV5WorkerManager.command(action);
+  }catch(error){
+    console.warn("RAW V5 worker IPC unavailable",error?.message);
+    return {ok:false,code:"WORKER_UNAVAILABLE"};
+  }
+});
+app.on("before-quit",()=>{rawV5WorkerManager?.close();});
 app.whenReady().then(()=>{
   if(process.platform==="win32")app.setAppUserModelId("com.raw.remote-studio");
   createWindow();
