@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="raw-workspace-v4.css" />
   <link rel="stylesheet" href="raw-v5-diagnostics.css" />
   <link rel="stylesheet" href="raw-v5-worker.css" />
+  <link rel="stylesheet" href="raw-v5-autosave.css" />
 </head>
 <body>
   <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
@@ -261,6 +262,8 @@
   <script src="raw-developer-access-v1.js"></script>
   <script src="raw-audio-route-v4.js"></script>
   <script src="raw-workspace-project-status-v4.js"></script>
+  <script src="raw-v5-autosave-recovery-v55.js"></script>
+  <script src="raw-v5-autosave-panel-v55.js"></script>
   <script src="raw-portable-project-v1.js"></script>
   <script src="raw-portable-project-panel-v1.js"></script>
   <script src="raw-local-project-library-v2.js"></script>
@@ -684,6 +687,7 @@ window.logoutUser = async function() {
     stopBillingTimer();
     stopHeartbeat();
 
+    window.RAWAutoSaveV55UI?.stop?.();
     revokeDeveloperLabs();
     await signOut(auth);
 
@@ -702,6 +706,7 @@ onAuthStateChanged(auth, async (user) => {
   authReady = true;
 
   if (!user || !user.emailVerified) {
+    window.RAWAutoSaveV55UI?.stop?.();
     revokeDeveloperLabs();
     currentUser = null;
     currentUserData = null;
@@ -1150,6 +1155,7 @@ window.endChainSession = async function(options = {}) {
   try {
     console.log("ENDING CHAIN SESSION:", sessionId, reason);
 
+    if(TEST_MODE)await window.RAWAutoSaveV55UI?.flush?.();
     stopWave();
     stopBillingTimer();
     stopHeartbeat();
@@ -1161,6 +1167,7 @@ window.endChainSession = async function(options = {}) {
         local.endedAt = {toDate: () => new Date()};
       }
       activeSessionId = null;
+      window.RAWAutoSaveV55UI?.stop?.();
       sessionStartedAtMs = null;
       spentThisSession = 0;
       spentBeforeCurrentRun = 0;
@@ -1247,6 +1254,7 @@ function renderPlugin() {
           <div><h3>MASTERING DESK</h3><p>Virtual analog-inspired controls · original audio · saved project recall</p></div>
           <div class="raw-console-hero-actions">
             <span class="raw-console-mode">LOCAL DIGITAL PREVIEW</span>
+            <span id="rawAutosaveConsoleStatus" role="status">AUTO SAVE · CHECKING</span>
             <button class="raw-console-project-btn" type="button" onclick="goTo('projects')">MY PROJECTS <span aria-hidden="true">↗</span></button>
           </div>
         </div>
@@ -1526,6 +1534,7 @@ let statusRefreshHandle=null;
 const queueProjectStatusRefresh=()=>{
   clearTimeout(statusRefreshHandle);
   statusRefreshHandle=setTimeout(()=>projectStatus?.evaluate(),120);
+  window.RAWAutoSaveV55UI?.notifyChanged?.();
 };
 const rackStatusObserver=new MutationObserver(queueProjectStatusRefresh);
 rackStatusObserver.observe(pluginHost,{subtree:true,attributes:true,attributeFilter:["data-value"]});
@@ -1564,6 +1573,18 @@ window.RAWLocalProjectLibraryPanelV2?.attach(projectsHost, {
   onCheckpoint:checkpoint=>projectStatus?.checkpoint(checkpoint),
   onStateChange:()=>projectStatus?.evaluate()
 });
+if(activeSessionId&&currentUser?.uid){
+  const ownerUidForAutoSave=currentUser.uid;
+  const sessionIdForAutoSave=activeSessionId;
+  window.RAWAutoSaveV55UI?.mount?.(projectsHost,{
+    userId:currentUser.uid,sessionId:activeSessionId,
+    capture:()=>window.RAWChainArchiveV1.capture({
+      ...window.RAWDeveloperRackModels?.(),label:"RAW AutoSave local control models"
+    }),
+    canWrite:()=>TEST_MODE===true&&currentUser?.uid===ownerUidForAutoSave&&
+      activeSessionId===sessionIdForAutoSave
+  });
+}
 projectStatus?.evaluate();
 }
 window.RAWDawBridge?.refresh();
