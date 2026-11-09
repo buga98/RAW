@@ -131,3 +131,31 @@ No actual rack restoration occurs in V5.5. The next V5.6 phase will connect reco
 10. Test a different/unverified login where possible: it must not see the other account's draft or get LOCAL TEST privileges.
 
 **Limitations:** The debounce interval means the last subsecond of knob movements may be missing if Windows/Electron crashes immediately. LOCAL TEST AutoSave is not backup against disk loss or profile deletion and is intentionally *not* cloud sync. Any real analog session must require server-side authorization, exclusive lease, physical state recheck and a distinct audio preservation path.
+
+
+## V5.6 — verified rack recovery with explicit local apply and UNDO
+
+The V5.5 dual-slot journal still discovers a verified prior draft after relaunch. V5.6 adds a reversible **restore of LOCAL control models only**, using a separate instance of the existing `RAWProjectRecallV3` and its `RAWLocalRackTransactionV3` transaction. Manual `.rawproj` versions, revision identity, undo state and original audio remain separate.
+
+### Safety gates
+
+- The draft must have passed the V5.5 owner-scoped SHA-256 and strict archive checks.
+- An active verified **LOCAL TEST** session, matching UID and session identity are required. The studio Gateway, device Simulator and DAW bridge **must all be disconnected**.
+- `PREVIEW RECOVERY` validates device/chain compatibility, model constraints and the number of changes. An edited rack between preview and restore makes the plan **STALE** and blocks apply.
+- `RESTORE SAVED RACK · LOCAL` requires an explicit confirmation. The V3 transaction applies to local models with `suppressHardware:true`, verifies exact post-restore readback and attempts rollback if rejected. The prior rack can be restored by `UNDO RECOVERY · LOCAL`, also with confirmation.
+- The AutoSave journal only resumes writing when `acceptRecovered()` independently verifies the live rack matches the previously verified draft. The last saved journal entry remains on disk until a later successful AutoSave.
+- After a rejected restore, never claim recovery, print a processed master, replay an unverified hardware command, or bill anyone.
+
+### TEST 16 — hands-on Windows acceptance
+
+1. Ensure a clean working tree in `feature/studio-audio-worker-v5`, then pull the branch; run `npm run studio:autosave:v5:check`, `npm run test:smoke` and `npm run test:local`.
+2. Create a LOCAL TEST chain session with the same three virtual devices used in V5.5. Set a recognizable Bettermaker EQ1 gain, ngBusComp threshold and ngTubeComp control. Wait until AutoSave shows `SAVED`.
+3. Close Electron normally. Launch `npm run test:local`, sign in to the same verified account, initialize the identical LOCAL TEST rack and open **Moji projekti**. Expect `RECOVERABLE COPY FOUND`.
+4. Press `PREVIEW RECOVERY`: changes and device order are displayed, but knobs stay unchanged.
+5. Press `RESTORE SAVED RACK · LOCAL`. Cancel the confirmation once to prove no changes occur. Then confirm. The local rack knobs must move back to the saved values; the card reports `RECOVERED LOCAL RACK` and `READBACK VERIFIED`.
+6. Press `UNDO RECOVERY · LOCAL`: cancel confirmation, then confirm. The rack must return to its state immediately before restore.
+7. Repeat restore in another fresh session, but first change a control **after** preview. The apply must be rejected as stale instead of overwriting that newer change. Preview again to continue.
+8. Connect a LOCAL TEST Gateway/Simulator/DAW bridge, then try preview/restore: it must be rejected, with no physical MIDI, network or studio command. Disconnect and re-preview.
+9. Sign out, back in and start the rack again: only the authenticated account's verified backups are accessible. Existing manual project revisions and saved original audio must remain intact.
+
+**Limitations:** V5.6 restores rack model values, not the song, physical analog equipment, device leases, studio routing, PCM capture, session billing, or real processed audio. Because the local demo creates a new session ID after each relaunch, **we intentionally require the user's confirmation** before applying a backup. Unattended reconnect and verified physical-device resume belong to later phases.
