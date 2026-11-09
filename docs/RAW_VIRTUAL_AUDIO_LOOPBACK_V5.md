@@ -55,3 +55,28 @@ Check:
 - `npm run studio:audio:v5:integrity:check` — V5.2 tests
 - `npm run studio:audio:v5:check` — all V5/V5.1/V5.2 tests
 - `npm run test:smoke` — full regression suite
+
+
+## V5.3 — interactive Audio Engine Diagnostics inside Developer LAB
+
+The Electron main process exposes **one fixed, read-only, local-test-only diagnostic IPC** operation with an eight-scenario allowlist. It calls the **same** V5/V5.1/V5.2 Node modules tested in CI. This is not a browser-side imitation and not a device control bridge. It accepts only the scenario name, never paths, audio files, commands, endpoints, tokens or connection details.
+
+**Manual Windows test (LOCAL TEST only):**
+
+1. Check out `feature/studio-audio-worker-v5`, run `npm run studio:audio:v5:check` and `npm run test:smoke`.
+2. Launch with `npm run test:local` (do **not** run the legacy billing watchdog or hardware agent).
+3. Sign in using the previously verified owner account; open a **LOCAL TEST chain session** so the Control Room rack has been initialized.
+4. Open **Programerski dio**. You must see **V5 AUDIO ENGINE** beside **AUDIO DIAGNOSTICS** in the owner-only access bar.
+5. Click **V5 AUDIO ENGINE**. A `SIMULATION ONLY` panel with eight buttons appears.
+6. Click **RUN ALL 8 TESTS**. Expected: `PASS · 8/8 odabranih provjera · VIRTUAL ONLY` and eight result entries. The expected *fault* scenarios (SWAP L/R, GAIN FAULT, CLIPPING, BAD SHA-256, ABORT, INVALID PCM) count as PASS when the fault is correctly **detected / rejected**, not when corrupted audio is accepted.
+7. Check **LATENCY +256** → 256 frames, approximately 5.33 ms at 48 kHz; **CLEAN STEREO** → bit-accurate, identical input/capture SHA-256; **CLIPPING** → clipping detected; **BAD SHA-256** and **ABORT** → no receipt.
+8. Close and re-open the panel, navigate to Control Room and back; the rack must remain unchanged.
+9. Log out, re-login and use **REVERIFY ACCESS**. The panel must be freshly created and no stale results should be treated as live.
+10. Verify an unverified account or a non-test app launch cannot access the Developer panel or the diagnostic IPC. These are **local UI tests**, not server authorization tests.
+
+*Development security:* the diagnostic command checks `RAW_TEST_MODE=1`, an exact local app URL and fixed scenario names in the Electron main process. The renderer exposes the panel only after fresh owner verification. The handler has no physical interface, network, file export, database or billing capability. No such test can establish analog audio fidelity.
+
+Scripts:
+- `npm run studio:audio:v5:diagnostics:check`: V5.3 cases, UI guards and Electron IPC regression.
+- `npm run studio:audio:v5:check`: all V5/V5.1/V5.2/V5.3 cases.
+- `npm run test:smoke`: full RAW regression suite.
