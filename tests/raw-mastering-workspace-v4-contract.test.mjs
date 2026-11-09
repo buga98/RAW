@@ -36,10 +36,10 @@ test("hidden initial render never collapses rack size and activation recalculate
  assert.match(rack.style.transform,/^scale\(/);
 });
 test("MEQ details open/close reserves new scaled rack height without RACK SIZE click",()=>{
- const fit=html.match(/function fitRackDevices\\(\\) \\{[\\s\\S]*?\\n\\}/)?.[0];
- const bind=html.match(/function bindRackExpansionFit\\(\\) \\{[\\s\\S]*?\\n\\}/)?.[0];
+ const fit=html.match(/function fitRackDevices\(\) \{[\s\S]*?\n\}/)?.[0];
+ const bind=html.match(/function bindRackExpansionFit\(\) \{[\s\S]*?\n\}/)?.[0];
  assert.ok(fit&&bind,"rack expansion handler must exist");
- assert.match(html,/bindRackExpansionFit\\(\\);\\s*fitRackDevices\\(\\);/);
+ assert.match(html,/bindRackExpansionFit\(\);\s*fitRackDevices\(\);/);
  let naturalHeight=500,active=true,onToggle;
  const rack={dataset:{designWidth:"1380"},get offsetHeight(){return naturalHeight},style:{}};
  const wrapper={clientWidth:1000,style:{},querySelector:()=>rack};
@@ -55,7 +55,7 @@ test("MEQ details open/close reserves new scaled rack height without RACK SIZE c
   },
   requestAnimationFrame:callback=>callback()
  };
- vm.runInNewContext(fit+"\\n"+bind+"\\nfitRackDevices();bindRackExpansionFit();",sandbox);
+ vm.runInNewContext(fit+"\n"+bind+"\nfitRackDevices();bindRackExpansionFit();",sandbox);
  const initial=wrapper.style.height;
  assert.ok(Number.parseInt(initial,10)>0);
  assert.equal(typeof onToggle,"function");
