@@ -87,6 +87,16 @@ function harness({frames=4096}={}){
  };
 }
 const settle=()=>new Promise(resolve=>setImmediate(resolve));
+async function waitReady(h){
+ for(let i=0;i<250;i++){
+  const value=h.button("status").textContent;
+  if(/DIGITAL PREMASTER READY/.test(value))return;
+  if(/RENDER FAILED|REJECTED/.test(value))
+   throw new Error("Unexpected premaster UI result: "+value);
+  await new Promise(resolve=>setTimeout(resolve,10));
+ }
+ throw new Error("Digital premaster did not become READY: "+h.button("status").textContent);
+}
 
 test("V5.9: digital mastering is separate from the virtual hardware rack",()=>{
  assert.match(html,/src="raw-digital-premaster-v59\.js"/);
@@ -104,7 +114,7 @@ test("V5.9: digital mastering is separate from the virtual hardware rack",()=>{
 test("V5.9: verified local session can render user audio and download distinct DIGITAL WAV",async()=>{
  const h=harness();assert.equal(h.attach(),true);
  h.button("start").click();
- for(let i=0;i<10;i++)await settle();
+ await waitReady(h);
  assert.match(h.button("status").textContent,/DIGITAL PREMASTER READY/);
  assert.equal(h.button("download").disabled,false);
  assert.equal(h.button("ab-a").disabled,false);
@@ -121,7 +131,7 @@ test("V5.9: verified local session can render user audio and download distinct D
 });
 test("V5.9: A/B swaps source and processed audio without claiming analog work",async()=>{
  const h=harness();h.attach();h.button("start").click();
- for(let i=0;i<8;i++)await settle();
+ await waitReady(h);
  const player=h.button("player"),original=h.createdUrls[1].str,processed=h.createdUrls[0].str;
  assert.equal(player.src,processed);
  h.button("ab-a").click();
@@ -134,7 +144,7 @@ test("V5.9: A/B swaps source and processed audio without claiming analog work",a
 });
 test("V5.9: revoked owner scope cannot export stale rendered audio",async()=>{
  const h=harness();h.attach();h.button("start").click();
- for(let i=0;i<8;i++)await settle();
+ await waitReady(h);
  h.allow(false);
  h.button("download").click();
  assert.equal(h.clicks,0);
@@ -163,7 +173,7 @@ test("V5.9: absent file, denied owner and lost file scope cannot render",async()
 
 test("V5.9: changing DSP settings invalidates downloadable WAV and A/B preview",async()=>{
  const h=harness();h.attach();h.button("start").click();
- for(let i=0;i<8;i++)await settle();
+ await waitReady(h);
  assert.equal(h.button("download").disabled,false);
  const control=h.panel.querySelector('[data-v59-setting="lowShelfDb"]');
  control.value="4";control.handlers.change();
@@ -179,7 +189,7 @@ test("V5.9: changing DSP settings invalidates downloadable WAV and A/B preview",
 
 test("V5.10: local DSP exposes verified QC metadata and separate JSON receipt",async()=>{
  const h=harness();h.attach();h.button("start").click();
- for(let i=0;i<10;i++)await settle();
+ await waitReady(h);
  assert.equal(h.button("qc").disabled,false);
  assert.match(h.button("metrics").textContent,/DIGITAL QC: PASS/);
  assert.match(h.button("metrics").textContent,/SHA-256: [a-f0-9]{64}/);
