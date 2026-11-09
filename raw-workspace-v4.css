@@ -377,3 +377,11 @@ body.sidebar-collapsed .sidebar.glass > .sidebar-toggle {
   align-self: center;
   margin: 0 auto 14px;
 }
+
+
+/* Authentication screen safety: the full-width dock must never intercept
+ * input clicks after the Control Room loses its active screen state. */
+#rawAudioDock[hidden]{
+ display:none!important;
+ pointer-events:none!important;
+}
