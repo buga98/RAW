@@ -35,3 +35,15 @@ test("archive JSON validation still refuses forged prototype and constructor key
  assert.match(source,/parseKeys=new Set\(\["__proto__","prototype","constructor"\]\)/);
  assert.match(source,/Object\.getPrototypeOf\(value\)!==Object\.prototype/);
 });
+
+test("standalone archive fixture loads native module in same realm as model objects",()=>{
+ const source=readFileSync(new URL("raw-chain-archive-v1.test.mjs",import.meta.url),"utf8");
+ assert.match(source,/import "\.\.\/raw-chain-archive-v1\.js"/);
+ assert.doesNotMatch(source,/new Function\("window",source\)/);
+});
+test("Windows CRLF does not invalidate exact source-order UI contract tests",()=>{
+ for(const name of ["raw-local-output-ui-v1.test.mjs","raw-local-project-library-ui-contract-v2.test.mjs"]){
+  const source=readFileSync(new URL(name,import.meta.url),"utf8");
+  assert.match(source,/replace\(\/\\r\\n\/g,"\\n"\)/);
+ }
+});
