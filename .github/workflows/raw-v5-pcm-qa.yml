@@ -1,0 +1,28 @@
+name: RAW V5 Offline Audio QA
+on:
+  push:
+    branches:
+      - feature/studio-audio-worker-v5
+  pull_request:
+    branches:
+      - feature/studio-audio-worker-v5
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  pcm-tests:
+    name: PCM test / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: V5 and V5.1 offline audio regression
+        run: node --test tests/raw-virtual-audio-loopback-v5.test.mjs tests/raw-virtual-pcm-block-engine-v5.test.mjs
