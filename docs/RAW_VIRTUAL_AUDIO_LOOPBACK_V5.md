@@ -41,3 +41,17 @@ Run:
 - `npm run test:smoke` — full repository regression tests
 
 Before moving to V5.2, verify all tests on Windows and do not merge this branch into production. A future worker must add authenticated adapter boundaries, safe cancellation, clock-drift detection, and lossless capture verification before any DAC/ADC or physical hardware I/O.
+
+
+## V5.2 — virtual PCM SHA-256 integrity and abort
+
+`raw-virtual-pcm-integrity-v5.mjs` composes the bounded PCM block engine and its stereo metering in an isolated Node test-only session. It consumes valid ordered Float32 blocks incrementally and produces source and virtual-capture SHA-256 digests **only after successful finalization**. Canonical digest bytes are: the `RAW5PCM\\0` domain tag, little-endian sample rate, interleaved L/R little-endian Float32 sample words, then a little-endian unsigned 64-bit frame count. Block boundaries do not affect the digest. The format is an internal test fingerprint, not a standardized WAV hash.
+
+Status states are `OPEN`, `ABORTED`, `REJECTED`, and `COMPLETE_SIMULATION_ONLY`. `abort()` makes further processing impossible, and empty/mismatched streams do not yield completed receipts. An optional trusted expected source hash is checked on finalization. Bad packet shape, non-finite audio or unexpected sequence is rejected atomically by the V5.1 block engine so the caller can retry a corrected block. Hashing requires bounded memory per block; no full recording is retained.
+
+The receipt explicitly reports `analogCaptured:false`, `hardwareProcessed:false`, `physicalReadback:false`, `masterAvailable:false`, `transportAllowed:false`. It does not authorize playback, studio routing, file delivery or billing. Cryptographic hashes establish sample identity within this local test pipeline, **not physical provenance, ownership, or authentic capture hardware**.
+
+Check:
+- `npm run studio:audio:v5:integrity:check` — V5.2 tests
+- `npm run studio:audio:v5:check` — all V5/V5.1/V5.2 tests
+- `npm run test:smoke` — full regression suite
