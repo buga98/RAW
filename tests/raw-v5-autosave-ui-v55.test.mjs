@@ -98,6 +98,7 @@ test('AutoSave UI exists in normal Projects/Control Room, never adds new develop
  assert.match(html,/src="raw-v5-autosave-panel-v55\.js"/);
  assert.match(html,/src="raw-v5-autosave-restore-v56\.js"/);
  assert.match(html,/recoveryRecall,/);
+ assert.match(html,/window\.RAWAutoSaveV55UI\?\.discoverBeforeSession\?\.\(projectsHost/);
  assert.match(html,/id="rawAutosaveConsoleStatus"/);
  assert.match(html,/window\.RAWAutoSaveV55UI\?\.mount\?\.\(projectsHost/);
  assert.match(html,/window\.RAWAutoSaveV55UI\?\.notifyChanged\?\.\(\)/);
@@ -114,8 +115,8 @@ test('AutoSave panel runs on its own and shows a simple status without button pr
  await settle();
  assert.equal(f.opens,1);
  assert.equal(f.created,1);
- assert.equal(f.registry['[data-autosave-status]'].textContent.startsWith('AUTO SAVE ACTIVE'),true);
- assert.equal(f.consoleTag.textContent,'AUTO SAVE · SAVED');
+ assert.equal(f.registry['[data-autosave-status]'].textContent.startsWith('AUTO SAVE SAVED'),true);
+ assert.equal(f.consoleTag.textContent,'AUTO SAVE · SAVED #2');
  assert.equal(f.registry['[data-autosave-recovery-actions]'].hidden,true);
  assert.equal(f.startedTimers,1);
  f.window.RAWAutoSaveV55UI.stop();
@@ -219,4 +220,95 @@ test('V5.6 UI never restores when authenticated session is revoked',async()=>{
  await f.registry['[data-autosave-restore]'].click();
  assert.equal(f.restores,0);
  f.window.RAWAutoSaveV55UI.stop();
+});
+
+test('pre-session Projects visit reports RECOVERABLE COPY FOUND without opening rack',async()=>{
+ const source=read('raw-v5-autosave-panel-v55.js');
+ const nodes=[];
+ const createElement=tag=>{
+  const el={tag,children:[],textContent:'',className:'',
+   setAttribute(){},append(...children){this.children.push(...children);},
+   remove(){this.removed=true;}};
+  nodes.push(el);return el;
+ };
+ const host={nodes:[],prepend(el){this.nodes.unshift(el);}};
+ let lookup='RECOVERY_AVAILABLE',inspects=0;
+ const window={
+  RAWAutoSaveRecoveryV55:{
+   inspect:async()=>{inspects++;return {
+    phase:lookup,sequence:4,lastSavedAt:'2026-11-09T11:00:00Z',
+    pendingRecovery:lookup==='RECOVERY_AVAILABLE'
+   };}
+  }
+ };
+ const document={createElement,getElementById(){return null;}};
+ window.document=document;
+ vm.runInNewContext(source,{window,document,Blob});
+ const ui=window.RAWAutoSaveV55UI;
+ assert.equal(ui.discoverBeforeSession(host,{
+  userId:'verified-uid',canRead:()=>true
+ }),true);
+ await settle();
+ assert.equal(inspects,1);
+ assert.equal(host.nodes.length,1);
+ assert.equal(host.nodes[0].children[1].textContent,'RECOVERABLE COPY FOUND');
+ assert.match(host.nodes[0].children[2].textContent,/Pokreni novu LOCAL TEST sesiju/);
+ assert.equal(host.nodes[0].children[2].textContent.includes('automatski primijenjena'),true);
+ ui.stop();
+ assert.equal(host.nodes[0].removed,true);
+});
+test('pre-session recovery clearly distinguishes NO COPY from storage errors',async()=>{
+ const source=read('raw-v5-autosave-panel-v55.js'),rows=[];
+ let phase='ACTIVE';
+ const window={RAWAutoSaveRecoveryV55:{
+  inspect:async()=>({phase,lastSavedAt:null,sequence:0,
+   warning:phase==='CORRUPT'?'SHA mismatch':null})
+ }};
+ const document={
+  createElement(tag){return {tag,children:[],textContent:'',
+   setAttribute(){},append(...els){this.children.push(...els);},remove(){}};},
+  getElementById(){return null;}
+ };
+ window.document=document;
+ vm.runInNewContext(source,{window,document,Blob});
+ const host={prepend(el){rows.push(el);}};
+ const ui=window.RAWAutoSaveV55UI;
+ ui.discoverBeforeSession(host,{userId:'local-uid',canRead:()=>true});
+ await settle();
+ assert.equal(rows.at(-1).children[1].textContent,'NO LOCAL RECOVERY COPY');
+ phase='CORRUPT';
+ ui.discoverBeforeSession(host,{userId:'local-uid',canRead:()=>true});
+ await settle();
+ assert.equal(rows.at(-1).children[1].textContent,'RECOVERY COPY CORRUPT');
+ assert.match(rows.at(-1).children[2].textContent,/SHA mismatch/);
+ ui.stop();
+});
+test('AutoSave starts initial checkpoint immediately after empty local journal opens',async()=>{
+ let onChange,flushes=0;
+ const source=read('raw-v5-autosave-panel-v55.js');
+ const doc={
+  createElement(){return {innerHTML:'',querySelector(sel){return this.widgets[sel]||null;},
+   widgets:Object.fromEntries([
+    '[data-autosave-preview]','[data-autosave-export]','[data-autosave-discard]',
+    '[data-autosave-restore]','[data-autosave-undo]'
+   ].map(name=>[name,{addEventListener(){},set disabled(v){},set hidden(v){}}])),
+   remove(){}};},
+  getElementById(){return null;}
+ };
+ const service={
+  open:async()=>({phase:'ACTIVE',sequence:0,lastSavedAt:null}),
+  flush:async()=>{flushes++;return true;},
+  snapshot:()=>({phase:'ACTIVE',sequence:0,lastSavedAt:null}),
+  close(){},schedule(){}
+ };
+ const win={document:doc,RAWAutoSaveRecoveryV55:{create(){return service;}},
+  setInterval:()=>1,clearInterval(){}};
+ vm.runInNewContext(source,{window:win,document:doc,Blob});
+ const host={prepend(){}};
+ assert.equal(win.RAWAutoSaveV55UI.mount(host,{
+  userId:'owner',sessionId:'local',capture:()=>({}),canWrite:()=>true
+ }),true);
+ await settle();await settle();
+ assert.equal(flushes,1);
+ win.RAWAutoSaveV55UI.stop();
 });
