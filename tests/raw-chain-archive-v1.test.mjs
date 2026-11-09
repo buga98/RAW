@@ -1,8 +1,12 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
+import "../raw-chain-archive-v1.js";
 const source=readFileSync(new URL("../raw-chain-archive-v1.js",import.meta.url),"utf8");
-function library(){const target={};new Function("window",source)(target);return target.RAWChainArchiveV1;}
+// Import the trusted local module in the same Node realm as its model fixtures.
+ // new Function("window", source) can create incompatible Object prototypes in
+ // some Node test contexts and makes valid snapshots fail the strict validator.
+function library(){return globalThis.RAWChainArchiveV1;}
 const states={
  meq:{snapshot:()=>({slot:"A",A:{eq1Gain:4},B:{eq1Gain:0}})},
  manual:{bankChannels:{A:{A:{eq1Gain:4},B:{eq1Gain:4}}},bankOptions:{A:{A:{filters:{eq1:true}}}},
