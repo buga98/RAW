@@ -276,6 +276,7 @@
   <script src="ngbuscomp-control-v1.js"></script>
   <script src="ngtubecomp-control-v1.js"></script>
   <script src="studio-state-reconciliation-v3.js"></script>
+  <script src="raw-local-reconnect-v57.js"></script>
   <script src="studio-sim-client.js"></script>
   <script src="studio-gateway-client.js"></script>
   <script type="module">
@@ -1507,6 +1508,7 @@ const rawProjectUiOptions={
   canStageSources:()=>TEST_MODE===true&&!!activeSessionId&&
     !window.RAWStudioGatewayV1?.interceptsControls?.()&&
     !window.RAWStudioSim?.interceptsControls?.()&&
+    !window.RAWStudioSim?.reconnecting?.()&&
     !window.RAWDawBridge?.isActive?.(),
   stageSources:async files=>{
     if(!TEST_MODE||!activeSessionId||
@@ -1569,6 +1571,7 @@ const localRackRecallOptions={
   canRestore:()=>TEST_MODE===true&&!!currentUser?.emailVerified&&!!activeSessionId&&
     !window.RAWStudioGatewayV1?.interceptsControls?.()&&
     !window.RAWStudioSim?.interceptsControls?.()&&
+    !window.RAWStudioSim?.reconnecting?.()&&
     !window.RAWDawBridge?.isActive?.(),
   refresh:()=>{
     if(rawBm3Model && window.RAWBettermakerEngineV3LocalRefresh?.()!==true)return false;
