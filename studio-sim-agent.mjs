@@ -1,6 +1,6 @@
 // RAW Offline Studio Agent V2: dedicated loopback TEST harness, never hardware.
 // No physical USB/HID/GCon/MIDI, no real audio processing, cloud data or billing.
-// Launch explicitly with: npm run studio:agent:sim (only 127.0.0.1:7075).
+// Launch explicitly with: npm run studio:agent:sim (only 127.0.0.1:7077).
 import { WebSocketServer } from "ws";
 import { fileURLToPath } from "node:url";
 import { resolve } from "node:path";
@@ -12,7 +12,7 @@ const HEARTBEAT_MS = 30_000;
 const WINDOW_MS = 1_000;
 const MAX_COMMANDS = 35;
 const DEMO_HOST = "127.0.0.1";
-const DEFAULT_PORT = 7075;
+const DEFAULT_PORT = 7077;
 
 export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
  const simulator=new StudioDeviceSimulator({now});
@@ -147,7 +147,7 @@ const launched=process.argv[1]&&resolve(process.argv[1])===fileURLToPath(import.
 if(launched){
  const agent=createStudioSimAgent();
  agent.server.on("listening",()=>{
-  console.log("RAW SIM AGENT | ws://127.0.0.1:7075 | LOCAL TEST ONLY");
+  console.log("RAW SIM AGENT | ws://127.0.0.1:7077 | LOCAL TEST ONLY");
   console.log("NO AUTHENTICATED PRODUCTION SESSION, PHYSICAL HARDWARE, AUDIO, CLOUD OR BILLING");
  });
  agent.server.on("error",error=>{console.error("Simulator start failed:",error.message);process.exitCode=1;});
