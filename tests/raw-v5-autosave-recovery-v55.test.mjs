@@ -48,6 +48,7 @@ function fixture(backend=fakeBackend(),userId='verified-owner-uid'){
  const create=(overrides={})=>{
   const x=w.RAWAutoSaveRecoveryV55.create({
    userId,capture,backend,cryptoRef:webcrypto,delayMs:200,canWrite:()=>allowed,
+   timers:{setTimeout,clearTimeout},
    ...overrides
   });
   instances.push(x);return x;
