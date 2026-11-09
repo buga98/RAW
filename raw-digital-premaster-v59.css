@@ -1,0 +1,35 @@
+/* RAW V5.9 — local DIGITAL premaster lane, intentionally separate from analog rack. */
+.raw-digital-premaster{
+ margin:22px 0 4px;padding:20px 22px;background:linear-gradient(135deg,#0e2533,#10252c);
+ border:1px solid rgba(115,196,188,.28);border-radius:14px;color:#e0efeb
+}
+.raw-dpm-head{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;margin-bottom:14px}
+.raw-dpm-head small{font:700 11px Consolas,monospace;color:#93bfb9;letter-spacing:.1em}
+.raw-dpm-head h3{font-size:20px;letter-spacing:.04em;margin:5px 0}
+.raw-dpm-head p{margin:0;line-height:1.5;color:#b5d0ca;font-size:12px}
+.raw-dpm-head>span{flex:none;border:1px solid rgba(95,183,174,.3);
+ border-radius:99px;padding:7px 10px;color:#c9e5da;font-size:10px;font-weight:800}
+.raw-dpm-settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(175px,1fr));gap:11px;margin:15px 0}
+.raw-dpm-settings label{font-size:10px;font-weight:800;letter-spacing:.04em;color:#bbd9d3;
+ display:flex;flex-direction:column;gap:6px}
+.raw-dpm-settings input:not([type=checkbox]),.raw-dpm-settings select{
+ width:100%;box-sizing:border-box;background:#09202b;color:#f3fffc;padding:10px 11px;
+ border:1px solid rgba(151,201,194,.34);border-radius:8px;font-size:13px;min-height:38px
+}
+.raw-dpm-settings .raw-dpm-check{flex-direction:row;align-items:center;gap:10px;line-height:1.5}
+.raw-dpm-check input{width:17px;height:17px}
+.raw-dpm-actions{display:flex;flex-wrap:wrap;gap:9px;margin:15px 0 11px}
+.raw-dpm-actions button{
+ min-height:37px;background:rgba(43,91,90,.55);border:1px solid rgba(125,210,195,.45);
+ color:#eafaf4;border-radius:8px;padding:8px 13px;font-size:11px;font-weight:800;cursor:pointer
+}
+.raw-dpm-actions button:first-child{background:#216c63}
+.raw-dpm-actions button:disabled{opacity:.4;cursor:not-allowed}
+.raw-digital-premaster progress{width:100%;height:8px;accent-color:#4eae9b;display:block;margin:10px 0}
+.raw-digital-premaster [data-v59-status]{font:700 12px/1.6 Consolas,monospace;color:#b6e7d8}
+.raw-digital-premaster [data-v59-metrics]{overflow-wrap:anywhere;white-space:pre-wrap;
+ font:11px/1.8 Consolas,monospace;border:1px solid rgba(132,186,179,.18);background:rgba(7,24,30,.6);
+ border-radius:9px;padding:14px;max-height:225px;overflow:auto}
+.raw-digital-premaster audio{width:100%;height:42px;margin:4px 0}
+.raw-dpm-footnote{margin:9px 0 0;color:#b1c5c4;font-size:11px;line-height:1.5}
+@media(max-width:720px){.raw-dpm-head{flex-direction:column}.raw-digital-premaster{padding:15px}}
