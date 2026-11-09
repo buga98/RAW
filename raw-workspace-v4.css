@@ -338,3 +338,42 @@ body {
  .sidebar.glass{padding:13px}
  .main.glass{min-height:0}
 }
+
+
+/* Workspace V4 sidebar header fix: the toggle occupies its own flow row.
+ * Previously absolute positioning covered the RAW MASTERING brand on 268px
+ * sidebars, especially with wider system font rendering / UI scaling.
+ * Scoped to the V4 layout; existing collapsed dock remains centered.
+ */
+.sidebar.glass > .sidebar-toggle {
+  position: static;
+  align-self: flex-end;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  margin: 0 0 10px;
+  transform: none;
+}
+.sidebar.glass .brand {
+  min-width: 0;
+  width: 100%;
+  padding: 0 0 18px;
+}
+.sidebar.glass .brand > div:not(.logo) {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+.sidebar.glass .brand h1 {
+  white-space: normal;
+  overflow-wrap: break-word;
+  line-height: 1.18;
+  letter-spacing: .1em;
+}
+.sidebar.glass .brand p {
+  white-space: normal;
+  overflow-wrap: break-word;
+}
+body.sidebar-collapsed .sidebar.glass > .sidebar-toggle {
+  align-self: center;
+  margin: 0 auto 14px;
+}
