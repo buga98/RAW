@@ -49,3 +49,5 @@
 }
 #rawAutosaveConsoleStatus[data-state='ERROR'],
 #rawAutosaveConsoleStatus[data-state='CORRUPT']{color:#f1a99f;border-color:rgba(241,127,111,.4)}
+
+#rawAutosaveConsoleStatus[hidden]{display:none!important}
