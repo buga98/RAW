@@ -575,6 +575,18 @@ window.goTo = function(screenId) {
     });
   }
 
+  // V5.6 hotfix: discover the previous owner-scoped recovery journal as soon as
+  // Moji projekti is opened, even BEFORE a new LOCAL TEST chain is started.
+  // Read-only: no default rack snapshot can overwrite the verified old one.
+  if(screenId==="projects"&&TEST_MODE&&!activeSessionId&&currentUser?.emailVerified){
+    const ownerUid=currentUser.uid;
+    window.RAWAutoSaveV55UI?.discoverBeforeSession?.(projectsHost,{
+      userId:ownerUid,
+      canRead:()=>TEST_MODE===true&&!activeSessionId&&
+        currentUser?.uid===ownerUid&&currentUser?.emailVerified===true&&
+        auth.currentUser?.uid===ownerUid
+    });
+  }
   if ((screenId === "projects" || screenId === "developer") &&
       activeSessionId && !projectsHost.querySelector(".raw-library-panel")) renderPlugin();
   // Navigating back must NOT recreate the virtual rack: a fresh model would
