@@ -1555,6 +1555,7 @@ window.RAWLocalProjectLibraryPanelV2?.attach(projectsHost, {
 projectStatus?.evaluate();
 }
 window.RAWDawBridge?.refresh();
+bindRackExpansionFit();
 fitRackDevices();
 initWaveform(firstAudioFile);
 }
@@ -1867,6 +1868,19 @@ window.setRackSize = function(percent) {
   localStorage.setItem("rawRackSizePercent", String(next));
   fitRackDevices();
 };
+
+// Native <details> controls change the unscaled device height. Refit their
+// enclosing rack slot after each open/close; RACK SIZE is not a refresh button.
+function bindRackExpansionFit() {
+  pluginHost.querySelectorAll("[data-rack-fit] details").forEach(details => {
+    details.addEventListener("toggle", () => {
+      requestAnimationFrame(() => {
+        if (document.getElementById("plugin")?.classList.contains("active"))
+          fitRackDevices();
+      });
+    });
+  });
+}
 
 function fitRackDevices() {
   const factor = rackSizePercent / 100;
