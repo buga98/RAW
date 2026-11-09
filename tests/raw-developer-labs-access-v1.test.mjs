@@ -139,6 +139,7 @@ test("login navigation removes fixed audio dock and restores email input focus",
    querySelectorAll:selector=>selector===".screen"?Object.values(screens):buttons
   },
   window:{requestAnimationFrame:callback=>callback()},
+  requestAnimationFrame:callback=>callback(),
   fitRackDevices(){},renderPlugin(){},renderSessions(){}
  };
  vm.runInNewContext(nav+";window.goTo('login');",context);
