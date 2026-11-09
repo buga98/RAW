@@ -23,8 +23,8 @@ function createWindow(){
     width: 1400, height: 900,
     minWidth: 1000, minHeight: 700,
     backgroundColor: "#07111f",
-    icon: path.join(__dirname, "icon.png"),
-    title: "Remote Studio",
+    icon: path.join(__dirname, "raw-brand-icon.png"),
+    title: "RAW Mastering · Remote Audio Workstation",
     webPreferences:{
       preload: path.join(__dirname, "preload.js"),
       nodeIntegration:false,
