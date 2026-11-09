@@ -12,6 +12,7 @@
   <link rel="stylesheet" href="studio-gateway-client.css" />
   <link rel="stylesheet" href="raw-workspace-v4.css" />
   <link rel="stylesheet" href="raw-v5-diagnostics.css" />
+  <link rel="stylesheet" href="raw-v5-worker.css" />
 </head>
 <body>
   <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
@@ -239,6 +240,7 @@
           <button type="button" class="ghost-btn" onclick="checkDeveloperAccess()">REVERIFY ACCESS</button>
           <button type="button" class="ghost-btn" id="rawDiagnosticsToggle" onclick="toggleRawDiagnostics()" aria-expanded="false">AUDIO DIAGNOSTICS</button>
           <button type="button" class="ghost-btn" id="rawV5DiagnosticsToggle" onclick="toggleRawV5Diagnostics()" aria-expanded="false">V5 AUDIO ENGINE</button>
+          <button type="button" class="ghost-btn" id="rawV54WorkerToggle" onclick="toggleRawV54Worker()" aria-expanded="false">V5 AUDIO WORKER</button>
         </div>
         <div id="developerLabHost" class="raw-developer-labs">
           <p>Pokreni lokalnu testnu sesiju kako bi se prikazali Gateway, Simulator, Chain Archive i DAW Bridge.</p>
@@ -250,6 +252,7 @@
 
   <script src="audio-diagnostics.js"></script>
   <script src="raw-v5-diagnostics-ui.js"></script>
+  <script src="raw-v5-worker-ui.js"></script>
   <script src="raw-local-wav-export-v1.js"></script>
   <script src="raw-chain-archive-v1.js"></script>
   <script src="raw-chain-recall-planner-v2.js"></script>
@@ -354,6 +357,7 @@ function revokeDeveloperLabs(){
   window.RAWStudioSim?.disconnect?.();
   window.RAWDawBridge?.disconnect?.();
   window.RAWAudioV5Lab?.detach?.();
+  window.RAWAudioWorkerV54Lab?.detach?.();
   document.getElementById("developerLabHost")?.replaceChildren();
   updateDeveloperUi();
 }
@@ -374,6 +378,7 @@ function mountDeveloperLabs(){
   }
   window.RAWDawBridge?.refresh();
   window.RAWAudioV5Lab?.attach?.(developerLabHost,developerAllowed);
+  window.RAWAudioWorkerV54Lab?.attach?.(developerLabHost,developerAllowed);
 }
 async function authorizeDeveloper(user) {
   const attempt=++developerAuthEpoch;
@@ -1449,6 +1454,7 @@ if (developerAllowed()) {
   developerLabHost.querySelector(".raw-daw-toolbar")?.remove();
   if(dawToolbar)developerLabHost.prepend(dawToolbar);
   window.RAWAudioV5Lab?.attach?.(developerLabHost,developerAllowed);
+  window.RAWAudioWorkerV54Lab?.attach?.(developerLabHost,developerAllowed);
 }else{
   pluginHost.querySelector(".raw-daw-toolbar")?.remove();
   pluginHost.querySelector("#rawDiagnosticsDetails")?.remove();
