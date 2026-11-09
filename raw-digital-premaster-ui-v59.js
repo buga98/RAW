@@ -21,7 +21,7 @@ function resetRender(){
  rendered=null;revoke();
  const player=el("[data-v59-player]");
  if(player){try{player.pause();player.removeAttribute("src");player.load();}catch{}}
- for(const selector of ["[data-v59-download]","[data-v59-ab-a]","[data-v59-ab-b]"]){
+ for(const selector of ["[data-v59-download]","[data-v59-qc]","[data-v59-ab-a]","[data-v59-ab-b]"]){
   const button=el(selector);if(button)button.disabled=true;
  }
  const progress=el("[data-v59-progress]");if(progress)progress.value=0;
@@ -67,7 +67,7 @@ async function process(){
  const current=++generation;
  const token={cancelled:false};run=token;rendered=null;
  revoke();
- const buttons=["[data-v59-start]","[data-v59-download]","[data-v59-ab-a]","[data-v59-ab-b]"];
+ const buttons=["[data-v59-start]","[data-v59-download]","[data-v59-qc]","[data-v59-ab-a]","[data-v59-ab-b]"];
  buttons.forEach(sel=>{const b=el(sel);if(b)b.disabled=true;});
  const abort=el("[data-v59-cancel]");if(abort)abort.disabled=false;
  const metrics=el("[data-v59-metrics]");
@@ -89,7 +89,11 @@ async function process(){
   if(token.cancelled||current!==generation||!allowed())return;
   const blob=new Blob(out.chunks,{type:"audio/wav"});
   if(blob.size!==out.byteLength)throw new Error("Digital WAV byte size mismatch");
-  rendered={blob,out,file};
+  status("VERIFYING DIGITAL WAV · SHA-256 + offline sample-peak QC");
+  if(!global.RAWMasterQCV510?.inspect)throw new Error("Digital QC module unavailable");
+  const qc=await global.RAWMasterQCV510.inspect({result:out,blob,sourceName:file.name});
+  if(token.cancelled||current!==generation||!allowed())return;
+  rendered={blob,out,file,qc};
   const output=el("[data-v59-metrics]");
   if(output)output.textContent=
    "INPUT  | "+measure(out.inputMeter)+"\n"+
@@ -98,15 +102,21 @@ async function process(){
    " · COMPRESSOR MAX REDUCTION: "+out.maxCompressorReductionDb.toFixed(2)+" dB\n"+
    "DIGITAL WAV "+out.outputBits+"-BIT · "+out.frames+" FRAMES · "+
    out.sampleRate+" Hz · "+(out.outputDither?"TPDF DITHER":"NO DITHER")+"\n"+
-   "Not a calibrated LUFS/true-peak meter. Not Bettermaker/WesAudio processing.";
-  status("DIGITAL PREMASTER READY · processed PCM available · NOT ANALOG MASTER");
+   "Not a calibrated LUFS/true-peak meter. Not Bettermaker/WesAudio processing."+
+   "\nDIGITAL QC: "+qc.overall+" · SHA-256: "+qc.sha256+
+   "\n"+qc.diagnostics.map(entry=>entry.status+" · "+entry.description).join("\n");
+  status((qc.downloadAllowed?"DIGITAL PREMASTER READY · QC "+qc.overall:
+     "DIGITAL PREMASTER REJECTED · QC FAIL")+
+   " · LOCAL WAV SHA-256 VERIFIED · NOT ANALOG MASTER");
   previewUrl=global.URL.createObjectURL(blob);
   originalUrl=global.URL.createObjectURL(file);
   const player=el("[data-v59-player]");
   if(player){player.src=previewUrl;player.load();}
-  ["[data-v59-download]","[data-v59-ab-a]","[data-v59-ab-b]"].forEach(sel=>{
+  ["[data-v59-qc]","[data-v59-ab-a]","[data-v59-ab-b]"].forEach(sel=>{
    const b=el(sel);if(b)b.disabled=false;
   });
+  const download=el("[data-v59-download]");
+  if(download)download.disabled=!qc.downloadAllowed;
  }catch(error){
   if(current===generation&&panel&&allowed()&&!token.cancelled){
    status("DIGITAL RENDER FAILED · "+String(error?.message||error).slice(0,145));
@@ -121,7 +131,7 @@ async function process(){
  }
 }
 function download(){
- if(!allowed()||!rendered||!previewUrl)return;
+ if(!allowed()||!rendered?.qc?.downloadAllowed||!previewUrl)return;
  const a=global.document.createElement("a");
  a.href=previewUrl;
  a.download=raw().safeFilename(rendered.file.name);
@@ -129,6 +139,19 @@ function download(){
  try{a.click();}
  finally{a.remove();}
  status("DOWNLOADED "+a.download+" · OFFLINE DIGITAL PREMASTER, not analog master");
+}
+function downloadQC(){
+ if(!allowed()||!rendered?.qc)return;
+ const blob=new Blob([JSON.stringify(rendered.qc,null,2)],{type:"application/json"});
+ const url=global.URL.createObjectURL(blob);
+ const a=global.document.createElement("a");
+ a.href=url;a.download=global.RAWMasterQCV510.jsonFileName(rendered.file.name);
+ a.hidden=true;global.document.body.append(a);
+ try{a.click();}finally{
+  a.remove();
+  global.setTimeout(()=>global.URL.revokeObjectURL(url),10000);
+ }
+ status("DIGITAL QC REPORT DOWNLOADED · SHA-256 "+rendered.qc.sha256.slice(0,12)+"… · LOCAL ONLY");
 }
 function listen(original){
  if(!allowed()||!rendered||!previewUrl||!originalUrl)return;
@@ -183,6 +206,7 @@ function attach(host,{getFile,canUse}={}){
  '<button type="button" data-v59-start>▶ RENDER DIGITAL PREMASTER</button>'+
  '<button type="button" data-v59-cancel disabled>■ CANCEL</button>'+
  '<button type="button" data-v59-download disabled>↓ DOWNLOAD DIGITAL WAV</button>'+
+ '<button type="button" data-v59-qc disabled>↓ EXPORT QC JSON</button>'+
  '<button type="button" data-v59-ab-a disabled>A · ORIGINAL</button>'+
  '<button type="button" data-v59-ab-b disabled>B · DIGITAL</button></div>'+
  '<progress data-v59-progress value="0" max="100"></progress>'+
@@ -196,6 +220,7 @@ function attach(host,{getFile,canUse}={}){
   if(run){run.cancelled=true;status("CANCEL REQUESTED · no output will be delivered");}
  });
  el("[data-v59-download]").addEventListener("click",download);
+ el("[data-v59-qc]").addEventListener("click",downloadQC);
  el("[data-v59-ab-a]").addEventListener("click",()=>listen(true));
  el("[data-v59-ab-b]").addEventListener("click",()=>listen(false));
  // A rendered file must never be downloadable under settings it was not
