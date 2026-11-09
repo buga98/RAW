@@ -65,7 +65,11 @@ function capture({chainOrder,meq,manual,bus,tube,label="RAW Chain"}={}){
    bankChannels:clone(manual.bankChannels),bankOptions:clone(manual.bankOptions),
    channel:manual.channel,mode:manual.mode,locked:manual.locked,
    peakHold:manual.peakHold,brightness:manual.brightness,
-   notes:manual.notes===true,rtaSource:manual.rtaSource,rtaStyle:manual.rtaStyle
+   notes:manual.notes===true,
+   // Optional legacy manual settings must not enter strict archive validation
+   // as undefined: JSON objects can omit these fields but cannot store undefined.
+   ...(manual.rtaSource===undefined?{}:{rtaSource:manual.rtaSource}),
+   ...(manual.rtaStyle===undefined?{}:{rtaStyle:manual.rtaStyle})
   }:null}:null,
   ngbuscomp:bus?bus.export():null,
   ngtubecomp:tube?tube.export():null
