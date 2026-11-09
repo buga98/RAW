@@ -5,9 +5,10 @@ import vm from "node:vm";
 
 const trackerCode=readFileSync(new URL("../studio-state-reconciliation-v3.js",import.meta.url),"utf8");
 const clientCode=readFileSync(new URL("../studio-sim-client.js",import.meta.url),"utf8");
+const reconnectCode=readFileSync(new URL("../raw-local-reconnect-v57.js",import.meta.url),"utf8");
 const SESSION="test-1793883600000";
 function harness(){
- let time=0,idSeq=0;
+ let time=0,idSeq=0,currentSession=SESSION;
  const clock=new Map(),sockets=[];
  const tick=ms=>{
   time+=ms;
@@ -57,7 +58,7 @@ function harness(){
  }
  const window={
   location:{search:"?testMode=1"},
-  RAWStudioSimSession:()=>SESSION,
+  RAWStudioSimSession:()=>currentSession,
   RAWDawBridge:{disconnect(){}},
   addEventListener(){},
   RAWStudioStateV3:null
@@ -68,10 +69,11 @@ function harness(){
   setInterval:(fn,ms)=>delay(fn,ms,true),clearInterval:id=>clock.delete(id)
  };
  vm.runInNewContext(trackerCode,context);
+ vm.runInNewContext(reconnectCode,context);
  vm.runInNewContext(clientCode,context);
  window.RAWStudioSim.attach(root);
  return {
-  root,window,clock,tick,sockets,
+  root,window,clock,tick,sockets,setSession:next=>{currentSession=next;},
   latest:()=>sockets.at(-1),
   connect(){
    root.panel.querySelector("#rawSimConnect").click();
@@ -201,4 +203,108 @@ test("audit viewer requests only the current lease and clears on disconnect",()=
  h.window.RAWStudioSim.disconnect();
  assert.doesNotMatch(h.root.panel.querySelector("#rawSimAudit").textContent,/lease-claimed/);
  assert.equal(button.disabled,true);
+});
+
+test("V5.7: unexpected link drop retries automatically and requires a NEW lease + full readback",()=>{
+ const h=harness(),old=h.connect();
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"READY");
+ old.close();
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"RETRY_WAIT");
+ assert.match(h.root.panel.querySelector("#rawSimRecoveryStatus").textContent,/RETRY_WAIT/);
+ h.tick(349);assert.equal(h.sockets.length,1);
+ h.tick(1);assert.equal(h.sockets.length,2);
+ const latest=h.latest();latest.open();
+ assert.equal(latest.sent[0].type,"studio-sim-claim");
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"CLAIMING");
+ assert.equal(h.window.RAWStudioSim.recoveryState().ready,false);
+ latest.receive({type:"studio-sim-claimed",simulated:true,leaseEpoch:2,sessionId:SESSION});
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"RECONCILING");
+ assert.equal(latest.sent.at(-1).type,"studio-sim-snapshot");
+ assert.equal(h.window.RAWStudioSim.recoveryState().ready,false);
+ latest.receive({type:"simulator-snapshot",simulated:true,hardwareVerified:false,
+  leaseEpoch:2,stateVersion:0,devices:{
+   bettermaker_eq:{online:true,source:"simulated-memory",values:{eq1Gain:0}},
+   ngbuscomp:{online:true,source:"simulated-memory",values:{L_threshold:-8.5}},
+   ngtubecomp:{online:true,source:"simulated-memory",values:{L_thd:0}}
+  }});
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"READY");
+ assert.equal(h.window.RAWStudioSim.recoveryState().attempts,2);
+ assert.equal(latest.sent.filter(m=>m.type==="parameter-change").length,0);
+ assert.match(h.history(),/AUTO RECOVERY VERIFIED/);
+});
+test("V5.7: pending commands from dead connection are NEVER replayed",()=>{
+ const h=harness(),old=h.connect();
+ h.move("ngbuscomp","L_threshold",-11);
+ const cmd=old.sent.find(m=>m.type==="parameter-change");
+ assert.ok(cmd);
+ old.close();
+ h.move("ngbuscomp","L_threshold",-12);
+ h.tick(350);
+ const current=h.latest();current.open();
+ current.receive({type:"studio-sim-claimed",simulated:true,leaseEpoch:2,sessionId:SESSION});
+ h.move("ngbuscomp","L_threshold",-13);
+ assert.equal(current.sent.some(m=>m.type==="parameter-change"),false);
+ old.receive({type:"simulator-command-result",requestId:cmd.requestId,
+  sequence:cmd.sequence,sessionId:SESSION,leaseEpoch:1,
+  deviceId:"ngbuscomp",parameter:"L_threshold",
+  status:"simulated-applied",simulated:true,hardwareVerified:false,
+  stateVersion:1,readback:{value:-11,source:"simulated-memory"}});
+ current.receive({type:"simulator-snapshot",simulated:true,hardwareVerified:false,
+  leaseEpoch:2,stateVersion:2,devices:{
+   bettermaker_eq:{online:true,source:"simulated-memory",values:{eq1Gain:0}},
+   ngbuscomp:{online:true,source:"simulated-memory",values:{L_threshold:-8.5}},
+   ngtubecomp:{online:true,source:"simulated-memory",values:{L_thd:0}}
+  }});
+ assert.equal(current.sent.filter(m=>m.type==="parameter-change").length,0);
+ assert.equal(h.window.RAWStudioSim.recoveryState().commandsReplayed,0);
+ h.move("ngbuscomp","L_threshold",-14);
+ assert.equal(current.sent.filter(m=>m.type==="parameter-change").length,1,
+  "ONLY deliberate new post-readback changes may be sent");
+});
+test("V5.7: offline device pauses and requires new snapshot before forwarding",()=>{
+ const h=harness(),sock=h.connect();
+ sock.receive({type:"simulator-device-state",deviceId:"ngbuscomp",online:false});
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"PAUSED_DEVICE");
+ const n=sock.sent.length;
+ h.move("bettermaker_eq","eq1Gain",2);
+ assert.equal(sock.sent.length,n);
+ sock.receive({type:"simulator-device-state",deviceId:"ngbuscomp",online:true});
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"PAUSED_DEVICE");
+ sock.receive({type:"simulator-snapshot",simulated:true,hardwareVerified:false,
+  leaseEpoch:1,stateVersion:1,devices:{
+   bettermaker_eq:{online:true,source:"simulated-memory",values:{eq1Gain:0}},
+   ngbuscomp:{online:true,source:"simulated-memory",values:{L_threshold:-8.5}},
+   ngtubecomp:{online:true,source:"simulated-memory",values:{L_thd:0}}
+  }});
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"READY");
+});
+test("V5.7: intentional manual disconnect cancels scheduled auto-reconnect",()=>{
+ const h=harness(),s=h.connect();
+ s.close();
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"RETRY_WAIT");
+ h.root.panel.querySelector("#rawSimConnect").click();
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"IDLE");
+ h.tick(30000);
+ assert.equal(h.sockets.length,1);
+});
+test("V5.7: owner session changed or lease occupied never auto-claims a new session",()=>{
+ const h=harness(),old=h.connect();
+ old.close();h.setSession("test-1793883600001");
+ h.tick(350);
+ assert.equal(h.sockets.length,1);
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"IDLE");
+ const another=harness();const socket=another.connect();
+ socket.receive({type:"studio-sim-state",status:"occupied",owner:false});
+ assert.equal(another.window.RAWStudioSim.recoveryState().phase,"BLOCKED");
+ another.tick(30000);assert.equal(another.sockets.length,1);
+});
+test("V5.7: Developer link drop button uses real unexpected-close logic",()=>{
+ const h=harness(),sock=h.connect();
+ const button=h.root.panel.querySelector("#rawSimDropLink");
+ assert.equal(button.disabled,false);
+ button.click();
+ assert.equal(sock.readyState,3);
+ assert.equal(h.window.RAWStudioSim.recoveryState().phase,"RETRY_WAIT");
+ h.tick(350);
+ assert.equal(h.sockets.length,2);
 });
