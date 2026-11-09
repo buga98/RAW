@@ -80,3 +80,30 @@ Scripts:
 - `npm run studio:audio:v5:diagnostics:check`: V5.3 cases, UI guards and Electron IPC regression.
 - `npm run studio:audio:v5:check`: all V5/V5.1/V5.2/V5.3 cases.
 - `npm run test:smoke`: full RAW regression suite.
+
+
+## V5.4 — isolated audio Worker lifecycle and hands-on recovery tests
+
+The fixed `raw-v5-audio-worker-thread.mjs` uses Node `worker_threads` and V5.2's incremental PCM integrity session. It generates exactly 262,144 virtual stereo Float32 frames (48 kHz), 512 frames per block, and a simulated 256-frame return delay. The thread processes a small batch per timer tick so CANCEL can be received without a tight blocking loop. Results contain only frame counts, stereo source/capture SHA-256, and explicit `simulationOnly` flags. **Nothing leaves the local test process, and no physical signal is recorded.**
+
+The Electron main process owns `raw-v5-audio-worker-manager.cjs`. It allows **one** running Worker at a time, validates a fixed local Electron origin and `RAW_TEST_MODE=1`, accepts only `start`, `cancel`, `reset`, `status`, `crash`, `hang`, and never accepts arbitrary file paths, devices, commands or adapters. A normal run must complete within six seconds; intentional hang is terminated after 1.5 seconds. Errors and unexpected exits fail closed. A failed, cancelled or completed Worker must be explicitly RESET before START again. App shutdown terminates the thread.
+
+### TEST 14 — manual Windows UI verification
+
+1. Stop RAW if already running. On branch `feature/studio-audio-worker-v5` with a clean working tree, run `git pull --ff-only origin feature/studio-audio-worker-v5`, then `npm run studio:audio:v5:check` and `npm run test:smoke`.
+2. Open `npm run test:local`. Sign in with a verified developer account and initialize a LOCAL TEST rack session.
+3. Enter **Programerski dio** → **V5 AUDIO WORKER**. The panel must display `NO HARDWARE · NO BILLING`.
+4. Select **START WORKER**. Watch the **WORKER STATUS**, percent and frame count. It should progress from RUNNING to **COMPLETED**, showing `262144 / 262144`, `CAPTURE: 262400`, and two SHA-256 digests (source differs from capture because of the virtual delay).
+5. Select **RESET / RETRY**, then **START WORKER** again and immediately choose **CANCEL**. The result should be **CANCELLED** with no successful capture receipt.
+6. **RESET / RETRY** → **SIMULATE CRASH**. Expected **FAILED**, code `WORKER_CRASHED`; the app must remain open and responsive.
+7. **RESET / RETRY** → **SIMULATE HANG**. Expected **TIMED_OUT**, code `WORKER_TIMEOUT`, without a false successful receipt.
+8. **RESET / RETRY** → **START WORKER**. Expected **COMPLETED** again after both failure scenarios.
+9. Navigate back to **Control Room** and verify the device values are unchanged; navigate back to the Developer LAB.
+10. Log out and back in, reverify access and reopen the LAB. Stale progress must not be presented as a new successful result. Non-owner and non-LOCAL-TEST environments must not access or start the worker.
+
+**Interpretation:** Worker results verify only offline PCM processing and error handling. They do not measure audio-interface latency, real-time jitter, clock drift, analog coloration, manufacturer parity, or actual master rendering.
+
+Commands:
+- `npm run studio:audio:v5:worker:check`: V5.4 Worker integration + UI + IPC tests.
+- `npm run studio:audio:v5:check`: all V5 tests.
+- `npm run test:smoke`: full repository tests.
