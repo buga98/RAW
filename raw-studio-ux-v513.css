@@ -1,0 +1,126 @@
+/* RAW V5.13–V5.15 — mastering layout / brand / auth navigation.
+ * Restyles existing transport without replacing WaveSurfer or rack nodes.
+ */
+#loginNav[hidden],#accountNav[hidden],#account[hidden]{display:none!important}
+.sidebar .raw-brand-mark{
+ width:48px;height:48px;min-width:48px;flex:0 0 48px;
+ display:flex;align-items:center;justify-content:center;
+ border-radius:11px;background:#101f27;box-shadow:0 8px 22px rgba(0,0,0,.25);
+ overflow:hidden;padding:0;line-height:normal
+}
+.sidebar .raw-brand-mark img{display:block;width:100%;height:100%;object-fit:contain}
+.sidebar.glass .brand h1{letter-spacing:.08em;font-size:15px}
+.sidebar.glass .brand p{letter-spacing:.1em;font-size:9px}
+#account .raw-account-card{
+ display:flex;gap:17px;align-items:center;flex-wrap:wrap;
+ background:linear-gradient(115deg,#112b32,#0c1a24);
+ border:1px solid rgba(135,208,188,.3);border-radius:15px;padding:24px
+}
+.raw-account-symbol{width:56px;height:56px;display:grid;place-items:center;
+ background:#153d3b;color:#96e3cb;border:1px solid #406c63;
+ border-radius:14px;font-size:30px}
+.raw-account-details{flex:1 1 200px;min-width:0;display:flex;flex-direction:column;gap:6px}
+.raw-account-details small{color:#98b8b7;font-size:10px;font-weight:800;letter-spacing:.09em}
+.raw-account-details strong{font-size:16px;overflow-wrap:anywhere}
+.raw-account-details span{color:#b4d3ca;font-size:12px}
+.raw-account-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:17px}
+
+/* Critical fix: the legacy audio region was viewport-fixed and obscured
+ * the DIGITAL PREMASTER audio/A-B player. All states are document-flow. */
+#plugin.active #pluginHost,
+#plugin.active:has(.audio-region-panel.minimized) #pluginHost,
+#plugin.active:has(#rawDiagnosticsDetails:not([hidden])) #pluginHost {
+ padding-bottom:0!important;
+}
+#plugin.active .audio-region-panel,
+body.sidebar-collapsed #plugin.active .audio-region-panel {
+ position:relative!important;inset:auto!important;left:auto!important;
+ right:auto!important;bottom:auto!important;z-index:auto!important;
+ max-height:none!important;overflow:visible!important;
+ width:100%;box-sizing:border-box;
+ margin:20px 0 26px!important;padding:20px 22px 18px!important;
+ border:1px solid rgba(126,206,190,.28)!important;border-radius:15px!important;
+ background:linear-gradient(135deg,#102c34 0%,#0c1a25 85%)!important;
+ box-shadow:0 10px 25px rgba(0,0,0,.24),inset 0 1px rgba(255,255,255,.04)!important;
+ backdrop-filter:none!important;
+}
+#plugin.active .raw-source-transport-v513 .audio-region-head{
+ display:flex;justify-content:space-between;align-items:center;
+ gap:14px;margin-bottom:14px;flex-wrap:wrap
+}
+#plugin.active .raw-source-identity{
+ display:flex;align-items:center;gap:13px;min-width:0;flex:1 1 260px
+}
+#plugin.active .raw-source-icon{
+ width:47px;height:47px;flex:0 0 47px;border-radius:12px;
+ display:grid;place-items:center;background:#173f46;color:#7de8cf;
+ font-size:24px;border:1px solid rgba(122,226,204,.18)
+}
+#plugin.active .raw-source-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+#plugin.active .raw-source-kicker{font:800 10px/1.4 Consolas,monospace;
+ color:#93ccc2;letter-spacing:.09em}
+#plugin.active .raw-source-copy strong{
+ display:block;font-size:17px;line-height:1.2;letter-spacing:.045em;
+ margin:0;white-space:normal
+}
+#plugin.active .raw-source-copy .file-pill{
+ display:block;max-width:100%;background:transparent!important;
+ border:0!important;border-radius:0;padding:0!important;
+ color:#bed3d5;font:600 12px/1.4 "Segoe UI",Arial,sans-serif;
+ overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+#plugin.active .raw-source-collapse{flex:none;font-size:11px;min-height:36px}
+#plugin.active .raw-source-utilities{
+ display:flex;align-items:center;flex-wrap:wrap;gap:9px;
+ border-top:1px solid rgba(153,201,195,.16);
+ padding:13px 0 10px;margin-top:3px
+}
+#plugin.active .raw-source-utilities label{
+ color:#9bbeba;font-size:10px;font-weight:800;letter-spacing:.07em
+}
+#plugin.active .raw-source-utilities select{min-width:145px;min-height:37px;
+ background:#0a202a;border:1px solid rgba(138,200,190,.27);color:#dcefeb;
+ font-size:12px;border-radius:8px;padding:7px 10px}
+#plugin.active .raw-source-utilities button{
+ min-height:37px;font-size:11px;padding:8px 12px
+}
+#plugin.active #rawLocalExportStatus{
+ padding:0;margin:0 0 12px;color:#a1c1bd;
+ font:700 10px/1.5 Consolas,monospace;letter-spacing:0
+}
+#plugin.active #rawAudioDockBody{
+ border:1px solid rgba(144,199,190,.15);
+ background:linear-gradient(180deg,rgba(5,16,24,.4),rgba(5,16,24,.18));
+ border-radius:12px;padding:14px;
+}
+#plugin.active #rawAudioDockBody .waveform{height:112px;border-radius:9px}
+#plugin.active #rawAudioDockBody .wave-timeline{height:20px}
+#plugin.active #rawAudioDockBody .region-info{margin:12px 0;gap:8px}
+#plugin.active #rawAudioDockBody .region-info div{
+ background:#0e2630;border:1px solid rgba(156,192,185,.13);
+ border-radius:9px;padding:8px
+}
+#plugin.active #rawAudioDockBody .transport{
+ display:flex;justify-content:flex-start;align-items:center;
+ flex-wrap:wrap;gap:8px;padding-top:10px;
+ border-top:1px solid rgba(146,200,194,.12);
+}
+#plugin.active #rawAudioDockBody .transport-time{
+ margin:0 12px;color:#a2e4cf;font-size:16px;min-width:94px
+}
+#plugin.active .audio-region-panel.minimized #rawAudioDockBody{display:none!important}
+#plugin.active .audio-region-panel.minimized #rawLocalExportStatus{margin-bottom:0}
+#plugin.active .audio-region-panel.minimized{margin-bottom:22px!important}
+@media(max-width:900px){
+ #plugin.active .audio-region-panel{padding:16px!important}
+ #plugin.active .raw-source-utilities{gap:8px}
+ #plugin.active #rawAudioDockBody .waveform{height:88px}
+}
+@media(max-width:600px){
+ #plugin.active .audio-region-panel{padding:13px!important}
+ #plugin.active .raw-source-identity{flex-basis:200px}
+ #plugin.active .raw-source-utilities label{width:100%}
+ #plugin.active .raw-source-utilities select{min-width:0;flex:1 1 160px}
+ #plugin.active .raw-source-utilities button{flex:1 1 170px}
+ #plugin.active #rawAudioDockBody{padding:9px}
+}
