@@ -532,6 +532,16 @@ window.goTo = function(screenId) {
   // silently erase a just-applied Project Recall (e.g. EQ1 160 Hz -> 132 Hz).
   // New sessions/chain edits invoke renderPlugin() explicitly as before.
   if (screenId === "plugin" && !pluginHost.querySelector(".chain-control")) renderPlugin();
+  // renderPlugin() can run before Control Room becomes visible (new session).
+  // Absolute-positioned, scaled rack panels measure 0px while hidden.
+  // Refit only after activation; never rebuild models on navigation/recall.
+  if (screenId === "plugin") {
+    fitRackDevices();
+    requestAnimationFrame(() => {
+      if (document.getElementById("plugin")?.classList.contains("active"))
+        fitRackDevices();
+    });
+  }
   if (screenId === "sessions") renderSessions();
 };
 
@@ -1825,7 +1835,10 @@ function fitRackDevices() {
     // The original device design is always laid out at its native dimensions.
     // Its transformed visual rectangle must be positioned independently from
     // CSS layout, otherwise a 1380px flex item overflows the narrow viewport.
-    const availableWidth = Math.max(1, wrapper.clientWidth);
+    // A hidden panel has no measurable width; leave its last valid layout
+    // alone and measure once Control Room becomes visible.
+    const availableWidth = wrapper.clientWidth;
+    if (availableWidth <= 0) return;
     const designWidth = Number(rack.dataset.designWidth || 1380);
     const maxScale = Number(rack.dataset.maxScale || 1.22);
     const baselineScale = Math.min(maxScale, availableWidth / designWidth);
