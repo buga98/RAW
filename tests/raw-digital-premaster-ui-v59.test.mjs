@@ -98,7 +98,7 @@ test("V5.9: verified local session can render user audio and download distinct D
  assert.equal(h.button("ab-a").disabled,false);
  assert.equal(h.button("ab-b").disabled,false);
  assert.match(h.button("metrics").textContent,/SAMPLE PEAK/);
- assert.match(h.button("metrics").textContent,/NOT.*?analog/i);
+ assert.match(h.button("metrics").textContent,/Not Bettermaker\/WesAudio processing/i);
  h.button("download").click();
  assert.equal(h.clicks,1);
  assert.equal(h.createdUrls.length,2);
