@@ -114,12 +114,12 @@ test('read-only preview shows differences, copied data cannot modify preserved s
  const next=h.create();await next.open();
  const preview=await next.preview(h.w.RAWChainRecallPlannerV2);
  assert.ok(preview.changes>=1);
- assert.equal(h.eq.snapshot().channels.L.eq1Gain,-3);
+ assert.equal(h.eq.snapshot().A.eq1Gain,-3);
  const exportCopy=next.getVerifiedCopy();
  assert.equal(exportCopy.kind,'RAW_LOCAL_CHAIN_ARCHIVE');
  exportCopy.label='CHANGED ONLY THIS COPY';
  assert.notEqual(next.getVerifiedCopy().label,'CHANGED ONLY THIS COPY');
- assert.equal(h.eq.snapshot().channels.L.eq1Gain,-3,'preview must not apply any control model');
+ assert.equal(h.eq.snapshot().A.eq1Gain,-3,'preview must not apply any control model');
 });
 test('explicit discard clears both existing slots then enables a fresh AutoSave',async t=>{
  const backend=fakeBackend(),h=using(t,backend),first=h.create();
