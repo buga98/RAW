@@ -51,6 +51,20 @@ async function inspect({result,blob,sourceName="",cryptoRef=global.crypto,
   fail("WAV_MISMATCH","WAV format does not match digital PCM receipt");
  const bytes=await blob.arrayBuffer();
  if(bytes.byteLength!==blob.size)fail("WAV_MISMATCH","Digital WAV data length changed");
+ // The file may not silently diverge from the DSP encoder's actual PCM output.
+ // Compare against every encoded chunk; never trust just its header or byte size.
+ if(!Array.isArray(result.chunks)||!result.chunks.length)
+  fail("WAV_MISMATCH","Missing original DSP export chunks");
+ const compare=new Uint8Array(bytes);let offset=0;
+ for(const chunk of result.chunks){
+  if(!(chunk instanceof Uint8Array)||offset+chunk.byteLength>compare.length)
+   fail("WAV_MISMATCH","Invalid encoded PCM chunk boundaries");
+  for(let i=0;i<chunk.byteLength;i++)
+   if(compare[offset+i]!==chunk[i])
+    fail("WAV_TAMPERED","Digital WAV does not match the encoded PCM from this render");
+  offset+=chunk.byteLength;
+ }
+ if(offset!==compare.length)fail("WAV_MISMATCH","Digital WAV is truncated");
  const sha256=hex(await cryptoRef.subtle.digest("SHA-256",bytes));
  if(!/^[a-f0-9]{64}$/.test(sha256))fail("HASH_INVALID","WAV checksum failed");
  const input=result.inputMeter,output=result.outputMeter;
