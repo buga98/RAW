@@ -92,7 +92,7 @@ export function createStudioSimAgent({port=DEFAULT_PORT,now=()=>Date.now()}={}){
      if(msg.sessionId!==sessionId)throw Object.assign(new Error("Session mismatch"),{code:"SESSION_MISMATCH"});
      deadline=now()+HEARTBEAT_MS;
      audit.record("heartbeat",{leaseEpoch:simulator.leaseEpoch,status:"renewed"});
-     send(ws,{type:"studio-sim-pong",leaseEpoch:simulator.leaseEpoch,simulated:true});
+     send(ws,{type:"studio-sim-pong",leaseEpoch:simulator.leaseEpoch,simulated:true,hardwareVerified:false});
      return;
     }
     if(msg.type==="studio-sim-audit"){
