@@ -81,7 +81,9 @@ test("V5.16: scrollbar listener is released before new rack binding",()=>{
 test("V5.16: safe switch alters CSS only and never touches audio runtime",()=>{
  assert.doesNotMatch(source.slice(source.indexOf("*/")+2),/\b(?:WebSocket|fetch|AudioContext|WaveSurfer|currentTime|pause|play|ipcRenderer|sendControlMessage)\b/);
  const css=readFileSync(new URL("../raw-studio-ux-v513.css",import.meta.url),"utf8");
- assert.match(css,/\.audio-region-panel:not\(\.raw-source-safe-inline\)[\s\S]*?position:fixed!important/);
+ const original=readFileSync(new URL("../style.css",import.meta.url),"utf8");
+ assert.match(original,/#plugin\.active \.audio-region-panel \{[\s\S]*?position: fixed;/);
+ assert.doesNotMatch(css,/position:fixed!important/);
  assert.match(css,/\.audio-region-panel\.raw-source-safe-inline[\s\S]*?position:relative!important/);
  assert.match(css,/body\.sidebar-collapsed #plugin\.active/);
  const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
