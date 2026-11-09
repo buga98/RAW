@@ -91,3 +91,34 @@ test("V5.17: no network, analog or hardware control and no certified true-peak c
  assert.match(source,/NOT a separately accredited/);
  assert.match(source,/BS1770_5_STEREO_K_WEIGHTED_GATED/);
 });
+
+test("V5.18: 4x interpolation discovers intersample overs above sampled peaks",async()=>{
+ const an=analyzer(),rate=48000,amp=0.8;
+ const channels=song(rate/2,rate,i=>amp*Math.sin(Math.PI/2*i+Math.PI/4));
+ const result=await an.estimateTruePeak(channels,rate);
+ assert.equal(result.kind,"RAW_4X_INTERSAMPLE_PEAK_ESTIMATE_V518");
+ assert.equal(result.oversamplingFactor,4);
+ assert.ok(result.estimatedTruePeakDbtp>result.samplePeakDbfs+1.3,
+  "Interpolation must find missed 12 kHz peaks: "+JSON.stringify(result));
+ assert.equal(result.standardCertified,false);
+ assert.equal(result.referenceVectorValidated,false);
+ assert.equal(result.isPeakLimiter,false);
+ assert.equal(result.hardwareProcessed,false);
+});
+test("V5.18: DC and silent signals do not create imaginary intersample transients",async()=>{
+ const an=analyzer(),rate=48000;
+ const constant=await an.estimateTruePeak(song(4096,rate,()=>0.35),rate);
+ assert.ok(Math.abs(constant.estimatedTruePeakDbtp-20*Math.log10(.35))<0.01);
+ const silence=await an.estimateTruePeak(song(4096,rate,()=>0),rate);
+ assert.equal(silence.estimatedTruePeakDbtp,null);
+ assert.equal(silence.samplePeakDbfs,null);
+ assert.equal(silence.intersampleOvershootDb,null);
+});
+test("V5.18: intersample peak estimate obeys cancellation and rejects bad audio",async()=>{
+ const an=analyzer();let stop=false;
+ await assert.rejects(an.estimateTruePeak(song(50000),48000,{
+  yieldEveryFrames:2048,onProgress:()=>{stop=true;},isCancelled:()=>stop
+ }),/cancelled/);
+ const x=song(1000);x[0][0]=NaN;
+ await assert.rejects(an.estimateTruePeak(x,48000),/Non-finite/);
+});
