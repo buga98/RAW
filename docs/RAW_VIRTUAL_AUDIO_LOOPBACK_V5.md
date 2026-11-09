@@ -163,7 +163,7 @@ The V5.5 dual-slot journal still discovers a verified prior draft after relaunch
 
 ## V5.7 — automatic local Simulator reconnect (not physical transport)
 
-New `raw-local-reconnect-v57.js` implements a deliberately bounded state machine wired to the **existing** `studio-sim-client.js` local WebSocket agent on `127.0.0.1:7075`. The user explicitly connects to the Simulator **once** in Developer LAB. After an unexpected link loss, RAW clears all in-flight/queued knob commands, marks readings unconfirmed, and automatically retries with bounded exponential delays (350 ms, 700 ms, 1400 ms; max four attempts including the initial connection). On an attempted reconnect RAW must receive a fresh lease for the **same current LOCAL TEST session**, then a complete, simulated, lease-matching readback snapshot of all three devices before enabling any *new* forwarding. Nothing replays old parameter changes or downloads old audio.
+New `raw-local-reconnect-v57.js` implements a deliberately bounded state machine wired to the **existing** `studio-sim-client.js` local WebSocket agent on `127.0.0.1:7077`. The user explicitly connects to the Simulator **once** in Developer LAB. After an unexpected link loss, RAW clears all in-flight/queued knob commands, marks readings unconfirmed, and automatically retries with bounded exponential delays (350 ms, 700 ms, 1400 ms; max four attempts including the initial connection). On an attempted reconnect RAW must receive a fresh lease for the **same current LOCAL TEST session**, then a complete, simulated, lease-matching readback snapshot of all three devices before enabling any *new* forwarding. Nothing replays old parameter changes or downloads old audio.
 
 An occupied studio lease, expired/invalid claim, changed session, user disconnect, or owner logout blocks retry (fail-closed). If a simulated device goes offline, the whole simulator forwarding path pauses until a fresh full readback confirms it is online again. A silent connection is checked by a simulated heartbeat: an unanswered 10-second ping with a four-second response deadline forces a bounded reconnect. Heartbeat/pong is explicitly `simulated:true`, `hardwareVerified:false`.
 
@@ -185,3 +185,9 @@ While reconnect is in progress, Project Recall and V5.6 AutoSave Restore remain 
 10. Sign out and back in. No lingering retry timers must reconnect on behalf of a signed-out or newly authenticated session. Rack AutoSave remains a separate persisted local feature.
 
 **Security:** no reconnect to DAW/real Gateway or hardware in V5.7; no tokens persisted, no replay of old queued commands, and no billed session. Production will require separately designed authentication renewal, server authorization, lease fencing, state consistency and explicit hardware interlocks.
+
+### V5.7 Windows localhost port-conflict fix — 2026-11-09
+
+The Simulator's fixed localhost endpoint is now `127.0.0.1:7077` instead of `7075`: Windows reported `EADDRINUSE` when binding `7075`, even without a visible `netstat` listener. The distinct `Studio Gateway LAB` endpoint remains `127.0.0.1:7076`, preventing a future collision when both local services run. Agent and Electron simulator client were updated together, with a contract test enforcing their port and gateway separation. This does **not** open any ports to the network: each service binds strictly to IPv4 loopback.
+
+If 7077 is also unavailable on a particular machine, diagnose the local binding first; do not change the server port alone without updating the client and tests. The legacy 7075 service is not stopped, killed, or modified by this fix.
