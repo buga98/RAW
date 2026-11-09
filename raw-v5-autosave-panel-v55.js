@@ -184,13 +184,64 @@ function discoverBeforeSession(host,{userId,canRead}={}){
  status.textContent="CHECKING SAVED RACK · local-only read";
  const detail=global.document.createElement("p");
  detail.textContent="Provjeravam postoji li sigurnosna kopija na ovom računalu. Nijedna kontrola neće se promijeniti.";
- note.append(heading,status,detail);
+ const show=global.document.createElement("button");
+ show.type="button";
+ show.className="raw-v55-discovery-show";
+ show.textContent="POKAŽI SPREMLJENE POSTAVKE";
+ show.hidden=true;
+ const stored=global.document.createElement("pre");
+ stored.className="raw-v55-discovery-values";
+ stored.hidden=true;
+ stored.textContent="No recovery details loaded.";
+ note.append(heading,status,detail,show,stored);
+ let loading=false,loaded=false;
+ const isOwner=()=>token===discoverySerial&&discovery===note&&
+   canRead()===true&&!service;
+ show.addEventListener?.("click",async()=>{
+  if(!isOwner()||show.hidden||loading)return;
+  if(loaded){
+   stored.hidden=!stored.hidden;
+   show.textContent=stored.hidden?"POKAŽI SPREMLJENE POSTAVKE":"SAKRI SPREMLJENE POSTAVKE";
+   return;
+  }
+  loading=true;show.disabled=true;
+  stored.hidden=false;stored.textContent="Verifying local SHA-256 recovery copy…";
+  try{
+   const data=await global.RAWAutoSaveRecoveryV55.inspectDetails({userId});
+   if(!isOwner())return;
+   if(data.phase!=="RECOVERY_AVAILABLE"||data.readOnly!==true||
+      data.hardwareApplied!==false||data.originalAudioIncluded!==false||
+      !Array.isArray(data.devices))
+    throw new Error("Verified saved settings are no longer available");
+   const lines=[
+    "LOCAL SAVED RACK · COPY #"+data.sequence,
+    "SAVED: "+new Date(data.savedAt).toLocaleString("hr-HR"),
+    "CHAIN: "+data.chainOrder.join(" → "),
+    "STORED MODEL VALUES · NO HARDWARE READBACK OR AUTOMATIC RESTORE"
+   ];
+   for(const device of data.devices){
+    lines.push("",device.name.toUpperCase());
+    if(!device.available){lines.push("  (not present in saved model)");continue;}
+    for(const item of device.values)
+     lines.push("  "+item.parameter+" = "+item.value);
+    if(device.truncated)lines.push("  … additional values omitted");
+   }
+   stored.textContent=lines.join("\n").slice(0,60000);
+   loaded=true;
+   show.textContent="SAKRI SPREMLJENE POSTAVKE";
+  }catch(error){
+   if(isOwner())stored.textContent="Saved settings preview unavailable: "+
+     String(error?.message||error).slice(0,150)+
+     ". Nothing was applied or overwritten.";
+  }finally{loading=false;if(isOwner())show.disabled=false;}
+ });
  host.prepend(note);
  discovery=note;
  const owner=userId;
  void global.RAWAutoSaveRecoveryV55.inspect({userId:owner}).then(state=>{
   if(token!==discoverySerial||discovery!==note||canRead()!==true)return;
   if(state.phase==="RECOVERY_AVAILABLE"){
+   show.hidden=!global.RAWAutoSaveRecoveryV55?.inspectDetails;
    status.textContent="RECOVERABLE COPY FOUND";
    detail.textContent="Spremljena lokalna kopija #"+state.sequence+" · "+
      new Date(state.lastSavedAt).toLocaleString("hr-HR")+
