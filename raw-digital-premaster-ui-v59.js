@@ -1,0 +1,204 @@
+/* RAW V5.9 — standalone local DIGITAL premaster workspace for real user audio.
+ * Does not emulate Bettermaker or WesAudio. Does not access MIDI/USB/DAW/Gateway.
+ * Only attaches after verified owner + LOCAL TEST session, file stays in browser RAM.
+ */
+(function(global){
+"use strict";
+let panel=null,generation=0,run=null,previewUrl=null,originalUrl=null,rendered=null;
+let fileGetter=()=>null,guard=()=>false,sourceAtMount=null;
+const raw=()=>global.RAWDigitalPremasterV59;
+function allowed(){
+ try{return guard()===true&&fileGetter()===sourceAtMount;}catch{return false;}
+}
+function el(selector){return panel?.querySelector(selector);}
+function status(text){const target=el("[data-v59-status]");if(target)target.textContent=text;}
+function revoke(){
+ if(previewUrl){try{global.URL.revokeObjectURL(previewUrl);}catch{}previewUrl=null;}
+ if(originalUrl){try{global.URL.revokeObjectURL(originalUrl);}catch{}originalUrl=null;}
+}
+function resetRender(){
+ generation++;if(run)run.cancelled=true;run=null;
+ rendered=null;revoke();
+ const player=el("[data-v59-player]");
+ if(player){try{player.pause();player.removeAttribute("src");player.load();}catch{}}
+ for(const selector of ["[data-v59-download]","[data-v59-ab-a]","[data-v59-ab-b]"]){
+  const button=el(selector);if(button)button.disabled=true;
+ }
+ const progress=el("[data-v59-progress]");if(progress)progress.value=0;
+}
+function measure(m){
+ const fmt=n=>typeof n==="number"&&Number.isFinite(n)?n.toFixed(2):"—";
+ return "SAMPLE PEAK: "+fmt(m.peakDbfs)+" dBFS"+
+  " · UNWEIGHTED RMS: "+fmt(m.rmsDbfs)+" dBFS"+
+  " · CLIPPED FRAMES: "+m.clippedFrames+
+  " · STEREO CORRELATION: "+fmt(m.correlation);
+}
+function settings(){
+ const numeric=["lowCutHz","lowShelfDb","presenceDb","airDb","thresholdDb","ratio",
+   "attackMs","releaseMs","makeupDb","ceilingDb"];
+ const values={};
+ for(const name of numeric){
+  const control=el('[data-v59-setting="'+name+'"]');
+  values[name]=Number(control?.value);
+ }
+ values.bits=Number(el('[data-v59-setting="bits"]')?.value);
+ values.dither=el('[data-v59-setting="dither"]')?.checked===true;
+ return raw().settingsOf(values);
+}
+async function decodeFile(file){
+ if(!file||typeof file.arrayBuffer!=="function"||
+    !Number.isSafeInteger(file.size)||file.size<1||file.size>128*1024*1024)
+  throw new Error("Select a local file of 1–128 MiB");
+ if(!/\.(wav|wave|aif|aiff|mp3)$/i.test(String(file.name||"")))
+  throw new Error("Choose WAV / AIFF / MP3 source");
+ const Context=global.AudioContext||global.webkitAudioContext;
+ if(typeof Context!=="function")throw new Error("Browser AudioContext unavailable");
+ let context;
+ try{
+  context=new Context();
+  const bytes=await file.arrayBuffer();
+  if(bytes.byteLength!==file.size)throw new Error("Source changed during decode");
+  return await context.decodeAudioData(bytes);
+ }finally{try{await context?.close();}catch{}}
+}
+async function process(){
+ if(!panel||!allowed()||run||!raw())return;
+ const file=fileGetter();
+ const current=++generation;
+ const token={cancelled:false};run=token;rendered=null;
+ revoke();
+ const buttons=["[data-v59-start]","[data-v59-download]","[data-v59-ab-a]","[data-v59-ab-b]"];
+ buttons.forEach(sel=>{const b=el(sel);if(b)b.disabled=true;});
+ const abort=el("[data-v59-cancel]");if(abort)abort.disabled=false;
+ const metrics=el("[data-v59-metrics]");
+ try{
+  const profile=settings();
+  status("DECODING LOCAL SOURCE · no hardware or network");
+  const audio=await decodeFile(file);
+  if(token.cancelled||current!==generation||!allowed())return;
+  if(audio.numberOfChannels!==2)throw new Error("V5.9 accepts only stereo decoded source (2 channels)");
+  status("DIGITAL DSP · rendering actual PCM");
+  const out=await raw().render(audio,profile,{
+   isCancelled:()=>token.cancelled||current!==generation||!allowed(),
+   onProgress:report=>{
+    if(current!==generation||token.cancelled||!allowed())return;
+    const bar=el("[data-v59-progress]");if(bar)bar.value=report.percent;
+    status("DIGITAL "+report.phase+" · "+report.percent+"% · NO ANALOG HARDWARE");
+   }
+  });
+  if(token.cancelled||current!==generation||!allowed())return;
+  const blob=new Blob(out.chunks,{type:"audio/wav"});
+  if(blob.size!==out.byteLength)throw new Error("Digital WAV byte size mismatch");
+  rendered={blob,out,file};
+  const output=el("[data-v59-metrics]");
+  if(output)output.textContent=
+   "INPUT  | "+measure(out.inputMeter)+"\n"+
+   "OUTPUT | "+measure(out.outputMeter)+"\n"+
+   "PEAK SAFETY ATTENUATION: "+(out.peakSafetyAttenuationDb??0).toFixed(2)+" dB"+
+   " · COMPRESSOR MAX REDUCTION: "+out.maxCompressorReductionDb.toFixed(2)+" dB\n"+
+   "DIGITAL WAV "+out.outputBits+"-BIT · "+out.frames+" FRAMES · "+
+   out.sampleRate+" Hz · "+(out.outputDither?"TPDF DITHER":"NO DITHER")+"\n"+
+   "Not a calibrated LUFS/true-peak meter. Not Bettermaker/WesAudio processing.";
+  status("DIGITAL PREMASTER READY · processed PCM available · NOT ANALOG MASTER");
+  previewUrl=global.URL.createObjectURL(blob);
+  originalUrl=global.URL.createObjectURL(file);
+  const player=el("[data-v59-player]");
+  if(player){player.src=previewUrl;player.load();}
+  ["[data-v59-download]","[data-v59-ab-a]","[data-v59-ab-b]"].forEach(sel=>{
+   const b=el(sel);if(b)b.disabled=false;
+  });
+ }catch(error){
+  if(current===generation&&panel&&allowed()&&!token.cancelled){
+   status("DIGITAL RENDER FAILED · "+String(error?.message||error).slice(0,145));
+   if(metrics)metrics.textContent="Nothing was exported or applied to the rack.";
+  }
+ }finally{
+  if(run===token){
+   run=null;
+   const start=el("[data-v59-start]");if(start)start.disabled=!allowed();
+   const cancel=el("[data-v59-cancel]");if(cancel)cancel.disabled=true;
+  }
+ }
+}
+function download(){
+ if(!allowed()||!rendered||!previewUrl)return;
+ const a=global.document.createElement("a");
+ a.href=previewUrl;
+ a.download=raw().safeFilename(rendered.file.name);
+ a.hidden=true;global.document.body.append(a);
+ try{a.click();}
+ finally{a.remove();}
+ status("DOWNLOADED "+a.download+" · OFFLINE DIGITAL PREMASTER, not analog master");
+}
+function listen(original){
+ if(!allowed()||!rendered||!previewUrl||!originalUrl)return;
+ const player=el("[data-v59-player]");if(!player)return;
+ const wasPaused=player.paused;const oldTime=player.currentTime||0;
+ const newUrl=original?originalUrl:previewUrl;
+ if(player.src===newUrl)return;
+ player.pause();player.src=newUrl;player.load();
+ const keep=()=>{if(!allowed())return;
+  try{player.currentTime=Math.min(oldTime,player.duration||oldTime);}catch{}
+  if(!wasPaused)void player.play()?.catch?.(()=>{});
+ };
+ player.addEventListener("loadedmetadata",keep,{once:true});
+ status(original?"A · ORIGINAL SOURCE (no DSP)":"B · RAW DIGITAL PREMASTER · no analog equipment");
+}
+function detach(){
+ resetRender();
+ panel?.remove?.();panel=null;fileGetter=()=>null;guard=()=>false;sourceAtMount=null;
+}
+function attach(host,{getFile,canUse}={}){
+ if(!host||typeof getFile!=="function"||typeof canUse!=="function"||!raw())
+  return false;
+ let allowedNow=false;
+ try{allowedNow=canUse()===true;}catch{}
+ if(!allowedNow)return false;
+ // Re-render invalidates prior input, processed PCM and object URLs by design.
+ detach();fileGetter=getFile;guard=canUse;sourceAtMount=getFile();
+ if(!sourceAtMount)return false;
+ const section=global.document.createElement("section");
+ section.id="rawDigitalPremasterV59";
+ section.className="raw-digital-premaster";
+ section.innerHTML=
+ '<div class="raw-dpm-head"><div><small>RAW / OFFLINE DIGITAL LAB · V5.9</small>'+
+ '<h3>DIGITAL PREMASTER</h3>'+
+ '<p>Stvarna lokalna obrada stereo audija. Zaseban digitalni lanac — ne simulira identičan zvuk Bettermaker/WesAudio hardvera.</p>'+
+ '</div><span>LOCAL TEST · NO HARDWARE / BILLING</span></div>'+
+ '<div class="raw-dpm-settings">'+
+ '<label>HIGH PASS Hz<input type="number" min="0" max="120" step="1" value="25" data-v59-setting="lowCutHz"></label>'+
+ '<label>LOW SHELF 110 Hz · dB<input type="number" min="-12" max="12" step=".5" value="0" data-v59-setting="lowShelfDb"></label>'+
+ '<label>PRESENCE 3 kHz · dB<input type="number" min="-12" max="12" step=".5" value="0" data-v59-setting="presenceDb"></label>'+
+ '<label>AIR 12 kHz · dB<input type="number" min="-12" max="12" step=".5" value="0" data-v59-setting="airDb"></label>'+
+ '<label>COMP THRESHOLD · dBFS<input type="number" min="-36" max="0" step=".5" value="-18" data-v59-setting="thresholdDb"></label>'+
+ '<label>COMP RATIO<input type="number" min="1" max="8" step=".25" value="1" data-v59-setting="ratio"></label>'+
+ '<label>ATTACK · ms<input type="number" min=".2" max="200" step=".1" value="20" data-v59-setting="attackMs"></label>'+
+ '<label>RELEASE · ms<input type="number" min="20" max="2000" step="10" value="180" data-v59-setting="releaseMs"></label>'+
+ '<label>MAKEUP · dB<input type="number" min="-12" max="12" step=".5" value="0" data-v59-setting="makeupDb"></label>'+
+ '<label>PEAK CEILING · dBFS<input type="number" min="-12" max="-.1" step=".1" value="-1" data-v59-setting="ceilingDb"></label>'+
+ '<label>WAV BIT DEPTH<select data-v59-setting="bits"><option value="24">24-bit PCM</option><option value="16">16-bit PCM</option></select></label>'+
+ '<label class="raw-dpm-check"><input type="checkbox" checked data-v59-setting="dither"> TPDF dither on integer export</label>'+
+ '</div>'+
+ '<div class="raw-dpm-actions">'+
+ '<button type="button" data-v59-start>▶ RENDER DIGITAL PREMASTER</button>'+
+ '<button type="button" data-v59-cancel disabled>■ CANCEL</button>'+
+ '<button type="button" data-v59-download disabled>↓ DOWNLOAD DIGITAL WAV</button>'+
+ '<button type="button" data-v59-ab-a disabled>A · ORIGINAL</button>'+
+ '<button type="button" data-v59-ab-b disabled>B · DIGITAL</button></div>'+
+ '<progress data-v59-progress value="0" max="100"></progress>'+
+ '<div data-v59-status role="status" aria-live="polite">READY · local source only · no digital output generated</div>'+
+ '<pre data-v59-metrics>RMS, sample peak, stereo correlation and DSP metrics appear after render. No LUFS/true-peak certification.</pre>'+
+ '<audio data-v59-player controls preload="none" aria-label="Local A/B digital premaster listening"></audio>'+
+ '<p class="raw-dpm-footnote">V5.9 sample-peak safety uses transparent whole-file attenuation, NOT a true-peak limiter. Digital settings are independent from the virtual hardware rack. No analog master is available.</p>';
+ host.append(section);panel=section;
+ el("[data-v59-start]").addEventListener("click",()=>void process());
+ el("[data-v59-cancel]").addEventListener("click",()=>{
+  if(run){run.cancelled=true;status("CANCEL REQUESTED · no output will be delivered");}
+ });
+ el("[data-v59-download]").addEventListener("click",download);
+ el("[data-v59-ab-a]").addEventListener("click",()=>listen(true));
+ el("[data-v59-ab-b]").addEventListener("click",()=>listen(false));
+ return true;
+}
+global.RAWDigitalPremasterV59UI=Object.freeze({attach,detach});
+})(typeof window!=="undefined"?window:globalThis);
