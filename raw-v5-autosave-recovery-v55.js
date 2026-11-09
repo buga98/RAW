@@ -238,7 +238,17 @@ function create({
  }
  return Object.freeze({open,schedule,flush,preview,getVerifiedCopy,acceptRecovered,discard,close,snapshot});
 }
+// Safe, non-mutating discovery for the Projects screen before a new rack
+// session exists. The same owner hash, SHA-256 and archive validation are used.
+async function inspect({userId,backend,archive=global.RAWChainArchiveV1,
+ cryptoRef=global.crypto}={}){
+ const scanner=create({userId,backend:backend||createIndexedDBBackend(),
+  archive,cryptoRef,capture:()=>fail("READ_ONLY","Pre-session inspection cannot capture rack"),
+  canWrite:()=>false});
+ try{return await scanner.open();}
+ finally{scanner.close();}
+}
 global.RAWAutoSaveRecoveryV55=Object.freeze({
- create,createIndexedDBBackend,openDB,KIND
+ create,inspect,createIndexedDBBackend,openDB,KIND
 });
 })(typeof window!=="undefined"?window:globalThis);
