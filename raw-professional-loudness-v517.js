@@ -125,5 +125,65 @@ async function measure(channels,sampleRate,{isCancelled=()=>false,
   referenceCertified:false,analogCaptured:false,physicalReadback:false
  });
 }
-global.RAWProfessionalLoudnessV517=Object.freeze({measure,mapRate});
+// V5.18 — 4x polyphase windowed-sinc intersample peak ESTIMATE.
+// Not an ITU-approved true-peak meter until reference-vector validation.
+// Deliberately NOT a limiter and never used to certify commercial delivery.
+const TRUE_PEAK_PHASES=[0.25,0.5,0.75].map(phase=>{
+ const samples=[],radius=8;
+ let total=0;
+ for(let n=-radius;n<=radius;n++){
+  const delta=n-phase;
+  const sinc=Math.abs(delta)<1e-12?1:Math.sin(Math.PI*delta)/(Math.PI*delta);
+  const window=0.5+0.5*Math.cos(Math.PI*delta/(radius+1));
+  const tap=sinc*window;
+  samples.push(tap);total+=tap;
+ }
+ return Object.freeze(samples.map(tap=>tap/total));
+});
+async function estimateTruePeak(channels,sampleRate,{isCancelled=()=>false,
+ onProgress=()=>{},yieldEveryFrames=32768}={}){
+ check(channels,sampleRate);
+ if(typeof isCancelled!=="function"||typeof onProgress!=="function"||
+   !Number.isSafeInteger(yieldEveryFrames)||yieldEveryFrames<1024||
+   yieldEveryFrames>262144)error("INVALID_CONTROL","Invalid intersample peak controls");
+ const frames=channels[0].length;
+ const cancelled=()=>{if(isCancelled())error("CANCELLED","True-peak estimate cancelled");};
+ let sampled=0,oversampled=0;
+ for(let off=0;off<frames;off+=yieldEveryFrames){
+  cancelled();
+  const end=Math.min(frames,off+yieldEveryFrames);
+  for(let i=off;i<end;i++){
+   for(let ch=0;ch<2;ch++){
+    const data=channels[ch],sample=data[i];
+    if(!Number.isFinite(sample))error("NON_FINITE","Non-finite signal in TP estimate");
+    sampled=Math.max(sampled,Math.abs(sample));
+    for(const taps of TRUE_PEAK_PHASES){
+     let sum=0;
+     for(let k=0;k<taps.length;k++){
+      const index=i+k-8;
+      const value=data[Math.max(0,Math.min(frames-1,index))];
+      sum+=value*taps[k];
+     }
+     oversampled=Math.max(oversampled,Math.abs(sum));
+    }
+   }
+  }
+  try{onProgress(Object.freeze({processed:end,total:frames}));}catch{}
+  if(end<frames)await sleep();
+ }
+ cancelled();
+ const peak=Math.max(sampled,oversampled);
+ const sampleDb=sampled>0?20*Math.log10(sampled):null;
+ const peakDb=peak>0?20*Math.log10(peak):null;
+ return Object.freeze({
+  kind:"RAW_4X_INTERSAMPLE_PEAK_ESTIMATE_V518",
+  samplePeakDbfs:sampleDb,estimatedTruePeakDbtp:peakDb,
+  intersampleOvershootDb:peak>0&&sampled>0?20*Math.log10(peak/sampled):null,
+  oversamplingFactor:4,sampleRate,frames,
+  technique:"FOUR_TIMES_WINDOWED_SINC_INTERPOLATION",
+  standardCertified:false,referenceVectorValidated:false,
+  isPeakLimiter:false,hardwareProcessed:false,analogCaptured:false
+ });
+}
+global.RAWProfessionalLoudnessV517=Object.freeze({measure,estimateTruePeak,mapRate});
 })(typeof window!=="undefined"?window:globalThis);
