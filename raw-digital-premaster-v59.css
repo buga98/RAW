@@ -45,3 +45,8 @@
  color:#eafaf4;border-radius:7px;min-height:38px;padding:8px 10px;cursor:pointer;font-weight:800;font-size:11px}
 .raw-dpm-presets button:disabled{opacity:.4;cursor:not-allowed}
 .raw-dpm-presets [data-v59-preset-info]{flex:1 1 100%;font:11px/1.6 Consolas,monospace;color:#a5d3c5}
+
+/* V5.12: monitor-only RMS-matched A/B, no changes to exported PCM. */
+.raw-dpm-monitor{display:flex;align-items:center;gap:9px;margin:10px 0 7px;
+ color:#b7d9cf;font-size:10px;font-weight:800;line-height:1.6;letter-spacing:.02em}
+.raw-dpm-monitor input{width:16px;height:16px;flex:none}
