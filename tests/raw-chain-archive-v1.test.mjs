@@ -30,6 +30,14 @@ test("portable full chain includes three devices plus MEQ manual data",()=>{
  assert.equal(archive.provenance.audioRendered,false);
  assert.equal(archive.provenance.verifiedAnalogMaster,false);
 });
+test("legacy MEQ manual snapshots omit undefined optional RTA settings",()=>{
+ const archive=make();
+ const manual=archive.deviceStates.bettermaker_eq.manual;
+ assert.equal(Object.hasOwn(manual,"rtaSource"),false);
+ assert.equal(Object.hasOwn(manual,"rtaStyle"),false);
+ assert.equal(manual.notes,false);
+ assert.doesNotThrow(()=>JSON.stringify(archive));
+});
 test("JSON roundtrip import preserves compatible archived values without controlling hardware",()=>{
  const lib=library(),saved=make(lib);
  const recovered=lib.parse(JSON.stringify(saved));
