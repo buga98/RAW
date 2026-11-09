@@ -26,7 +26,7 @@ test("client only forwards small local simulator mapping, not arbitrary hardware
  assert.match(client,/L_thd/);
  assert.match(client,/KEYS\[device\]\.has\(key\)/);
  assert.match(client,/new WebSocket\(URL\)/);
- assert.match(client,/const URL="ws:\/\/127\.0\.0\.1:7075"/);
+ assert.match(client,/const URL="ws:\/\/127\.0\.0\.1:7077"/);
  assert.doesNotMatch(client,/firebase|runTransaction|easymidi|GConManager|hid\.send/i);
 });
 test("explicit command status and manual simulated readback supported",()=>{
@@ -40,7 +40,10 @@ test("explicit command status and manual simulated readback supported",()=>{
 });
 test("server uses loopback only, explicit command allowance and test-only lease",()=>{
  assert.match(agent,/const DEMO_HOST = "127\.0\.0\.1"/);
- assert.match(agent,/const DEFAULT_PORT = 7075/);
+ assert.match(agent,/const DEFAULT_PORT = 7077/);
+ const gateway=readFileSync(new URL("../studio-gateway-lab.mjs",import.meta.url),"utf8");
+ assert.match(gateway,/DEFAULT_PORT=7076/);
+ assert.notEqual(7077,7076,"Simulator and Gateway must have distinct localhost ports");
  assert.match(agent,/const LOCAL_SESSION =/);
  assert.match(agent,/if\(msg\.sessionId!==sessionId\)/);
  assert.match(agent,/if\(\+\+commands>MAX_COMMANDS\)/);
