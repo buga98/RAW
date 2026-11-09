@@ -92,8 +92,26 @@ async function process(){
   if(blob.size!==out.byteLength)throw new Error("Digital WAV byte size mismatch");
   status("VERIFYING DIGITAL WAV · SHA-256 + offline sample-peak QC");
   if(!global.RAWMasterQCV510?.inspect)throw new Error("Digital QC module unavailable");
-  const qc=await global.RAWMasterQCV510.inspect({result:out,blob,sourceName:file.name});
+  const rawQc=await global.RAWMasterQCV510.inspect({result:out,blob,sourceName:file.name});
   if(token.cancelled||current!==generation||!allowed())return;
+  // V5.17 professional loudness: analyze original AND rendered PCM.
+  // Never claim certified LUFS or true-peak compliance without references.
+  if(!global.RAWProfessionalLoudnessV517?.measure)
+   throw new Error("BS.1770 loudness analyzer unavailable");
+  status("MEASURING BS.1770-5 INTEGRATED LUFS · OFFLINE DIGITAL");
+  const meterOptions={
+    isCancelled:()=>token.cancelled||current!==generation||!allowed()
+  };
+  const [sourceLufs,digitalLufs]=await Promise.all([
+    global.RAWProfessionalLoudnessV517.measure(
+      [audio.getChannelData(0),audio.getChannelData(1)],out.sampleRate,meterOptions),
+    global.RAWProfessionalLoudnessV517.measure(out.channels,out.sampleRate,meterOptions)
+  ]);
+  if(token.cancelled||current!==generation||!allowed())return;
+  const qc=Object.freeze({...rawQc,
+    digitalLoudness:Object.freeze({source:sourceLufs,output:digitalLufs}),
+    loudnessReferenceCertified:false,deviceMasterCertified:false
+  });
   rendered={blob,out,file,qc};
   // V5.12 monitoring: attenuate ONLY the louder side to the quieter
   // unweighted-RMS level. This never alters PCM exports or QC receipts.
@@ -114,7 +132,10 @@ async function process(){
    " · COMPRESSOR MAX REDUCTION: "+out.maxCompressorReductionDb.toFixed(2)+" dB\n"+
    "DIGITAL WAV "+out.outputBits+"-BIT · "+out.frames+" FRAMES · "+
    out.sampleRate+" Hz · "+(out.outputDither?"TPDF DITHER":"NO DITHER")+"\n"+
-   "Not a calibrated LUFS/true-peak meter. Not Bettermaker/WesAudio processing."+
+   "BS.1770-5 GATED INTEGRATED LUFS (REFERENCE VALIDATION PENDING): "+
+   "INPUT "+(sourceLufs.integratedLufs?.toFixed(2)??"BELOW GATE")+
+   " / OUTPUT "+(digitalLufs.integratedLufs?.toFixed(2)??"BELOW GATE")+
+   "\nTRUE PEAK NOT MEASURED · SAMPLE-PEAK CEILING ONLY. Not Bettermaker/WesAudio processing."+
    "\nA/B RMS MONITOR ONLY: A ×"+monitorVolumes.original.toFixed(3)+
    " · B ×"+monitorVolumes.digital.toFixed(3)+" (NOT LUFS MATCHED)"+
    "\nDIGITAL QC: "+qc.overall+" · SHA-256: "+qc.sha256+
