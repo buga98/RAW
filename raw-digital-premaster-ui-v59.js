@@ -198,6 +198,19 @@ function attach(host,{getFile,canUse}={}){
  el("[data-v59-download]").addEventListener("click",download);
  el("[data-v59-ab-a]").addEventListener("click",()=>listen(true));
  el("[data-v59-ab-b]").addEventListener("click",()=>listen(false));
+ // A rendered file must never be downloadable under settings it was not
+ // rendered with: any edit invalidates the previous digital preview.
+ section.querySelectorAll("[data-v59-setting]").forEach(control=>
+  control.addEventListener("change",()=>{
+   if(!panel)return;
+   resetRender();
+   const start=el("[data-v59-start]");if(start)start.disabled=!allowed();
+   const cancel=el("[data-v59-cancel]");if(cancel)cancel.disabled=true;
+   const metrics=el("[data-v59-metrics]");
+   if(metrics)metrics.textContent="Digital settings changed · render again to refresh audio and measurements.";
+   status("SETTINGS CHANGED · DIGITAL PREMASTER MUST BE RENDERED AGAIN");
+  })
+ );
  return true;
 }
 global.RAWDigitalPremasterV59UI=Object.freeze({attach,detach});
