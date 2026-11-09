@@ -1,10 +1,10 @@
 /* RAW Studio Agent V2 TEST console — only for ?testMode=1.
- * Connects only after a user click to the dedicated loopback simulator on 7075.
+ * Connects only after a user click to the dedicated loopback simulator on 7077.
  * Never claims physical readback, never communicates with production services. */
 (function(global){
 "use strict";
 const TEST=new URLSearchParams(global.location.search).get("testMode")==="1";
-const URL="ws://127.0.0.1:7075";
+const URL="ws://127.0.0.1:7077";
 const KEYS={
  bettermaker_eq:new Set(["eq1Gain","eq1Freq"]),
  ngbuscomp:new Set(["L_threshold","R_threshold","L_mix","R_mix"]),
