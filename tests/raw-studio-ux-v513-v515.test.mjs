@@ -33,41 +33,40 @@ function scope(){
  vm.runInNewContext(nav,{window,document:doc});
  return {window,doc,ids,tabs};
 }
-test("V5.16: original source transport floats through rack and switches inline only near mastering",()=>{
- assert.match(html,/const sourceDock=pluginHost\.querySelector\("#rawAudioDock"\)/);
- assert.match(html,/pluginHost\.appendChild\(sourceDock\)/);
+test("V5.19: original compact Audio Region is restored and floats through devices",()=>{
+ const original=read("style.css");
+ assert.match(html,/<div class="audio-region-panel" id="rawAudioDock"/);
+ assert.match(html,/class="audio-dock-actions"/);
+ assert.match(html,/<strong>AUDIO REGION<\/strong>/);
+ assert.match(html,/id="rawAudioDockBody"/);
+ assert.match(html,/id="waveTimeline"/);
+ assert.match(html,/id="waveform"/);
+ assert.match(html,/id="rawLocalExportButton"/);
+ assert.match(html,/id="rawLocalExportBits"/);
+ assert.match(html,/id="rawDockToggle"/);
+ assert.match(html,/>− MINIMIZE<\/button>/);
+ assert.match(html,/window\.RAWAudioDockV516\?\.bind\?\.\(/);
+ assert.match(original,/#plugin\.active \.audio-region-panel \{[\s\S]*?position: fixed;/);
+ assert.match(original,/#plugin\.active \.waveform \{ height: 88px/);
+ assert.match(original,/#plugin\.active \.transport-btn \{ width: 36px/);
+ assert.match(css,/\.audio-region-panel\.raw-source-safe-inline/);
+ assert.match(css,/position:relative!important/);
+ assert.doesNotMatch(css,/position:fixed!important/);
+ assert.doesNotMatch(css,/max-height:min\(60vh,550px\)/);
+ assert.doesNotMatch(html,/class="raw-source-utilities"/);
+});
+test("V5.19: source waveform and transport remain distinct from digital premaster",()=>{
+ assert.match(html,/LOCAL SOURCE EXPORT · no analog hardware processing · NOT A MASTER/);
+ assert.match(html,/↓ EXPORT SOURCE WAV/);
+ assert.match(html,/CHANGE FILE/);
+ assert.match(html,/class="file-pill">♫ /);
+ assert.match(html,/\.replace\(\/\[&<>"'\]\/g/);
+ assert.match(read("raw-local-wav-export-v1.js"),/NOT a studio print, analog master/);
  const render=html.slice(html.indexOf("function renderPlugin() {"),
   html.indexOf("window.renderSessions = async function"));
  assert.ok(render.indexOf("mountDigitalPremaster();")>=0);
  assert.ok(render.indexOf("const sourceDock=pluginHost.querySelector")>
-  render.indexOf("mountDigitalPremaster();"),
-  "Source audio must stay after the premaster in Control Room");
- assert.match(css,/#plugin\.active \.audio-region-panel:not\(\.raw-source-safe-inline\)/);
- assert.match(css,/position:fixed!important/);
- assert.match(css,/\.audio-region-panel\.raw-source-safe-inline/);
- assert.match(css,/position:relative!important/);
- assert.match(css,/inset:auto!important/);
- assert.match(css,/max-height:none!important/);
- assert.match(css,/#plugin\.active #pluginHost[\s\S]*?padding-bottom:300px!important/);
- assert.match(html,/id="rawAudioDockBody"/);
- assert.match(html,/id="waveform"/);
- assert.match(html,/id="rawAudioDock"/);
- assert.match(html,/id="rawLocalExportButton"/);
- assert.match(html,/id="rawLocalExportBits"/);
- assert.match(html,/id="rawDockToggle"/);
- assert.match(css,/\.audio-region-panel\.minimized #rawAudioDockBody\{display:none!important\}/);
-});
-test("V5.13: source transport labels distinct from digital mastering and safe filename",()=>{
- assert.match(html,/SOURCE TRANSPORT/);
- assert.match(html,/IZVORNI AUDIO · bez digitalne\/analogne master obrade/);
- assert.match(html,/EXPORT FORMAT/);
- assert.match(html,/IZVEZI IZVORNI WAV/);
- assert.match(html,/const regionFileName=String/);
- assert.match(html,/\.replace\(\/\[&<>"'\]\/g/);
- assert.match(css,/\.raw-source-identity/);
- assert.match(css,/\.raw-source-utilities/);
- assert.match(css,/@media\(max-width:600px\)/);
- assert.match(read("raw-local-wav-export-v1.js"),/NOT a studio print, analog master/);
+  render.indexOf("mountDigitalPremaster();"));
 });
 test("V5.16: original Windows taskbar icon is restored across Electron and sidebar",()=>{
  assert.match(html,/<img src="icon.png" alt="RAW Mastering"/);
