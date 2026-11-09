@@ -32,6 +32,11 @@ function harness({frames=4096}={}){
  }
  class Panel extends FakeEl{
   constructor(){super();this.fields=new Map();}
+  querySelectorAll(selector){
+   if(selector==="[data-v59-setting]")
+    return Object.keys(settings).map(key=>this.querySelector('[data-v59-setting="'+key+'"]'));
+   return [];
+  }
   querySelector(sel){
    if(!this.fields.has(sel)){
     const out=new FakeEl();
@@ -147,4 +152,20 @@ test("V5.9: absent file, denied owner and lost file scope cannot render",async()
  for(let i=0;i<5;i++)await settle();
  assert.equal(changed.createdUrls.length,0);
  changed.window.RAWDigitalPremasterV59UI.detach();
+});
+
+test("V5.9: changing DSP settings invalidates downloadable WAV and A/B preview",async()=>{
+ const h=harness();h.attach();h.button("start").click();
+ for(let i=0;i<8;i++)await settle();
+ assert.equal(h.button("download").disabled,false);
+ const control=h.panel.querySelector('[data-v59-setting="lowShelfDb"]');
+ control.value="4";control.handlers.change();
+ assert.equal(h.button("download").disabled,true);
+ assert.equal(h.button("ab-a").disabled,true);
+ assert.equal(h.button("ab-b").disabled,true);
+ assert.equal(h.revoked.length,2);
+ assert.match(h.button("status").textContent,/SETTINGS CHANGED/);
+ h.button("download").click();
+ assert.equal(h.clicks,0);
+ h.window.RAWDigitalPremasterV59UI.detach();
 });
