@@ -8,7 +8,7 @@ const DEVICES=["bettermaker_eq","ngbuscomp","ngtubecomp"];
 const SESSION=/^test-[0-9]{10,20}$/;
 const makeError=(text)=>{throw new TypeError(text);};
 function create({getSession,onAttempt,onStatus=()=>{},onAbandon=()=>{},
- timers={setTimeout,clearTimeout},maxAttempts=4,baseDelayMs=350,handshakeMs=3000}={}){
+ timers=global,maxAttempts=4,baseDelayMs=350,handshakeMs=3000}={}){
  if(typeof getSession!=="function"||typeof onAttempt!=="function"||
     typeof onStatus!=="function"||typeof onAbandon!=="function"||
     !timers?.setTimeout||!timers?.clearTimeout||
