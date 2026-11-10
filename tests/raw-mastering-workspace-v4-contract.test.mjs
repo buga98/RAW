@@ -142,7 +142,8 @@ test("audio diagnostics controls and meters are mounted only in the developer sc
 test("unsaved project rack cannot be dismissed by accidental local session end/logout",()=>{
  assert.match(html,/RAWWorkspaceActiveProjectStatus\?\.getStatus\?\.\(\)\?\.dirty===true/);
  assert.match(html,/Imaš nespremljene promjene na virtualnom racku/);
- assert.match(html,/Imaš NESPREMLJENE rack postavke/);
+ assert.match(readFileSync(new URL("../raw-logout-focus-v524.js",import.meta.url),"utf8"),/Imaš NESPREMLJENE rack postavke/);
+ assert.match(html,/window\.RAWLogoutFocusV524\?\.request\?\.\(\{unsaved\}\)/);
  assert.match(html,/Već imaš aktivnu LOCAL TEST sesiju/);
 });
 test("new stylesheet/assets load before app module",()=>{
