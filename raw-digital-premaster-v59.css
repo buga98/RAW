@@ -86,3 +86,36 @@
  border:1px solid rgba(133,204,190,.35);border-radius:8px;padding:8px 11px;
  color:#edf7f4;background:#0a2029;font-size:12px}
 @media(max-width:680px){.raw-dpm-limiter-fields{grid-template-columns:1fr}}
+
+/* V5.23: Electron-safe inline preset name and explicit load/delete confirmation.
+   Do not rely on window.prompt/confirm: neither is guaranteed in Electron. */
+.raw-dpm-presets .raw-dpm-preset-editor,
+.raw-dpm-presets .raw-dpm-preset-confirm{
+ display:flex;flex:1 1 100%;flex-wrap:wrap;align-items:center;gap:8px;
+ padding:12px 13px;border:1px solid rgba(139,216,202,.3);
+ border-radius:9px;background:rgba(4,23,32,.68);min-width:0
+}
+.raw-dpm-presets .raw-dpm-preset-editor[hidden],
+.raw-dpm-presets .raw-dpm-preset-confirm[hidden]{display:none!important}
+.raw-dpm-presets .raw-dpm-preset-editor label{
+ flex:0 0 auto;color:#c6e8df;font-size:11px;font-weight:800
+}
+.raw-dpm-presets .raw-dpm-preset-editor input{
+ flex:1 1 240px;min-width:160px;box-sizing:border-box;
+ background:#081c25;color:#f0fbf8;min-height:39px;padding:8px 12px;
+ border-radius:8px;border:1px solid rgba(153,204,195,.48);font-size:13px
+}
+.raw-dpm-presets .raw-dpm-preset-editor input:focus-visible,
+.raw-dpm-presets button:focus-visible{
+ outline:2px solid #6fd5ba;outline-offset:2px
+}
+.raw-dpm-presets .raw-dpm-preset-confirm span{
+ flex:1 1 250px;color:#d9e9e3;font-size:12px;line-height:1.5
+}
+.raw-dpm-presets [data-v59-preset-save-confirm],
+.raw-dpm-presets [data-v59-preset-accept]{
+ background:#246f60;border-color:#70c7b3
+}
+.raw-dpm-presets [data-v59-preset-info]{
+ display:block;min-height:17px;white-space:normal
+}
