@@ -37,7 +37,7 @@ test("V5.26 local launcher starts Electron once, with explicit test mode and no 
  const launcher=read("launch-local-demo.mjs");
  assert.match(launcher,/require\("electron"\)/);
  assert.match(launcher,/spawn\(electron,\["\."\]/);
- assert.match(launcher,/RAW_TEST_MODE:\\s*"1"/);
+ assert.match(launcher,/RAW_TEST_MODE:\s*"1"/);
  assert.match(launcher,/shell:false/);
  assert.doesNotMatch(launcher,/\["start"\]|\["run","dev"\]|http:\/\/localhost/);
 });
