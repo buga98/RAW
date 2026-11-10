@@ -15,12 +15,15 @@ function boot({testMode=true,platform="win32",files=true}={}){
  class FakeWindow{
   constructor(opts){
    options=opts;window=this;
-   this.webContents={handlers:{},on(name,fn){this.handlers[name]=fn;},
+   this.webContents={handlers:{},focus(){window.webContentsFocused=true;},
+    on(name,fn){this.handlers[name]=fn;},
     setWindowOpenHandler(fn){this.openHandler=fn;},
     getURL(){return pathToFileURL("/fake/raw/index.html").href;}};
   }
   loadFile(file,props){this.loaded={file,props};}
   isDestroyed(){return false;}
+  isMinimized(){return false;}
+  focus(){this.windowFocused=true;}
   static fromWebContents(contents){return contents===window.webContents?window:null;}
  }
  const app={
@@ -47,6 +50,7 @@ function boot({testMode=true,platform="win32",files=true}={}){
  });
  return {get options(){return options;},get window(){return window;},
   get ipc(){return ipc;},get runtime(){return ipcHandlers["raw-runtime-info"];},
+  get restoreFocus(){return ipcHandlers["raw-restore-login-focus"];},
   get diagnostic(){return ipcHandlers["raw-v5-diagnostics"];},
   get worker(){return ipcHandlers["raw-v5-worker-command"];},get launched(){return launched;}};
 }
@@ -72,15 +76,18 @@ test("preload exposes only allowlisted native operations, never require or files
   }
  });
  assert.deepEqual(Object.keys(exposure),["RAWNative"]);
- assert.deepEqual(Object.keys(exposure.RAWNative),["openPluginSession","getRuntimeInfo","runAudioV5Diagnostic","runAudioV5Worker"]);
+ assert.deepEqual(Object.keys(exposure.RAWNative),["openPluginSession","getRuntimeInfo","restoreLoginFocus","runAudioV5Diagnostic","runAudioV5Worker"]);
  assert.equal(exposure.RAWNative.openPluginSession(),"open-plugin-session");
  assert.equal(exposure.RAWNative.getRuntimeInfo(),"raw-runtime-info");
+ assert.equal(exposure.RAWNative.restoreLoginFocus(),"raw-restore-login-focus");
+ assert.equal(invocations[2].name,"raw-restore-login-focus");
+ assert.deepEqual(invocations[2].args,[]);
  assert.equal(exposure.RAWNative.runAudioV5Diagnostic("clean"),"raw-v5-diagnostics");
- assert.equal(invocations[2].name,"raw-v5-diagnostics");
- assert.deepEqual(invocations[2].args,["clean"]);
+ assert.equal(invocations[3].name,"raw-v5-diagnostics");
+ assert.deepEqual(invocations[3].args,["clean"]);
  assert.equal(exposure.RAWNative.runAudioV5Worker("status"),"raw-v5-worker-command");
- assert.equal(invocations[3].name,"raw-v5-worker-command");
- assert.deepEqual(invocations[3].args,["status"]);
+ assert.equal(invocations[4].name,"raw-v5-worker-command");
+ assert.deepEqual(invocations[4].args,["status"]);
 });
 test("test mode prevents launching native studio software",async()=>{
  const app=boot({testMode:true});await Promise.resolve();
@@ -159,4 +166,14 @@ test("V5.4 main only exposes worker operations through exact test-only allowlist
  assert.match(main,/raw-v5-audio-worker-thread\.mjs/);
  assert.match(main,/app\.on\("before-quit",\(\)=>\{rawV5WorkerManager\?\.close\(\);\}\)/);
  assert.doesNotMatch(preload,/require\(["']node:fs|ipcRenderer\.send|writeFile/);
+});
+
+test("V5.24: native focus handler refocuses only RAW's own trusted window",async()=>{
+ const app=boot();await Promise.resolve();
+ const own=app.restoreFocus({sender:app.window.webContents});
+ assert.equal(own.ok,true);
+ assert.equal(app.window.windowFocused,true);
+ assert.equal(app.window.webContentsFocused,true);
+ const alien={getURL:()=> "https://malicious.example"};
+ assert.equal(app.restoreFocus({sender:alien}).code,"UNTRUSTED_RENDERER");
 });
