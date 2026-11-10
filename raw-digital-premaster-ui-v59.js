@@ -7,6 +7,7 @@
 let panel=null,generation=0,run=null,previewUrl=null,originalUrl=null,rendered=null;
 let fileGetter=()=>null,guard=()=>false,sourceAtMount=null,presetStore=null;
 let monitorVolumes={original:1,digital:1};
+let pendingPresetAction=null,presetBusy=false;
 const raw=()=>global.RAWDigitalPremasterV59;
 function allowed(){
  try{return guard()===true&&fileGetter()===sourceAtMount;}catch{return false;}
@@ -294,67 +295,129 @@ async function refreshPresets(store=presetStore){
    presetInfo("PRESET READ FAILED · "+String(error?.message||error).slice(0,120));
  }
 }
-async function savePreset(){
+// Electron does not reliably implement window.prompt/window.confirm.
+ // All preset interactions use visible, keyboard-accessible inline controls.
+function closePresetEditor(){
+ const editor=el("[data-v59-preset-editor]");
+ if(editor)editor.hidden=true;
+ const input=el("[data-v59-preset-name]");
+ if(input)input.value="";
+}
+function closePresetConfirmation(){
+ pendingPresetAction=null;
+ const confirmation=el("[data-v59-preset-confirm]");
+ if(confirmation)confirmation.hidden=true;
+}
+function openPresetEditor(){
  const store=presetStore;
- if(!store||!allowed())return;
- const name=global.prompt?.("Naziv digitalnog mastering preseta (bez audio datoteke):");
- if(name===null||name===undefined)return;
+ if(!store||!allowed()){
+  presetInfo("SAVE UNAVAILABLE · verify LOCAL TEST owner access and preset storage");
+  return;
+ }
+ if(presetBusy)return;
+ closePresetConfirmation();
+ const editor=el("[data-v59-preset-editor]");
+ if(editor)editor.hidden=false;
+ const input=el("[data-v59-preset-name]");
+ input?.focus?.();
+ presetInfo("ENTER PRESET NAME · press SPREMI or ENTER · LOCAL SETTINGS ONLY");
+}
+async function savePreset(){
+ const store=presetStore,input=el("[data-v59-preset-name]");
+ if(!store||!allowed()||presetBusy)return;
+ const name=String(input?.value||"").trim();
+ if(!name){
+  presetInfo("ENTER PRESET NAME FIRST · e.g. Test Limiter V522");
+  input?.focus?.();return;
+ }
+ presetBusy=true;
+ const save=el("[data-v59-preset-save-confirm]");
+ if(save)save.disabled=true;
  try{
   const saved=await store.save(name,settings());
   if(store!==presetStore||!allowed())return;
   await refreshPresets(store);
+  if(store!==presetStore||!allowed())return;
   const select=el("[data-v59-preset-select]");
   if(select)select.value=saved.id;
+  closePresetEditor();
   presetInfo("SAVED DIGITAL PRESET · "+saved.name+" · LOCAL SETTINGS ONLY");
  }catch(error){
   if(store===presetStore&&allowed())presetInfo("SAVE REJECTED · "+
-   String(error?.message||error).slice(0,120));
+   String(error?.message||error).slice(0,160));
+ }finally{
+  presetBusy=false;
+  if(save)save.disabled=false;
  }
 }
-async function loadPreset(){
+async function requestPresetAction(kind){
  const store=presetStore,select=el("[data-v59-preset-select]");
- if(!store||!allowed()||!select?.value)return;
- const selected=select.value;
+ if(!store||!allowed()){
+  presetInfo("PRESET STORAGE UNAVAILABLE · verify owner access");return;
+ }
+ if(presetBusy)return;
+ if(!select?.value){
+  presetInfo("SELECT A SAVED PRESET FIRST");return;
+ }
+ const id=select.value;
+ closePresetConfirmation();
  try{
-  const saved=await store.load(selected);
-  if(store!==presetStore||!allowed()||select.value!==selected)return;
-  if(global.confirm?.("Učitati spremljeni digitalni preset '"+saved.name+
-    "'? Trenutne digitalne vrijednosti će se zamijeniti. Nijedan rack ni hardver neće se promijeniti.")!==true)return;
-  for(const [key,value] of Object.entries(saved.settings)){
-   const input=el('[data-v59-setting="'+key+'"]');
-   if(!input)continue;
-   if(key==="dither"||key==="limiterEnabled")input.checked=value;
-   else input.value=String(value);
+  const saved=await store.load(id);
+  if(store!==presetStore||!allowed()||select.value!==id)return;
+  closePresetEditor();
+  pendingPresetAction={kind,store,id};
+  const label=el("[data-v59-preset-confirm-text]");
+  if(label)label.textContent=kind==="load"?
+   "Učitati preset '"+saved.name+"'? Zamijenit će samo DIGITALNE postavke; rack i hardware ostaju nepromijenjeni.":
+   "Trajno obrisati lokalni preset '"+saved.name+"'? Audio i rack ostaju nepromijenjeni.";
+  const button=el("[data-v59-preset-accept]");
+  if(button)button.textContent=kind==="load"?"POTVRDI UČITAVANJE":"POTVRDI BRISANJE";
+  const box=el("[data-v59-preset-confirm]");
+  if(box)box.hidden=false;
+  presetInfo("CONFIRM "+kind.toUpperCase()+" · local digital settings only");
+ }catch(error){
+  if(store===presetStore&&allowed())
+   presetInfo("PRESET CHECK FAILED · "+String(error?.message||error).slice(0,160));
+ }
+}
+async function acceptPresetAction(){
+ const action=pendingPresetAction;
+ if(!action||presetBusy||!allowed())return;
+ const {store,id,kind}=action,select=el("[data-v59-preset-select]");
+ closePresetConfirmation();
+ if(store!==presetStore||select?.value!==id)return;
+ presetBusy=true;
+ try{
+  if(kind==="load"){
+   const saved=await store.load(id);
+   if(store!==presetStore||!allowed()||select?.value!==id)return;
+   for(const [key,value] of Object.entries(saved.settings)){
+    const input=el('[data-v59-setting="'+key+'"]');
+    if(!input)continue;
+    if(key==="dither"||key==="limiterEnabled")input.checked=value;
+    else input.value=String(value);
+   }
+   const profile=el("[data-v59-handoff-profile]");
+   if(profile)profile.value="custom";
+   invalidateDigitalRender("DIGITAL PRESET LOADED · RENDER REQUIRED · NOT ANALOG HARDWARE");
+   const metrics=el("[data-v59-metrics]");
+   if(metrics)metrics.textContent="DIGITAL PRESET LOADED · render again to hear processed audio.";
+   presetInfo("LOADED · "+saved.name+" · RACK UNCHANGED");
+  }else if(kind==="delete"){
+   await store.remove(id,{confirmed:true});
+   if(store!==presetStore||!allowed())return;
+   await refreshPresets(store);
+   presetInfo("DIGITAL PRESET DELETED · LOCAL ONLY · AUDIO UNCHANGED");
   }
-  const handoffSelect=el("[data-v59-handoff-profile]");
-  if(handoffSelect)handoffSelect.value="custom";
-  invalidateDigitalRender("DIGITAL PRESET LOADED · RENDER REQUIRED · NOT ANALOG HARDWARE");
-  const metrics=el("[data-v59-metrics]");
-  if(metrics)metrics.textContent="DIGITAL PRESET LOADED · render again to hear processed audio.";
-  presetInfo("LOADED · "+saved.name+" · RACK UNCHANGED");
-  status("DIGITAL PRESET LOADED · RENDER REQUIRED · NOT ANALOG HARDWARE");
  }catch(error){
-  if(store===presetStore&&allowed())presetInfo("LOAD REJECTED · "+
-   String(error?.message||error).slice(0,120));
- }
+  if(store===presetStore&&allowed())presetInfo(
+   "PRESET "+kind.toUpperCase()+" REJECTED · "+String(error?.message||error).slice(0,160));
+ }finally{presetBusy=false;}
 }
-async function deletePreset(){
- const store=presetStore,select=el("[data-v59-preset-select]");
- if(!store||!allowed()||!select?.value)return;
- const target=select.value;
- if(global.confirm?.("Trajno obrisati odabrani DIGITALNI preset na ovom računalu? Audio i rack se ne brišu.")!==true)return;
- try{
-  await store.remove(target,{confirmed:true});
-  if(store!==presetStore||!allowed())return;
-  await refreshPresets(store);
-  presetInfo("DIGITAL PRESET DELETED · LOCAL ONLY · AUDIO UNCHANGED");
- }catch(error){
-  if(store===presetStore&&allowed())presetInfo("DELETE REJECTED · "+
-   String(error?.message||error).slice(0,120));
- }
-}
+
 function detach(){
- presetStore?.close?.();presetStore=null;
+ closePresetEditor();closePresetConfirmation();
+ presetStore?.close?.();presetStore=null;presetBusy=false;
  resetRender();
  panel?.remove?.();panel=null;fileGetter=()=>null;guard=()=>false;sourceAtMount=null;
 }
@@ -414,7 +477,18 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  '<button type="button" data-v59-preset-save>SAVE PRESET</button>'+
  '<button type="button" data-v59-preset-load>LOAD PRESET</button>'+
  '<button type="button" data-v59-preset-delete>DELETE PRESET</button>'+
- '<span data-v59-preset-info>LOCAL · SETTINGS ONLY · NO AUDIO</span>'+
+ '<div class="raw-dpm-preset-editor" data-v59-preset-editor hidden>'+
+ '<label for="rawPresetName">NAZIV NOVOG PRESETA</label>'+
+ '<input id="rawPresetName" type="text" maxlength="50" autocomplete="off" spellcheck="false" placeholder="npr. Test Limiter V522" data-v59-preset-name>'+
+ '<button type="button" data-v59-preset-save-confirm>SPREMI</button>'+
+ '<button type="button" data-v59-preset-save-cancel>ODUSTANI</button>'+
+ '</div>'+
+ '<div class="raw-dpm-preset-confirm" data-v59-preset-confirm hidden>'+
+ '<span data-v59-preset-confirm-text></span>'+
+ '<button type="button" data-v59-preset-accept>POTVRDI</button>'+
+ '<button type="button" data-v59-preset-reject>ODUSTANI</button>'+
+ '</div>'+
+ '<span data-v59-preset-info role="status" aria-live="polite">LOCAL · SETTINGS ONLY · NO AUDIO</span>'+
  '</div>'+
  '<div class="raw-dpm-actions">'+
  '<button type="button" data-v59-start>▶ RENDER DIGITAL PREMASTER</button>'+
@@ -439,9 +513,18 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  el("[data-v59-ab-a]").addEventListener("click",()=>listen(true));
  el("[data-v59-ab-b]").addEventListener("click",()=>listen(false));
  el("[data-v59-monitor-match]").addEventListener("change",updateMonitorVolume);
- el("[data-v59-preset-save]").addEventListener("click",()=>void savePreset());
- el("[data-v59-preset-load]").addEventListener("click",()=>void loadPreset());
- el("[data-v59-preset-delete]").addEventListener("click",()=>void deletePreset());
+ el("[data-v59-preset-save]").addEventListener("click",openPresetEditor);
+ el("[data-v59-preset-save-confirm]").addEventListener("click",()=>void savePreset());
+ el("[data-v59-preset-save-cancel]").addEventListener("click",closePresetEditor);
+ el("[data-v59-preset-name]").addEventListener("keydown",event=>{
+  if(event?.key==="Enter"){event.preventDefault?.();void savePreset();}
+  if(event?.key==="Escape"){event.preventDefault?.();closePresetEditor();}
+ });
+ el("[data-v59-preset-load]").addEventListener("click",()=>void requestPresetAction("load"));
+ el("[data-v59-preset-delete]").addEventListener("click",()=>void requestPresetAction("delete"));
+ el("[data-v59-preset-accept]").addEventListener("click",()=>void acceptPresetAction());
+ el("[data-v59-preset-reject]").addEventListener("click",closePresetConfirmation);
+ el("[data-v59-preset-select]").addEventListener("change",closePresetConfirmation);
  // A rendered file must never be downloadable under settings it was not
  // rendered with: any edit invalidates the previous digital preview.
  section.querySelectorAll("[data-v59-setting]").forEach(control=>
