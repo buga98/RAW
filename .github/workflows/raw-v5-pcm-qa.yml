@@ -26,3 +26,5 @@ jobs:
           node-version: '22'
       - name: V5 and V5.1 offline audio regression
         run: npm run studio:audio:v5:check
+      - name: Full RAW unit and contract smoke suite
+        run: npm run test:smoke
