@@ -31,6 +31,7 @@ function harness({frames=4096,withPresets=false}={}){
    this.textContent="";this.src="";this.handlers={};this.children=[];}
   addEventListener(name,fn){this.handlers[name]=fn;}
   click(){this.handlers.click?.();}
+  focus(){this.focused=true;}
   append(...items){this.children.push(...items);}
   replaceChildren(...items){this.children=[...items];}
   remove(){this.removed=true;}
@@ -55,6 +56,8 @@ function harness({frames=4096,withPresets=false}={}){
     if(sel.includes("download")||sel.includes("qc")||sel.includes("ab-a")||sel.includes("ab-b"))
      out.disabled=true;
     if(sel.includes("monitor-match"))out.checked=true;
+    if(sel.includes("preset-editor")||sel.includes("preset-confirm"))
+     out.hidden=true;
     if(sel.includes("cancel"))out.disabled=true;
     this.fields.set(sel,out);
    }
@@ -74,7 +77,7 @@ function harness({frames=4096,withPresets=false}={}){
   async decodeAudioData(){return decoded;}
   async close(){}
  }
- let enteredName="Vocal pop",confirmed=true;
+ // Intentionally no native dialogs: Electron may lack prompt/confirm entirely.
  const storedPresets=[],storedOps=[];
  const fakeStore={
   list:async()=>storedPresets.map(p=>({...p})),
@@ -92,8 +95,7 @@ function harness({frames=4096,withPresets=false}={}){
  };
  const window={document:doc,URL,AudioContext:FakeAudioContext,crypto:webcrypto,
   ...(withPresets?{RAWDigitalPresetsV511:{create:()=>fakeStore}}:{}),
-  prompt:()=>enteredName,confirm:()=>confirmed,
-  setTimeout:(fn,delay)=>{
+   setTimeout:(fn,delay)=>{
    const timer=setTimeout(fn,delay);if(delay>=1000)timer.unref?.();return timer;
   },clearTimeout,
   RAWStudioSim:null};
@@ -104,7 +106,7 @@ function harness({frames=4096,withPresets=false}={}){
  vm.runInNewContext(qcModule,context);
  vm.runInNewContext(loudnessModule,context);vm.runInNewContext(ui,context);
  return {window,doc,host,file,decoded,URL,createdUrls,revoked,storedPresets,storedOps,
-  setPresetName:name=>{enteredName=name;},confirm:yes=>{confirmed=yes;},
+  setPresetName:name=>{panel.querySelector("[data-v59-preset-name]").value=name;},
   get panel(){return panel;},
   get clicks(){return clicks;},
   attach:()=>window.RAWDigitalPremasterV59UI.attach(host,{
@@ -244,6 +246,11 @@ test("V5.11: local mastering preset buttons save, load, then confirm delete",asy
  const h=harness({withPresets:true});h.attach();await settle();
  h.select("airDb",3);
  h.button("preset-save").click();
+ assert.equal(h.button("preset-editor").hidden,false);
+ assert.equal(h.button("preset-name").focused,true);
+ assert.equal(h.storedPresets.length,0,"First click only opens inline name editor");
+ h.setPresetName("Vocal pop");
+ h.button("preset-save-confirm").click();
  for(let i=0;i<6;i++)await settle();
  assert.equal(h.storedPresets.length,1);
  assert.equal(h.storedPresets[0].name,"Vocal pop");
@@ -253,15 +260,23 @@ test("V5.11: local mastering preset buttons save, load, then confirm delete",asy
  h.select("airDb",-1);
  h.button("preset-load").click();
  for(let i=0;i<6;i++)await settle();
+ assert.equal(h.button("preset-confirm").hidden,false);
+ assert.equal(h.panel.querySelector('[data-v59-setting="airDb"]').value,"-1");
+ h.button("preset-accept").click();
+ for(let i=0;i<6;i++)await settle();
  assert.equal(h.panel.querySelector('[data-v59-setting="airDb"]').value,"3");
  assert.match(h.button("status").textContent,/PRESET LOADED/);
  assert.equal(h.button("download").disabled,true);
- h.confirm(false);
  h.button("preset-delete").click();
  for(let i=0;i<4;i++)await settle();
+ assert.equal(h.button("preset-confirm").hidden,false);
  assert.equal(h.storedPresets.length,1);
- h.confirm(true);
+ h.button("preset-reject").click();
+ assert.equal(h.button("preset-confirm").hidden,true);
+ assert.equal(h.storedPresets.length,1);
  h.button("preset-delete").click();
+ for(let i=0;i<5;i++)await settle();
+ h.button("preset-accept").click();
  for(let i=0;i<6;i++)await settle();
  assert.equal(h.storedPresets.length,0);
  assert.ok(h.storedOps.includes("delete"));
@@ -421,6 +436,8 @@ test("V5.22: saved digital presets retain limiter and M/S controls; recall remai
  h.select("limiterDriveDb",8);h.select("limiterLookaheadMs",7);
  h.select("limiterReleaseMs",220);h.select("stereoWidthPercent",125);
  h.button("preset-save").click();
+ h.setPresetName("Vocal pop");
+ h.button("preset-save-confirm").click();
  for(let i=0;i<8;i++)await settle();
  assert.equal(h.storedPresets.length,1);
  assert.equal(h.storedPresets[0].settings.limiterEnabled,true);
@@ -428,6 +445,9 @@ test("V5.22: saved digital presets retain limiter and M/S controls; recall remai
  assert.equal(h.storedPresets[0].settings.stereoWidthPercent,125);
  on.checked=false;h.select("limiterDriveDb",0);h.select("stereoWidthPercent",100);
  h.button("preset-load").click();
+ for(let i=0;i<5;i++)await settle();
+ assert.equal(on.checked,false,"Preset recall requires visible confirmation");
+ h.button("preset-accept").click();
  for(let i=0;i<10;i++)await settle();
  assert.equal(on.checked,true);
  assert.equal(h.panel.querySelector('[data-v59-setting="limiterDriveDb"]').value,"8");
