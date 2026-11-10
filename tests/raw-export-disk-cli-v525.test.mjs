@@ -67,7 +67,7 @@ test("metadata/header forge and invalid JSON never report integrity match",async
  await fixture(async({wav,json,qc})=>{
   await writeFile(json,JSON.stringify({...qc,frames:999}));
   await assert.rejects(verifyExport(wav,json),e=>e.code==="QC_MISMATCH");
-  await writeFile(json,"{");
+  await writeFile(json,"{bad");
   await assert.rejects(verifyExport(wav,json),e=>e.code==="QC_JSON");
   await writeFile(json,JSON.stringify(qc));
   const changed=await readFile(wav);changed[0]=0;await writeFile(wav,changed);
