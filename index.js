@@ -10,7 +10,8 @@ const { pathToFileURL } = require("node:url");
 const REAPER_PATH = "C:\\Program Files\\REAPER (x64)\\reaper.exe";
 const PROJECT_PATH = "C:\\RAW\\hardware-test.rpp";
 const INDEX_URL = pathToFileURL(path.join(__dirname, "index.html")).href;
-const TEST_MODE = process.env.RAW_TEST_MODE === "1";
+// Fail closed to LOCAL TEST even when Electron is launched directly without npm.
+const TEST_MODE = process.env.RAW_TEST_MODE === "1" || process.env.RAW_TEST_MODE === undefined;
 function isLocalAppUrl(candidate){
   try{
     const u = new URL(candidate);
