@@ -1,3 +1,4 @@
+import {rejectLegacyService} from "./raw-legacy-service-guard-v526.mjs";
 import { initializeApp } from "firebase/app";
 import {
   getFirestore,
@@ -10,6 +11,9 @@ import {
   serverTimestamp,
   increment
 } from "firebase/firestore";
+
+// Reject before any listener, Firestore client or process spawn can start.
+rejectLegacyService("billing-watchdog");
 
 const firebaseConfig = {
   apiKey: "AIzaSyD3LBWoS-uX9BnxDaMzQs_rlh9BMm_RRTM",
