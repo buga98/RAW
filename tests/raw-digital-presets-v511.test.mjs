@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {readFileSync} from "node:fs";
 import vm from "node:vm";
-import {webcrypto} from "node:crypto";
+import {webcrypto,createHash} from "node:crypto";
 
 const read=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
 function harness(t,owner="uid-owner"){
@@ -113,4 +113,29 @@ test("V5.11: local preset module contains no hardware/network/billing instructio
  assert.doesNotMatch(source,/\b(?:WebSocket|fetch|ipcRenderer|sendControlMessage|runTransaction|easymidi|localStorage)\s*\(/i);
  assert.match(source,/SHA-256/);
  assert.match(source,/NO.*?audio data/i);
+});
+
+test("V5.20: old V5.11 SHA-256 presets load with neutral M/S defaults, without rewriting storage",async t=>{
+ const h=harness(t),uid="uid-owner",s=h.create();
+ const hash=input=>createHash("sha256").update(input).digest("hex");
+ const scope=hash("RAW_V511_DIGITAL_PRESET_SCOPE\n"+uid);
+ const id="aaaaaaaa-aaaa-4aaa-8aaa-000000000020",name="Old analog-independent digital";
+ const settings={
+  lowCutHz:25,lowShelfDb:1,presenceDb:0,airDb:0,
+  thresholdDb:-18,ratio:2,attackMs:20,releaseMs:180,
+  makeupDb:0,ceilingDb:-1,bits:24,dither:true
+ };
+ const digest=hash("RAW_V511_PRESET_SHA256\n"+scope+"\n"+id+"\n"+name+"\n"+
+  JSON.stringify(settings));
+ const key=scope+":"+id;
+ h.rows.set(key,{key,scope,id,kind:"RAW_LOCAL_DIGITAL_PRESET_V511",name,
+  savedAt:"2026-11-09T14:30:00Z",settings,sha256:digest});
+ const loaded=await s.load(id);
+ assert.equal(loaded.settings.lowShelfDb,1);
+ assert.equal(loaded.settings.ratio,2);
+ assert.equal(loaded.settings.stereoWidthPercent,100);
+ assert.equal(loaded.settings.midTrimDb,0);
+ assert.equal(loaded.settings.sideTrimDb,0);
+ assert.equal(h.writes.length,0,"Migration must not silently overwrite verified preset");
+ assert.equal(h.rows.get(key).sha256,digest);
 });
