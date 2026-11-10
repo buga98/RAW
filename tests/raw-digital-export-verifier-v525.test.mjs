@@ -108,7 +108,7 @@ test("V5.25: unsigned receipt never asserts analog capture and rejects forged ha
 });
 test("V5.25: bad JSON, impossible input sizes and missing crypto fail before false PASS",async()=>{
  const checker=verifier(),f=fixtures();
- await assert.rejects(checker.verifyFiles({wavFile:f.wavFile,qcFile:new Blob(["{"])}),
+ await assert.rejects(checker.verifyFiles({wavFile:f.wavFile,qcFile:new Blob(["{bad"])}),
   e=>e.code==="QC_JSON");
  await assert.rejects(checker.verifyFiles({wavFile:f.wavFile,qcFile:new Blob([])}),
   e=>e.code==="QC_SIZE");
