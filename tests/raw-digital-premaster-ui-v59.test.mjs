@@ -456,3 +456,92 @@ test("V5.22: saved digital presets retain limiter and M/S controls; recall remai
  assert.equal(h.button("download").disabled,true);
  h.window.RAWDigitalPremasterV59UI.detach();
 });
+
+
+test("V5.23: Electron without prompt/confirm shows an inline preset editor instead of doing nothing",async()=>{
+ const h=harness({withPresets:true});
+ // Simulates Electron: window.prompt and window.confirm are unavailable.
+ assert.equal(h.window.prompt,undefined);
+ assert.equal(h.window.confirm,undefined);
+ h.attach();await settle();
+ const info=h.button("preset-info");
+ h.button("preset-save").click();
+ assert.equal(h.button("preset-editor").hidden,false);
+ assert.equal(h.button("preset-name").focused,true);
+ assert.match(info.textContent,/ENTER PRESET NAME/);
+ assert.equal(h.storedPresets.length,0);
+ h.button("preset-save-confirm").click();
+ await settle();
+ assert.match(info.textContent,/ENTER PRESET NAME FIRST/);
+ assert.equal(h.storedPresets.length,0);
+ h.setPresetName("Test Limiter V522");
+ h.button("preset-save-confirm").click();
+ for(let i=0;i<8;i++)await settle();
+ assert.equal(h.storedPresets.length,1);
+ assert.equal(h.storedPresets[0].name,"Test Limiter V522");
+ assert.equal(h.button("preset-editor").hidden,true);
+ assert.match(info.textContent,/SAVED DIGITAL PRESET/);
+ assert.equal(h.button("preset-select").value,h.storedPresets[0].id);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.23: CANCEL and Escape abandon the visible editor without deleting prior presets",async()=>{
+ const h=harness({withPresets:true});h.attach();await settle();
+ h.button("preset-save").click();
+ h.setPresetName("Should not save");
+ h.button("preset-save-cancel").click();
+ assert.equal(h.button("preset-editor").hidden,true);
+ assert.equal(h.button("preset-name").value,"");
+ assert.equal(h.storedPresets.length,0);
+ h.button("preset-save").click();
+ h.setPresetName("Should not save either");
+ let prevented=false;
+ h.button("preset-name").handlers.keydown({
+  key:"Escape",preventDefault(){prevented=true;}
+ });
+ assert.equal(prevented,true);
+ assert.equal(h.button("preset-editor").hidden,true);
+ assert.equal(h.storedPresets.length,0);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.23: Enter saves preset using an accessible inline name field",async()=>{
+ const h=harness({withPresets:true});h.attach();await settle();
+ h.button("preset-save").click();h.setPresetName("Limiter 10 dB");
+ let prevented=false;
+ h.button("preset-name").handlers.keydown({
+  key:"Enter",preventDefault(){prevented=true;}
+ });
+ for(let i=0;i<8;i++)await settle();
+ assert.equal(prevented,true);
+ assert.equal(h.storedPresets.length,1);
+ assert.equal(h.storedPresets[0].name,"Limiter 10 dB");
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.23: load/delete without selection give feedback; no native dialogs are invoked",async()=>{
+ const h=harness({withPresets:true});h.attach();await settle();
+ h.button("preset-load").click();await settle();
+ assert.match(h.button("preset-info").textContent,/SELECT A SAVED PRESET/);
+ h.button("preset-delete").click();await settle();
+ assert.match(h.button("preset-info").textContent,/SELECT A SAVED PRESET/);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.23: access revocation blocks opened save dialog and preserves settings",async()=>{
+ const h=harness({withPresets:true});h.attach();await settle();
+ h.button("preset-save").click();h.setPresetName("Unauthorized");
+ h.allow(false);
+ h.button("preset-save-confirm").click();
+ await settle();
+ assert.equal(h.storedPresets.length,0);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.23: preset UI has no native prompt/confirm and inline actions are explicit",()=>{
+ const css=read("raw-digital-premaster-v59.css");
+ assert.doesNotMatch(ui,/global\.(?:prompt|confirm)\s*\??\.\s*\(/);
+ assert.match(ui,/data-v59-preset-editor/);
+ assert.match(ui,/data-v59-preset-name/);
+ assert.match(ui,/data-v59-preset-save-confirm/);
+ assert.match(ui,/data-v59-preset-confirm-text/);
+ assert.match(ui,/data-v59-preset-accept/);
+ assert.match(ui,/aria-live="polite"/);
+ assert.match(css,/\.raw-dpm-preset-editor\[hidden\]/);
+ assert.match(css,/\.raw-dpm-preset-confirm\[hidden\]/);
+});
