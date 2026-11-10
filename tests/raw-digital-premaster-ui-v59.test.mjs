@@ -545,3 +545,36 @@ test("V5.23: preset UI has no native prompt/confirm and inline actions are expli
  assert.match(css,/\.raw-dpm-preset-editor\[hidden\]/);
  assert.match(css,/\.raw-dpm-preset-confirm\[hidden\]/);
 });
+
+test("V5.25: changing selected disk files clears previous MATCH and invalidates in-flight verification",async()=>{
+ const h=harness();assert.equal(h.attach(),true);
+ const status=h.button("verify-status");
+ const wav=h.button("verify-wav"),qc=h.button("verify-qc"),button=h.button("verify-files");
+ status.textContent="MATCH · verified old files";
+ wav.handlers.change();
+ assert.match(status.textContent,/FILES CHANGED/);
+ assert.doesNotMatch(status.textContent,/^MATCH/);
+ status.textContent="FILE CHECK FAILED · SHA256_MISMATCH";
+ qc.handlers.change();
+ assert.match(status.textContent,/FILES CHANGED/);
+
+ let complete=null;
+ h.window.RAWDigitalExportVerifierV525={
+  verifyFiles:()=>new Promise(resolve=>{complete=resolve;})
+ };
+ wav.files=[{name:"old.wav"}];qc.files=[{name:"old.json"}];
+ button.click();
+ await settle();
+ assert.equal(button.disabled,true);
+ assert.match(status.textContent,/CHECKING FILES/);
+ assert.equal(typeof complete,"function");
+
+ qc.files=[{name:"new.json"}];
+ qc.handlers.change();
+ assert.equal(button.disabled,false);
+ assert.match(status.textContent,/FILES CHANGED/);
+ complete({bits:24,sampleRate:48000,frames:123,sha256:"f".repeat(64)});
+ await settle();
+ assert.match(status.textContent,/FILES CHANGED/);
+ assert.doesNotMatch(status.textContent,/^MATCH/);
+});
