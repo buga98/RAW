@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node launch-local-demo.mjs",
     "dev": "node start-all.mjs",
     "test:local": "node launch-local-demo.mjs",
     "test:smoke": "node --test",
@@ -35,7 +35,7 @@
     "studio:library:check": "node --test tests/raw-local-project-library-v2.test.mjs tests/raw-local-project-library-panel-v2.test.mjs tests/raw-local-project-library-ui-contract-v2.test.mjs",
     "studio:workspace:check": "node --test tests/raw-project-recall-v3.test.mjs tests/raw-developer-labs-access-v1.test.mjs tests/raw-local-project-library-panel-v2.test.mjs tests/raw-vm-context-contract-v1.test.mjs tests/raw-project-recall-navigation-v3.test.mjs tests/raw-audio-route-v4.test.mjs tests/raw-workspace-project-status-v4.test.mjs tests/raw-mastering-workspace-v4-contract.test.mjs tests/raw-studio-audio-job-v4.test.mjs tests/raw-studio-ux-v513-v515.test.mjs tests/raw-audio-dock-v516.test.mjs tests/raw-logout-focus-v524.test.mjs",
     "studio:workspace:v4:check": "node --test tests/raw-audio-route-v4.test.mjs tests/raw-workspace-project-status-v4.test.mjs tests/raw-mastering-workspace-v4-contract.test.mjs tests/raw-project-recall-v3.test.mjs tests/raw-developer-labs-access-v1.test.mjs tests/raw-project-recall-navigation-v3.test.mjs tests/raw-studio-audio-job-v4.test.mjs",
-    "studio:audio:v5:check": "node --test tests/raw-virtual-audio-loopback-v5.test.mjs tests/raw-virtual-pcm-block-engine-v5.test.mjs tests/raw-virtual-pcm-integrity-v5.test.mjs tests/raw-v5-diagnostics-runner-v5.test.mjs tests/raw-v5-diagnostics-ui-v5.test.mjs tests/raw-v5-audio-worker-v54.test.mjs tests/raw-v5-worker-ui-v54.test.mjs tests/electron-preload-security-v1.test.mjs tests/raw-v5-autosave-recovery-v55.test.mjs tests/raw-v5-autosave-ui-v55.test.mjs tests/raw-v5-autosave-restore-v56.test.mjs tests/raw-local-reconnect-v57.test.mjs tests/studio-sim-client-behavior-v3.test.mjs tests/raw-v5-recovery-details-v58.test.mjs tests/raw-digital-premaster-v59.test.mjs tests/raw-digital-premaster-ui-v59.test.mjs tests/raw-master-qc-v510.test.mjs tests/raw-digital-presets-v511.test.mjs tests/raw-studio-ux-v513-v515.test.mjs tests/raw-audio-dock-v516.test.mjs tests/raw-professional-loudness-v517.test.mjs tests/raw-mid-side-v520.test.mjs tests/raw-digital-handoff-v521.test.mjs tests/raw-digital-limiter-v522.test.mjs tests/raw-logout-focus-v524.test.mjs tests/raw-digital-worker-v527.test.mjs",
+    "studio:audio:v5:check": "node --test tests/raw-virtual-audio-loopback-v5.test.mjs tests/raw-virtual-pcm-block-engine-v5.test.mjs tests/raw-virtual-pcm-integrity-v5.test.mjs tests/raw-v5-diagnostics-runner-v5.test.mjs tests/raw-v5-diagnostics-ui-v5.test.mjs tests/raw-v5-audio-worker-v54.test.mjs tests/raw-v5-worker-ui-v54.test.mjs tests/electron-preload-security-v1.test.mjs tests/raw-v5-autosave-recovery-v55.test.mjs tests/raw-v5-autosave-ui-v55.test.mjs tests/raw-v5-autosave-restore-v56.test.mjs tests/raw-local-reconnect-v57.test.mjs tests/studio-sim-client-behavior-v3.test.mjs tests/raw-v5-recovery-details-v58.test.mjs tests/raw-digital-premaster-v59.test.mjs tests/raw-digital-premaster-ui-v59.test.mjs tests/raw-master-qc-v510.test.mjs tests/raw-digital-presets-v511.test.mjs tests/raw-studio-ux-v513-v515.test.mjs tests/raw-audio-dock-v516.test.mjs tests/raw-professional-loudness-v517.test.mjs tests/raw-mid-side-v520.test.mjs tests/raw-digital-handoff-v521.test.mjs tests/raw-digital-limiter-v522.test.mjs tests/raw-logout-focus-v524.test.mjs tests/raw-digital-worker-v527.test.mjs tests/raw-digital-export-verifier-v525.test.mjs tests/raw-export-disk-cli-v525.test.mjs tests/raw-legacy-service-guard-v526.test.mjs",
     "studio:audio:v5:blocks:check": "node --test tests/raw-virtual-pcm-block-engine-v5.test.mjs",
     "studio:audio:v5:integrity:check": "node --test tests/raw-virtual-pcm-integrity-v5.test.mjs",
     "studio:audio:v5:diagnostics:check": "node --test tests/raw-v5-diagnostics-runner-v5.test.mjs tests/raw-v5-diagnostics-ui-v5.test.mjs tests/electron-preload-security-v1.test.mjs",
@@ -49,7 +49,10 @@
     "studio:handoff:v521:check": "node --test tests/raw-digital-handoff-v521.test.mjs",
     "studio:limiter:v522:check": "node --test tests/raw-digital-limiter-v522.test.mjs",
     "studio:logout:v524:check": "node --test tests/raw-logout-focus-v524.test.mjs tests/electron-preload-security-v1.test.mjs",
-    "studio:render:v527:check": "node --test tests/raw-digital-worker-v527.test.mjs tests/raw-digital-premaster-ui-v59.test.mjs tests/raw-digital-premaster-v59.test.mjs tests/raw-digital-limiter-v522.test.mjs"
+    "studio:render:v527:check": "node --test tests/raw-digital-worker-v527.test.mjs tests/raw-digital-premaster-ui-v59.test.mjs tests/raw-digital-premaster-v59.test.mjs tests/raw-digital-limiter-v522.test.mjs",
+    "studio:handoff:v525:check": "node --test tests/raw-digital-export-verifier-v525.test.mjs tests/raw-digital-handoff-v521.test.mjs tests/raw-master-qc-v510.test.mjs tests/raw-export-disk-cli-v525.test.mjs",
+    "security:legacy:v526:check": "node --test tests/raw-legacy-service-guard-v526.test.mjs tests/security.test.mjs",
+    "studio:integration:v528:check": "node --test tests/raw-v528-integration-contract.test.mjs tests/raw-digital-premaster-ui-v59.test.mjs tests/raw-digital-export-verifier-v525.test.mjs tests/raw-export-disk-cli-v525.test.mjs tests/raw-digital-worker-v527.test.mjs tests/raw-legacy-service-guard-v526.test.mjs"
   },
   "keywords": [],
   "author": "",
