@@ -151,7 +151,7 @@ test("V5.24: no active session skips confirmation and signs out normally",async(
 });
 test("V5.24: handler and native IPC are constrained to local RAW, no Electron dialogs",()=>{
  const h=logoutHarness();
- assert.doesNotMatch(h.handlerSource,/[^.]confirm\s*\(/);
+ assert.doesNotMatch(h.handlerSource.replace(/\/\/[^\n]*/g,""),/\bconfirm\s*\(/);
  assert.match(html,/src="raw-logout-focus-v524\.js"/);
  assert.match(html,/id="rawLogoutConfirm"[^>]* hidden/);
  assert.match(html,/id="rawLogoutYes"/);
