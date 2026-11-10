@@ -627,7 +627,14 @@ window.goTo = function(screenId) {
   if(audioDock)audioDock.hidden=screenId!=="plugin";
   window.RAWAudioDockV516?.update?.();
   if(screenId==="login"){
-    window.RAWLogoutFocusV524?.restoreLoginFocus?.();
+    // Preserve the old renderer focus contract for direct route navigation.
+    // V5.24 additionally recovers native BrowserWindow focus after logout.
+    const emailInput=document.getElementById("loginEmail");
+    emailInput?.focus({preventScroll:true});
+    window.requestAnimationFrame?.(()=>{
+      if(document.getElementById("login")?.classList.contains("active"))
+        emailInput?.focus({preventScroll:true});
+    });
   }
 
   // V5.6 hotfix: discover the previous owner-scoped recovery journal as soon as
