@@ -19,7 +19,7 @@ function revoke(){
  if(originalUrl){try{global.URL.revokeObjectURL(originalUrl);}catch{}originalUrl=null;}
 }
 function resetRender(){
- generation++;if(run)run.cancelled=true;run=null;
+ generation++;if(run){run.cancelled=true;run.cancelWorker?.();}run=null;
  rendered=null;monitorVolumes={original:1,digital:1};revoke();
  const player=el("[data-v59-player]");
  if(player){try{player.pause();player.removeAttribute("src");player.load();}catch{}}
@@ -96,15 +96,30 @@ async function process(){
   const audio=await decodeFile(file);
   if(token.cancelled||current!==generation||!allowed())return;
   if(audio.numberOfChannels!==2)throw new Error("V5.9 accepts only stereo decoded source (2 channels)");
-  status("DIGITAL DSP · rendering actual PCM");
-  const out=await raw().render(audio,profile,{
-   isCancelled:()=>token.cancelled||current!==generation||!allowed(),
-   onProgress:report=>{
-    if(current!==generation||token.cancelled||!allowed())return;
-    const bar=el("[data-v59-progress]");if(bar)bar.value=report.percent;
-    status("DIGITAL "+report.phase+" · "+report.percent+"% · NO ANALOG HARDWARE");
-   }
-  });
+  const renderProgress=report=>{
+   if(current!==generation||token.cancelled||!allowed())return;
+   const bar=el("[data-v59-progress]");if(bar)bar.value=report.percent;
+   status("DIGITAL "+report.phase+" · "+report.percent+"% · NO ANALOG HARDWARE");
+  };
+  let out;
+  if(global.RAWDigitalRenderWorkerV527?.create&&typeof global.Worker==="function"){
+   status("ISOLATED OFFLINE DSP WORKER · rendering PCM outside Electron UI");
+   const job=global.RAWDigitalRenderWorkerV527.create({
+    audio,settings:profile,onProgress:renderProgress
+   });
+   token.cancelWorker=job.cancel;
+   out=await job.promise;
+  }else{
+   // Bounded compatibility mode for browsers without Worker; avoid running
+   // a multi-minute, high-memory render directly on the Electron UI thread.
+   if(audio.length>audio.sampleRate*10)
+    throw new Error("OFFLINE DSP WORKER UNAVAILABLE · inline render limited to 10 seconds");
+   status("SHORT PCM COMPATIBILITY RENDER · DSP WORKER UNAVAILABLE");
+   out=await raw().render(audio,profile,{
+    isCancelled:()=>token.cancelled||current!==generation||!allowed(),
+    onProgress:renderProgress
+   });
+  }
   if(token.cancelled||current!==generation||!allowed())return;
   const blob=new Blob(out.chunks,{type:"audio/wav"});
   if(blob.size!==out.byteLength)throw new Error("Digital WAV byte size mismatch");
@@ -506,7 +521,7 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  host.append(section);panel=section;
  el("[data-v59-start]").addEventListener("click",()=>void process());
  el("[data-v59-cancel]").addEventListener("click",()=>{
-  if(run){run.cancelled=true;status("CANCEL REQUESTED · no output will be delivered");}
+  if(run){run.cancelled=true;run.cancelWorker?.();status("CANCEL REQUESTED · no output will be delivered");}
  });
  el("[data-v59-download]").addEventListener("click",download);
  el("[data-v59-qc]").addEventListener("click",downloadQC);
