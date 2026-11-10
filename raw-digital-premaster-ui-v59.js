@@ -286,6 +286,15 @@ async function verifyDownloadedFiles(){
    button.disabled=false;
  }
 }
+function invalidateDownloadedFileCheck(){
+ // File changes invalidate any previous MATCH/FAIL status and in-flight check.
+ // Its async completion must not claim that the newly selected files match.
+ verifyGeneration++;
+ const output=el("[data-v59-verify-status]");
+ const button=el("[data-v59-verify-files]");
+ if(button)button.disabled=false;
+ if(output)output.textContent="FILES CHANGED · previous file-check result cleared · click VERIFY FILES · SHA-256 again";
+}
 function updateMonitorVolume(){
  const player=el("[data-v59-player]");
  if(!player||!rendered)return;
@@ -557,6 +566,8 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  el("[data-v59-download]").addEventListener("click",download);
  el("[data-v59-qc]").addEventListener("click",downloadQC);
  el("[data-v59-verify-files]").addEventListener("click",()=>void verifyDownloadedFiles());
+ el("[data-v59-verify-wav]").addEventListener("change",invalidateDownloadedFileCheck);
+ el("[data-v59-verify-qc]").addEventListener("change",invalidateDownloadedFileCheck);
  el("[data-v59-ab-a]").addEventListener("click",()=>listen(true));
  el("[data-v59-ab-b]").addEventListener("click",()=>listen(false));
  el("[data-v59-monitor-match]").addEventListener("change",updateMonitorVolume);
