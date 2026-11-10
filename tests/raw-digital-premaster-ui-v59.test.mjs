@@ -8,11 +8,12 @@ const read=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
 const engine=read("raw-digital-premaster-v59.js");
 const limiterEngine=read("raw-digital-limiter-v522.js");
 const ui=read("raw-digital-premaster-ui-v59.js");
+const workerClient=read("raw-digital-worker-client-v527.js");
 const qcModule=read("raw-master-qc-v510.js");
 const handoffModule=read("raw-digital-handoff-v521.js");
 const loudnessModule=read("raw-professional-loudness-v517.js");
 const html=read("index.html");
-function harness({frames=4096,withPresets=false}={}){
+function harness({frames=4096,withPresets=false,withWorker=false}={}){
  const settings={lowCutHz:25,lowShelfDb:0,presenceDb:0,airDb:0,
  thresholdDb:-18,ratio:1,attackMs:20,releaseMs:180,
  makeupDb:0,ceilingDb:-1,bits:24,dither:true,
@@ -93,7 +94,32 @@ function harness({frames=4096,withPresets=false}={}){
    if(i>=0)storedPresets.splice(i,1);storedOps.push("delete");return {deletedId:id};},
   close(){storedOps.push("close");}
  };
+ const workerInstances=[];
+ class FakePCMWorker{
+  constructor(path){this.path=path;this.terminated=false;this.commands=[];workerInstances.push(this);}
+  postMessage(message,transfers){
+   this.commands.push({message,transfers});
+   if(message.type!=="RENDER")return;
+   setImmediate(async()=>{
+    if(this.terminated)return;
+    try{
+     const channels=message.channels;
+     const copy={length:channels[0].length,sampleRate:message.sampleRate,
+      numberOfChannels:2,getChannelData:index=>channels[index]};
+     const result=await window.RAWDigitalPremasterV59.render(copy,message.settings,{
+      isCancelled:()=>this.terminated
+     });
+     if(!this.terminated)this.onmessage?.({data:{type:"DONE",id:message.id,result}});
+    }catch(error){
+     if(!this.terminated)this.onmessage?.({data:{type:"FAILED",id:message.id,
+      code:error.code||"FAKE_RENDER",message:error.message}});
+    }
+   });
+  }
+  terminate(){this.terminated=true;}
+ }
  const window={document:doc,URL,AudioContext:FakeAudioContext,crypto:webcrypto,
+  ...(withWorker?{Worker:FakePCMWorker}:{ }),
   ...(withPresets?{RAWDigitalPresetsV511:{create:()=>fakeStore}}:{}),
    setTimeout:(fn,delay)=>{
    const timer=setTimeout(fn,delay);if(delay>=1000)timer.unref?.();return timer;
@@ -104,8 +130,10 @@ function harness({frames=4096,withPresets=false}={}){
  vm.runInNewContext(engine,context);vm.runInNewContext(limiterEngine,context);
  vm.runInNewContext(handoffModule,context);
  vm.runInNewContext(qcModule,context);
- vm.runInNewContext(loudnessModule,context);vm.runInNewContext(ui,context);
- return {window,doc,host,file,decoded,URL,createdUrls,revoked,storedPresets,storedOps,
+ vm.runInNewContext(loudnessModule,context);
+ if(withWorker)vm.runInNewContext(workerClient,context);
+ vm.runInNewContext(ui,context);
+ return {window,doc,host,file,decoded,URL,createdUrls,revoked,storedPresets,storedOps,workerInstances,
   setPresetName:name=>{panel.querySelector("[data-v59-preset-name]").value=name;},
   get panel(){return panel;},
   get clicks(){return clicks;},
@@ -544,4 +572,65 @@ test("V5.23: preset UI has no native prompt/confirm and inline actions are expli
  assert.match(ui,/aria-live="polite"/);
  assert.match(css,/\.raw-dpm-preset-editor\[hidden\]/);
  assert.match(css,/\.raw-dpm-preset-confirm\[hidden\]/);
+});
+
+test("V5.27: Digital Premaster UI performs actual PCM render through isolated Worker path",async()=>{
+ const h=harness({withWorker:true});
+ assert.equal(h.attach(),true);
+ h.button("start").click();
+ await waitReady(h);
+ assert.equal(h.workerInstances.length,1);
+ assert.equal(h.workerInstances[0].path,"raw-digital-render-worker-v527.js");
+ assert.equal(h.workerInstances[0].commands[0].message.type,"RENDER");
+ assert.equal(h.workerInstances[0].commands[0].transfers.length,2);
+ assert.equal(h.workerInstances[0].terminated,true);
+ assert.equal(h.button("download").disabled,false);
+ assert.equal(h.button("qc").disabled,false);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.27: immediate cancel terminates worker and leaves no downloadable WAV or QC",async()=>{
+ const h=harness({withWorker:true,frames:65536});h.attach();
+ h.button("start").click();
+ for(let i=0;i<25&&!h.workerInstances.length;i++)await settle();
+ assert.equal(h.workerInstances.length,1);
+ h.button("cancel").click();
+ assert.equal(h.workerInstances[0].terminated,true);
+ for(let i=0;i<8;i++)await settle();
+ assert.equal(h.button("download").disabled,true);
+ assert.equal(h.button("qc").disabled,true);
+ assert.match(h.button("status").textContent,/CANCEL REQUESTED/);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+
+test("V5.25: changing selected disk files clears previous MATCH and invalidates in-flight verification",async()=>{
+ const h=harness();assert.equal(h.attach(),true);
+ const status=h.button("verify-status");
+ const wav=h.button("verify-wav"),qc=h.button("verify-qc"),button=h.button("verify-files");
+ status.textContent="MATCH · verified old files";
+ wav.handlers.change();
+ assert.match(status.textContent,/FILES CHANGED/);
+ assert.doesNotMatch(status.textContent,/^MATCH/);
+ status.textContent="FILE CHECK FAILED · SHA256_MISMATCH";
+ qc.handlers.change();
+ assert.match(status.textContent,/FILES CHANGED/);
+
+ let complete=null;
+ h.window.RAWDigitalExportVerifierV525={
+  verifyFiles:()=>new Promise(resolve=>{complete=resolve;})
+ };
+ wav.files=[{name:"old.wav"}];qc.files=[{name:"old.json"}];
+ button.click();
+ await settle();
+ assert.equal(button.disabled,true);
+ assert.match(status.textContent,/CHECKING FILES/);
+ assert.equal(typeof complete,"function");
+
+ qc.files=[{name:"new.json"}];
+ qc.handlers.change();
+ assert.equal(button.disabled,false);
+ assert.match(status.textContent,/FILES CHANGED/);
+ complete({bits:24,sampleRate:48000,frames:123,sha256:"f".repeat(64)});
+ await settle();
+ assert.match(status.textContent,/FILES CHANGED/);
+ assert.doesNotMatch(status.textContent,/^MATCH/);
 });

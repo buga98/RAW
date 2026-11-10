@@ -119,3 +119,23 @@
 .raw-dpm-presets [data-v59-preset-info]{
  display:block;min-height:17px;white-space:normal
 }
+
+/* V5.25 local disk receipt verifier: always inline, never overlays the audio region. */
+.raw-dpm-verifier{
+ min-width:0;margin:14px 0 12px;padding:12px 14px;border-radius:10px;
+ background:rgba(5,29,38,.78);border:1px solid rgba(136,199,187,.3)
+}
+.raw-dpm-verifier legend{padding:0 6px;color:#d0f3e8;font-size:11px;font-weight:900;letter-spacing:.06em}
+.raw-dpm-verifier p{font-size:11px;color:#a5cbc2;line-height:1.5;margin:3px 0 10px}
+.raw-dpm-verifier-fields{display:flex;flex-wrap:wrap;gap:10px;align-items:end}
+.raw-dpm-verifier-fields label{display:flex;flex:1 1 175px;flex-direction:column;gap:6px;
+ font-size:10px;color:#b2d8ca;font-weight:800;min-width:0}
+.raw-dpm-verifier-fields input{width:100%;box-sizing:border-box;color:#e6f9ef;
+ font-size:11px;background:#0b252f;border:1px solid rgba(137,196,185,.37);
+ padding:8px;border-radius:7px}
+.raw-dpm-verifier-fields button{flex:0 1 auto;min-height:40px;cursor:pointer;
+ padding:9px 12px;color:#e9faf3;background:#1d675b;border-radius:8px;
+ border:1px solid rgba(137,214,194,.6);font-size:11px;font-weight:850}
+.raw-dpm-verifier-fields button:disabled{opacity:.55;cursor:wait}
+.raw-dpm-verifier [data-v59-verify-status]{overflow-wrap:anywhere;margin-top:10px;
+ color:#bce0d1;font:11px/1.65 Consolas,monospace}

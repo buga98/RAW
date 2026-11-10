@@ -1,3 +1,4 @@
+import {rejectLegacyService} from "./raw-legacy-service-guard-v526.mjs";
 import { WebSocketServer } from "ws";
 import { initializeApp } from "firebase/app";
 import {
@@ -6,6 +7,9 @@ import {
   updateDoc,
   serverTimestamp
 } from "firebase/firestore";
+
+// Reject before any listener, Firestore client or process spawn can start.
+rejectLegacyService("control");
 
 const PORT = 7071;
 
