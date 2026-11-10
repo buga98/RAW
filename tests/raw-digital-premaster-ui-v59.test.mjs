@@ -8,12 +8,14 @@ const read=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
 const engine=read("raw-digital-premaster-v59.js");
 const ui=read("raw-digital-premaster-ui-v59.js");
 const qcModule=read("raw-master-qc-v510.js");
+const handoffModule=read("raw-digital-handoff-v521.js");
 const loudnessModule=read("raw-professional-loudness-v517.js");
 const html=read("index.html");
 function harness({frames=4096,withPresets=false}={}){
  const settings={lowCutHz:25,lowShelfDb:0,presenceDb:0,airDb:0,
  thresholdDb:-18,ratio:1,attackMs:20,releaseMs:180,
- makeupDb:0,ceilingDb:-1,bits:24,dither:true};
+ makeupDb:0,ceilingDb:-1,bits:24,dither:true,
+ stereoWidthPercent:100,midTrimDb:0,sideTrimDb:0};
  const samples=[new Float32Array(frames),new Float32Array(frames)];
  for(let i=0;i<frames;i++)for(let ch=0;ch<2;ch++)
   samples[ch][i]=0.25*Math.sin(2*Math.PI*440*i/48000);
@@ -93,7 +95,8 @@ function harness({frames=4096,withPresets=false}={}){
   RAWStudioSim:null};
  const context={window,document:doc,Float32Array,Uint8Array,ArrayBuffer,DataView,
   TextEncoder,Blob,setTimeout,clearTimeout};
- vm.runInNewContext(engine,context);vm.runInNewContext(qcModule,context);
+ vm.runInNewContext(engine,context);vm.runInNewContext(handoffModule,context);
+ vm.runInNewContext(qcModule,context);
  vm.runInNewContext(loudnessModule,context);vm.runInNewContext(ui,context);
  return {window,doc,host,file,decoded,URL,createdUrls,revoked,storedPresets,storedOps,
   setPresetName:name=>{enteredName=name;},confirm:yes=>{confirmed=yes;},
@@ -125,6 +128,7 @@ test("V5.9: digital mastering is separate from the virtual hardware rack",()=>{
  assert.match(html,/src="raw-digital-premaster-v59\.js"/);
  assert.match(html,/src="raw-digital-premaster-ui-v59\.js"/);
  assert.match(html,/src="raw-master-qc-v510\.js"/);
+ assert.match(html,/src="raw-digital-handoff-v521\.js"/);
  assert.match(html,/src="raw-professional-loudness-v517\.js"/);
  assert.match(html,/raw-digital-premaster-v59\.css/);
  assert.match(html,/function mountDigitalPremaster/);
@@ -310,5 +314,60 @@ test("V5.17: Digital Premaster exposes real gated LUFS and includes it in the QC
  assert.equal(report.intersamplePeakEstimate.output.oversamplingFactor,4);
  assert.equal(report.deviceMasterCertified,false);
  assert.equal(report.verifiedAnalogMaster,false);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+
+test("V5.20: real M/S width and trims are visible in render QC and invalidate previous WAV",async()=>{
+ const h=harness();
+ h.attach();
+ h.select("stereoWidthPercent",0);
+ h.select("midTrimDb",2);
+ h.select("sideTrimDb",-1);
+ h.button("start").click();await waitReady(h);
+ assert.match(h.button("metrics").textContent,/M\/S DIGITAL: WIDTH 0% · MID 2 dB · SIDE -1 dB/);
+ assert.equal(h.button("download").disabled,false);
+ h.button("qc").click();
+ const qc=JSON.parse(await h.createdUrls.at(-1).value.text());
+ assert.equal(qc.deliveryHandoff.id,"custom");
+ assert.equal(qc.settings.stereoWidthPercent,0);
+ const control=h.panel.querySelector('[data-v59-setting="sideTrimDb"]');
+ control.value="3";control.handlers.change();
+ assert.equal(h.button("download").disabled,true);
+ assert.equal(h.button("handoff-profile").value,"custom");
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.21: 16-bit profile changes only export settings, generates hash-verified PCM receipt",async()=>{
+ const h=harness();h.attach();
+ h.select("presenceDb",4);
+ const select=h.button("handoff-profile");
+ select.value="pcm16";select.handlers.change();
+ assert.equal(h.panel.querySelector('[data-v59-setting="bits"]').value,"16");
+ assert.equal(h.panel.querySelector('[data-v59-setting="ceilingDb"]').value,"-1");
+ assert.equal(h.panel.querySelector('[data-v59-setting="presenceDb"]').value,"4");
+ assert.equal(h.panel.querySelector('[data-v59-setting="dither"]').checked,true);
+ h.button("start").click();await waitReady(h);
+ assert.match(h.button("metrics").textContent,/DIGITAL PROFILE: DIGITAL PCM · 16-bit WAV/);
+ assert.equal(h.button("download").disabled,false);
+ h.button("qc").click();
+ const receipt=JSON.parse(await h.createdUrls.at(-1).value.text());
+ assert.equal(receipt.deliveryHandoff.id,"pcm16");
+ assert.equal(receipt.deliveryHandoff.bits,16);
+ assert.equal(receipt.deliveryHandoff.sampleRate,48000);
+ assert.equal(receipt.deliveryHandoff.platformCertified,false);
+ assert.equal(receipt.deliveryHandoff.downloadAllowed,true);
+ const wav=h.createdUrls[0].value;
+ const bytes=new DataView(await wav.arrayBuffer());
+ assert.equal(bytes.getUint16(34,true),16);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.21: selecting archive 24 sets bit depth, while manual edits reset profile",async()=>{
+ const h=harness();h.attach();
+ const select=h.button("handoff-profile");
+ select.value="archive24";select.handlers.change();
+ assert.equal(h.panel.querySelector('[data-v59-setting="bits"]').value,"24");
+ assert.equal(h.panel.querySelector('[data-v59-setting="dither"]').checked,true);
+ const control=h.panel.querySelector('[data-v59-setting="ceilingDb"]');
+ control.value="-3";control.handlers.change();
+ assert.equal(select.value,"custom");
  h.window.RAWDigitalPremasterV59UI.detach();
 });
