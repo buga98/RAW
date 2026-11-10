@@ -193,8 +193,12 @@ async function render(audio,options={},control={}){
   },{
    isCancelled:isGone,yieldEveryFrames,
    onProgress:report=>{
+    const stage=report.phase==="4X_PEAK_SCAN"?[80,84]:
+      report.phase==="LINKED_LOOKAHEAD"?[84,89]:
+      report.phase==="OUTPUT_4X_VERIFY"?[89,93]:[93,96];
+    const percent=stage[0]+Math.round(report.done/frames*(stage[1]-stage[0]));
     try{onProgress(Object.freeze({phase:"LIMITER_"+report.phase,
-     framesDone:report.done,totalFrames:frames,percent:84}));}catch{}
+     framesDone:report.done,totalFrames:frames,percent}));}catch{}
    }
   });
   if(isGone())reject("CANCELLED","Offline rendering cancelled");
@@ -224,7 +228,8 @@ async function render(audio,options={},control={}){
    for(let i=start;i<end;i++){
     output[0][i]*=attenuation;output[1][i]*=attenuation;
    }
-   try{onProgress(Object.freeze({phase:"PEAK_SAFETY",framesDone:end,totalFrames:frames,percent:80+Math.round(end/frames*10)}));}catch{}
+   try{onProgress(Object.freeze({phase:"PEAK_SAFETY",framesDone:end,totalFrames:frames,
+    percent:s.limiterEnabled?96+Math.round(end/frames*3):80+Math.round(end/frames*10)}));}catch{}
    if(end<frames)await delayYield();
   }
  }
