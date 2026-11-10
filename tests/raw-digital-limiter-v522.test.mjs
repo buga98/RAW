@@ -51,7 +51,8 @@ test("V5.22: positive drive and isolated stereo transient cause real local gain 
  assert.ok(out.outputMeter.peakDbfs<=-1+.02);
  assert.ok(out.channels[0][0]>.09,
   "Early quiet audio should be driven up, not uniformly peak-attenuated");
- assert.ok(out.channels[0][8000]<.89);
+ assert.ok(out.channels[0][8000]<=Math.pow(10,-1/20)+0.0002,
+  "Transient must remain below the selected -1 dBFS sample ceiling");
  assert.equal(f.data[0][8000],Math.fround(.96));
  assert.equal(out.limiter.certifiedTruePeakLimiter,false);
 });
