@@ -88,7 +88,10 @@ function create({userId,authorized=()=>false,backend=backendIndexedDB(),
   try{values=codec.settingsOf(row.settings);}catch{
    reject("PRESET_CORRUPT","Stored digital mastering values are invalid");
   }
-  if(await checksum(ownerScope,row.id,row.name,values)!==row.sha256)
+  // Presets written by V5.11 lack later M/S keys. Always authenticate
+  // the exact original stored bytes/field order BEFORE filling new defaults.
+  // Otherwise V5.20 would reject every legitimate older SHA-256 preset.
+  if(await checksum(ownerScope,row.id,row.name,row.settings)!==row.sha256)
    reject("PRESET_CORRUPT","Saved digital mastering preset failed SHA-256 check");
   return Object.freeze({id:row.id,name:row.name,savedAt:row.savedAt,
    settings:values,localDigitalOnly:true,hardwareApplied:false});
