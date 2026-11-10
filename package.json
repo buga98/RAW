@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node launch-local-demo.mjs",
     "dev": "node start-all.mjs",
     "test:local": "node launch-local-demo.mjs",
     "test:smoke": "node --test",
@@ -48,7 +48,8 @@
     "studio:ms:v520:check": "node --test tests/raw-mid-side-v520.test.mjs",
     "studio:handoff:v521:check": "node --test tests/raw-digital-handoff-v521.test.mjs",
     "studio:limiter:v522:check": "node --test tests/raw-digital-limiter-v522.test.mjs",
-    "studio:logout:v524:check": "node --test tests/raw-logout-focus-v524.test.mjs tests/electron-preload-security-v1.test.mjs"
+    "studio:logout:v524:check": "node --test tests/raw-logout-focus-v524.test.mjs tests/electron-preload-security-v1.test.mjs",
+    "security:legacy:v526:check": "node --test tests/raw-legacy-service-guard-v526.test.mjs tests/security.test.mjs"
   },
   "keywords": [],
   "author": "",

@@ -1,3 +1,4 @@
+import {rejectLegacyService} from "./raw-legacy-service-guard-v526.mjs";
 import express from "express";
 import multer from "multer";
 import cors from "cors";
@@ -5,6 +6,9 @@ import fs from "fs";
 import path from "path";
 import { randomUUID } from "node:crypto";
 import { safeFolderName, safeAudioFilename } from "./upload-safety.mjs";
+
+// Reject before any listener, Firestore client or process spawn can start.
+rejectLegacyService("upload");
 
 const PORT = 7072;
 const IS_WINDOWS = process.platform === "win32";
