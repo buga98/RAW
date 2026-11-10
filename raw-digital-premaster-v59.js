@@ -9,6 +9,7 @@ const DEFAULTS=Object.freeze({
  lowCutHz:25,lowShelfDb:0,presenceDb:0,airDb:0,
  thresholdDb:-18,ratio:1,attackMs:20,releaseMs:180,makeupDb:0,
  stereoWidthPercent:100,midTrimDb:0,sideTrimDb:0,
+ limiterEnabled:false,limiterDriveDb:0,limiterLookaheadMs:5,limiterReleaseMs:120,
  ceilingDb:-1,bits:24,dither:true
 });
 const SETTINGS=Object.keys(DEFAULTS);
@@ -24,12 +25,14 @@ function settingsOf(input={}){
  const ranges={lowCutHz:[0,120],lowShelfDb:[-12,12],presenceDb:[-12,12],
   airDb:[-12,12],thresholdDb:[-36,0],ratio:[1,8],attackMs:[0.2,200],
   releaseMs:[20,2000],makeupDb:[-12,12],ceilingDb:[-12,-0.1],
-  stereoWidthPercent:[0,200],midTrimDb:[-6,6],sideTrimDb:[-6,6]};
+  stereoWidthPercent:[0,200],midTrimDb:[-6,6],sideTrimDb:[-6,6],
+  limiterDriveDb:[0,12],limiterLookaheadMs:[1,10],limiterReleaseMs:[20,1000]};
  for(const [key,[min,max]] of Object.entries(ranges))
   if(typeof x[key]!=="number"||!Number.isFinite(x[key])||
      x[key]<min||x[key]>max)reject("CONFIG",key+" out of range");
- if(![16,24].includes(x.bits)||typeof x.dither!=="boolean")
-  reject("CONFIG","WAV bits or dither invalid");
+ if(![16,24].includes(x.bits)||typeof x.dither!=="boolean"||
+    typeof x.limiterEnabled!=="boolean")
+  reject("CONFIG","WAV bits, dither or limiter enabled flag invalid");
  return Object.freeze(x);
 }
 function audioInfo(audio){
@@ -135,7 +138,7 @@ async function render(audio,options={},control={}){
  // Validate the full input before creating any new artifact. Never mutate audio.
  const inputMeter=analyze(input,rate);
  if(isGone())reject("CANCELLED","Offline rendering cancelled");
- const output=[new Float32Array(frames),new Float32Array(frames)];
+ let output=[new Float32Array(frames),new Float32Array(frames)];
  const filters=makeFilters(rate,s);
  const attack=Math.exp(-1/(rate*s.attackMs/1000));
  const release=Math.exp(-1/(rate*s.releaseMs/1000));
@@ -177,7 +180,40 @@ async function render(audio,options={},control={}){
   if(end<frames)await delayYield();
  }
  if(isGone())reject("CANCELLED","Offline rendering cancelled");
- // Transparent global peak safety attenuation, not a lookahead brickwall limiter.
+ // V5.22: separate real PCM lookahead limiter, enabled ONLY by user toggle.
+ // Physical gear, virtual rack and the older default DSP are unchanged.
+ let limiterState=Object.freeze({enabled:false,
+  certifiedTruePeakLimiter:false,actualPcmProcessed:false});
+ if(s.limiterEnabled){
+  if(typeof global.RAWDigitalLimiterV522?.apply!=="function")
+   reject("LIMITER_UNAVAILABLE","V5.22 digital lookahead limiter is not loaded");
+  const limit=await global.RAWDigitalLimiterV522.apply(output,rate,{
+   driveDb:s.limiterDriveDb,lookaheadMs:s.limiterLookaheadMs,
+   releaseMs:s.limiterReleaseMs,ceilingDb:s.ceilingDb
+  },{
+   isCancelled:isGone,yieldEveryFrames,
+   onProgress:report=>{
+    try{onProgress(Object.freeze({phase:"LIMITER_"+report.phase,
+     framesDone:report.done,totalFrames:frames,percent:84}));}catch{}
+   }
+  });
+  if(isGone())reject("CANCELLED","Offline rendering cancelled");
+  output=limit.channels;
+  limiterState=Object.freeze({
+   enabled:true,driveDb:limit.driveDb,lookaheadMs:limit.lookaheadMs,
+   releaseMs:limit.releaseMs,ceilingDb:limit.ceilingDb,
+   gainReductionMaxDb:limit.gainReductionMaxDb,
+   limitedFrames:limit.limitedFrames,
+   constantIntersampleSafetyDb:limit.constantIntersampleSafetyDb,
+   estimatedTruePeakAfterSafetyDbtp:limit.estimatedTruePeakAfterSafetyDbtp,
+   oversamplingFactor:4,actualPcmProcessed:true,
+   certifiedTruePeakLimiter:false,referenceValidated:false,
+   hardwareProcessed:false
+  });
+  const meter=analyze(output,rate);
+  rawPeak=meter.peakDbfs===null?0:gain(meter.peakDbfs);
+ }
+ // Transparent global peak safety attenuation, not a certified true-peak limiter.
  // Never hard-clip / truncate PCM to fake loudness or true-peak compliance.
  const ceiling=gain(s.ceilingDb);
  const attenuation=rawPeak>ceiling?ceiling/rawPeak:1;
@@ -202,6 +238,7 @@ async function render(audio,options={},control={}){
   channels:output,inputMeter,outputMeter,
   peakSafetyAttenuationDb:db(attenuation)??null,
   maxCompressorReductionDb:mostGainReductionDb,
+  limiter:limiterState,
   midSideProcessed:midSideActive,
   midSideSettings:Object.freeze({widthPercent:s.stereoWidthPercent,
    midTrimDb:s.midTrimDb,sideTrimDb:s.sideTrimDb}),
