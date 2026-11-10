@@ -50,3 +50,17 @@
 .raw-dpm-monitor{display:flex;align-items:center;gap:9px;margin:10px 0 7px;
  color:#b7d9cf;font-size:10px;font-weight:800;line-height:1.6;letter-spacing:.02em}
 .raw-dpm-monitor input{width:16px;height:16px;flex:none}
+
+/* V5.20–21: separate digital M/S processing from the analogue-inspired rack;
+   selected PCM handoff profile is informational, not platform certification. */
+.raw-dpm-handoff{
+ display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;
+ padding:12px 14px;margin:9px 0 14px;border-radius:10px;
+ border:1px solid rgba(106,211,192,.2);background:rgba(6,25,33,.5)
+}
+.raw-dpm-handoff label{display:flex;flex:1 1 210px;flex-direction:column;gap:7px;
+ font-size:10px;font-weight:800;letter-spacing:.06em;color:#a3d8ce}
+.raw-dpm-handoff select{background:#0a1c26;color:#e2f7f1;min-height:38px;
+ border:1px solid rgba(111,189,183,.34);border-radius:8px;padding:8px 11px;
+ font-size:12px;max-width:100%}
+.raw-dpm-handoff small{flex:2 1 280px;color:#9cbdb8;font-size:11px;line-height:1.65}
