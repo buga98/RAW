@@ -6,6 +6,7 @@ import {webcrypto} from "node:crypto";
 
 const read=name=>readFileSync(new URL("../"+name,import.meta.url),"utf8");
 const engine=read("raw-digital-premaster-v59.js");
+const limiterEngine=read("raw-digital-limiter-v522.js");
 const ui=read("raw-digital-premaster-ui-v59.js");
 const qcModule=read("raw-master-qc-v510.js");
 const handoffModule=read("raw-digital-handoff-v521.js");
@@ -15,7 +16,8 @@ function harness({frames=4096,withPresets=false}={}){
  const settings={lowCutHz:25,lowShelfDb:0,presenceDb:0,airDb:0,
  thresholdDb:-18,ratio:1,attackMs:20,releaseMs:180,
  makeupDb:0,ceilingDb:-1,bits:24,dither:true,
- stereoWidthPercent:100,midTrimDb:0,sideTrimDb:0};
+ stereoWidthPercent:100,midTrimDb:0,sideTrimDb:0,
+ limiterEnabled:false,limiterDriveDb:0,limiterLookaheadMs:5,limiterReleaseMs:120};
  const samples=[new Float32Array(frames),new Float32Array(frames)];
  for(let i=0;i<frames;i++)for(let ch=0;ch<2;ch++)
   samples[ch][i]=0.25*Math.sin(2*Math.PI*440*i/48000);
@@ -47,7 +49,9 @@ function harness({frames=4096,withPresets=false}={}){
    if(!this.fields.has(sel)){
     const out=new FakeEl();
     const option=sel.match(/data-v59-setting="([^"]+)"/)?.[1];
-    if(option){out.value=String(settings[option]);out.checked=option==="dither";}
+    if(option){out.value=String(settings[option]);
+     out.checked=option==="dither"||option==="limiterEnabled"?
+      settings[option]===true:false;}
     if(sel.includes("download")||sel.includes("qc")||sel.includes("ab-a")||sel.includes("ab-b"))
      out.disabled=true;
     if(sel.includes("monitor-match"))out.checked=true;
@@ -95,7 +99,8 @@ function harness({frames=4096,withPresets=false}={}){
   RAWStudioSim:null};
  const context={window,document:doc,Float32Array,Uint8Array,ArrayBuffer,DataView,
   TextEncoder,Blob,setTimeout,clearTimeout};
- vm.runInNewContext(engine,context);vm.runInNewContext(handoffModule,context);
+ vm.runInNewContext(engine,context);vm.runInNewContext(limiterEngine,context);
+ vm.runInNewContext(handoffModule,context);
  vm.runInNewContext(qcModule,context);
  vm.runInNewContext(loudnessModule,context);vm.runInNewContext(ui,context);
  return {window,doc,host,file,decoded,URL,createdUrls,revoked,storedPresets,storedOps,
@@ -126,6 +131,7 @@ async function waitReady(h){
 
 test("V5.9: digital mastering is separate from the virtual hardware rack",()=>{
  assert.match(html,/src="raw-digital-premaster-v59\.js"/);
+ assert.match(html,/src="raw-digital-limiter-v522\.js"/);
  assert.match(html,/src="raw-digital-premaster-ui-v59\.js"/);
  assert.match(html,/src="raw-master-qc-v510\.js"/);
  assert.match(html,/src="raw-digital-handoff-v521\.js"/);
@@ -369,5 +375,64 @@ test("V5.21: selecting archive 24 sets bit depth, while manual edits reset profi
  const control=h.panel.querySelector('[data-v59-setting="ceilingDb"]');
  control.value="-3";control.handlers.change();
  assert.equal(select.value,"custom");
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+
+test("V5.22: limiter ON renders actual PCM, reports gain reduction in preview and QC export",async()=>{
+ const h=harness({frames:10000});h.attach();
+ const on=h.panel.querySelector('[data-v59-setting="limiterEnabled"]');
+ on.checked=true;on.handlers.change();
+ h.select("limiterDriveDb",10);
+ h.select("limiterLookaheadMs",5);
+ h.select("limiterReleaseMs",80);
+ h.button("start").click();
+ await waitReady(h);
+ const metrics=h.button("metrics").textContent;
+ assert.match(metrics,/DIGITAL LIMITER: ON · DRIVE \+10 dB/);
+ assert.match(metrics,/LOOKAHEAD 5 ms · RELEASE 80 ms/);
+ assert.match(metrics,/NOT CERTIFIED TRUE-PEAK LIMITER/);
+ h.button("qc").click();
+ const receipt=JSON.parse(await h.createdUrls.at(-1).value.text());
+ assert.equal(receipt.digitalLimiter.enabled,true);
+ assert.equal(receipt.digitalLimiter.actualPcmProcessed,true);
+ assert.equal(receipt.digitalLimiter.driveDb,10);
+ assert.equal(receipt.digitalLimiter.releaseMs,80);
+ assert.equal(receipt.digitalLimiter.certifiedTruePeakLimiter,false);
+ assert.equal(receipt.hardwareProcessed,false);
+ assert.equal(h.button("download").disabled,false);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.22: limiter switch or release edit invalidates all stale exports and A/B",async()=>{
+ const h=harness();h.attach();h.button("start").click();await waitReady(h);
+ assert.equal(h.button("download").disabled,false);
+ const enable=h.panel.querySelector('[data-v59-setting="limiterEnabled"]');
+ enable.checked=true;enable.handlers.change();
+ assert.equal(h.button("download").disabled,true);
+ assert.equal(h.button("ab-a").disabled,true);
+ assert.equal(h.button("ab-b").disabled,true);
+ assert.equal(h.revoked.length,2);
+ assert.match(h.button("status").textContent,/SETTINGS CHANGED/);
+ h.window.RAWDigitalPremasterV59UI.detach();
+});
+test("V5.22: saved digital presets retain limiter and M/S controls; recall remains local",async()=>{
+ const h=harness({withPresets:true});h.attach();await settle();
+ const on=h.panel.querySelector('[data-v59-setting="limiterEnabled"]');
+ on.checked=true;
+ h.select("limiterDriveDb",8);h.select("limiterLookaheadMs",7);
+ h.select("limiterReleaseMs",220);h.select("stereoWidthPercent",125);
+ h.button("preset-save").click();
+ for(let i=0;i<8;i++)await settle();
+ assert.equal(h.storedPresets.length,1);
+ assert.equal(h.storedPresets[0].settings.limiterEnabled,true);
+ assert.equal(h.storedPresets[0].settings.limiterDriveDb,8);
+ assert.equal(h.storedPresets[0].settings.stereoWidthPercent,125);
+ on.checked=false;h.select("limiterDriveDb",0);h.select("stereoWidthPercent",100);
+ h.button("preset-load").click();
+ for(let i=0;i<10;i++)await settle();
+ assert.equal(on.checked,true);
+ assert.equal(h.panel.querySelector('[data-v59-setting="limiterDriveDb"]').value,"8");
+ assert.equal(h.panel.querySelector('[data-v59-setting="limiterReleaseMs"]').value,"220");
+ assert.equal(h.panel.querySelector('[data-v59-setting="stereoWidthPercent"]').value,"125");
+ assert.equal(h.button("download").disabled,true);
  h.window.RAWDigitalPremasterV59UI.detach();
 });
