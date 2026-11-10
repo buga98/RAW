@@ -47,3 +47,9 @@ Further audio engineering acceptance is still required for BS.1770 integrated LU
 - **V5.21 24/16-bit PCM handoff profiles: CODE IMPLEMENTED, MANUAL TEST PENDING.** Later select each profile, render, export, validate 16/24-bit header and SHA-256 QC. Original sample rate is preserved; no streaming compliance, CD 44.1 kHz claim, or certified true peak.
 - **V5.7 TEST LINK DROP:** remains NOT TESTED on second PC; port 7077 still not verified by user.
 - **Subjective A/B listening:** remains NOT TESTED; user explicitly deferred judging which version sounds better.
+
+## V5.22 lookahead limiter — owner manual acceptance OPEN (2026-11-10)
+
+**STATUS: IMPLEMENTED WITH AUTOMATED TESTS, NOT YET MANUALLY VALIDATED IN ELECTRON.** New visible limiter panel (ENABLE, Input Drive, Lookahead, Release) affects real digital PCM only. Render/QC uses 4x intersample estimate, reports actual gain reduction and requires a new export after every change. Saved digital presets now capture limiter switch and all three values, with explicit recall confirmation; verified older presets remain readable. The algorithm is a development preview and **not a certified true-peak limiter**. Owner must visually test the control panel, save/reload/logout persistence, WAV and QC export and actual gain reduction. Exact plan: [RAW_DIGITAL_LIMITER_V522_TEST_PLAN.md](./RAW_DIGITAL_LIMITER_V522_TEST_PLAN.md).
+
+**Do not mark as completed without user feedback.** Previously deferred A/B listening-quality judgment and V5.7 Simulator reconnection remain open; floating Audio Region still has owner-noted visual imperfections.
