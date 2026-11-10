@@ -112,7 +112,7 @@ function logoutHarness({active=true,consent=true,closeSucceeds=true}={}){
   calls.push(["endSession",opts]);
   if(closeSucceeds)scope.activeSessionId=null;
  };
- const match=html.match(/let rawLogoutInProgress=false;\nwindow\.logoutUser = async function\(\) \{[\s\S]*?\n\};/);
+ const match=html.match(/let rawLogoutInProgress=false;\r?\nwindow\.logoutUser = async function\(\) \{[\s\S]*?\r?\n\};/);
  assert.ok(match,"Could not extract real Electron logout handler");
  vm.runInNewContext(match[0],scope);
  return {scope,window,calls,status,handlerSource:match[0]};
