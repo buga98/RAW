@@ -34,9 +34,20 @@ function measure(m){
   " · CLIPPED FRAMES: "+m.clippedFrames+
   " · STEREO CORRELATION: "+fmt(m.correlation);
 }
+function profileId(){
+ return el("[data-v59-handoff-profile]")?.value||"custom";
+}
+function invalidateDigitalRender(message="SETTINGS CHANGED · DIGITAL PREMASTER MUST BE RENDERED AGAIN"){
+ resetRender();
+ const start=el("[data-v59-start]");if(start)start.disabled=!allowed();
+ const cancel=el("[data-v59-cancel]");if(cancel)cancel.disabled=true;
+ const metrics=el("[data-v59-metrics]");
+ if(metrics)metrics.textContent="Digital settings changed · render again to refresh audio and measurements.";
+ status(message);
+}
 function settings(){
  const numeric=["lowCutHz","lowShelfDb","presenceDb","airDb","thresholdDb","ratio",
-   "attackMs","releaseMs","makeupDb","ceilingDb"];
+   "attackMs","releaseMs","makeupDb","ceilingDb","stereoWidthPercent","midTrimDb","sideTrimDb"];
  const values={};
  for(const name of numeric){
   const control=el('[data-v59-setting="'+name+'"]');
@@ -74,6 +85,10 @@ async function process(){
  const metrics=el("[data-v59-metrics]");
  try{
   const profile=settings();
+  const handoffProfile=profileId();
+  if(!global.RAWDigitalHandoffV521?.byId)
+   throw new Error("Offline digital handoff profiles unavailable");
+  global.RAWDigitalHandoffV521.byId(handoffProfile);
   status("DECODING LOCAL SOURCE · no hardware or network");
   const audio=await decodeFile(file);
   if(token.cancelled||current!==generation||!allowed())return;
@@ -125,7 +140,11 @@ async function process(){
     loudnessReferenceCertified:false,truePeakReferenceCertified:false,
     deviceMasterCertified:false
   });
-  rendered={blob,out,file,qc};
+  const handoff=global.RAWDigitalHandoffV521.evaluate({
+   id:handoffProfile,result:out,qc
+  });
+  const receipt=Object.freeze({...qc,deliveryHandoff:handoff});
+  rendered={blob,out,file,qc:receipt,handoff};
   // V5.12 monitoring: attenuate ONLY the louder side to the quieter
   // unweighted-RMS level. This never alters PCM exports or QC receipts.
   const inRms=out.inputMeter.rmsDbfs,processedRms=out.outputMeter.rmsDbfs;
@@ -155,6 +174,12 @@ async function process(){
    "\nSAMPLE-PEAK CEILING IS NOT A TRUE-PEAK LIMITER. Not Bettermaker/WesAudio processing."+
    "\nA/B RMS MONITOR ONLY: A ×"+monitorVolumes.original.toFixed(3)+
    " · B ×"+monitorVolumes.digital.toFixed(3)+" (NOT LUFS MATCHED)"+
+   "\nM/S DIGITAL: WIDTH "+out.midSideSettings.widthPercent+"% · MID "+
+   out.midSideSettings.midTrimDb+" dB · SIDE "+out.midSideSettings.sideTrimDb+" dB"+
+   "\nDIGITAL PROFILE: "+handoff.label+" · "+handoff.readiness+
+   " · PRESERVED "+handoff.sampleRate+" Hz"+
+   (handoff.reasons.length?"\n"+handoff.reasons.join("\n"):"")+
+   "\n"+handoff.notes.join("\n")+
    "\nDIGITAL QC: "+qc.overall+" · SHA-256: "+qc.sha256+
    "\n"+qc.diagnostics.map(entry=>entry.status+" · "+entry.description).join("\n");
   status((qc.downloadAllowed?"DIGITAL PREMASTER READY · QC "+qc.overall:
@@ -173,7 +198,7 @@ async function process(){
    const b=el(sel);if(b)b.disabled=false;
   });
   const download=el("[data-v59-download]");
-  if(download)download.disabled=!qc.downloadAllowed;
+  if(download)download.disabled=!(qc.downloadAllowed&&handoff.downloadAllowed);
  }catch(error){
   if(current===generation&&panel&&allowed()&&!token.cancelled){
    status("DIGITAL RENDER FAILED · "+String(error?.message||error).slice(0,145));
@@ -188,10 +213,12 @@ async function process(){
  }
 }
 function download(){
- if(!allowed()||!rendered?.qc?.downloadAllowed||!previewUrl)return;
+ if(!allowed()||!rendered?.qc?.downloadAllowed||
+    !rendered?.handoff?.downloadAllowed||!previewUrl)return;
  const a=global.document.createElement("a");
  a.href=previewUrl;
- a.download=raw().safeFilename(rendered.file.name);
+ a.download=global.RAWDigitalHandoffV521.outputFilename(
+  rendered.file.name,rendered.handoff.id);
  a.hidden=true;global.document.body.append(a);
  try{a.click();}
  finally{a.remove();}
@@ -289,9 +316,9 @@ async function loadPreset(){
    if(key==="dither")input.checked=value;
    else input.value=String(value);
   }
-  resetRender();
-  const start=el("[data-v59-start]");if(start)start.disabled=!allowed();
-  const cancel=el("[data-v59-cancel]");if(cancel)cancel.disabled=true;
+  const handoffSelect=el("[data-v59-handoff-profile]");
+  if(handoffSelect)handoffSelect.value="custom";
+  invalidateDigitalRender("DIGITAL PRESET LOADED · RENDER REQUIRED · NOT ANALOG HARDWARE");
   const metrics=el("[data-v59-metrics]");
   if(metrics)metrics.textContent="DIGITAL PRESET LOADED · render again to hear processed audio.";
   presetInfo("LOADED · "+saved.name+" · RACK UNCHANGED");
@@ -338,6 +365,14 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  '<h3>DIGITAL PREMASTER</h3>'+
  '<p>Stvarna lokalna obrada stereo audija. Zaseban digitalni lanac — ne simulira identičan zvuk Bettermaker/WesAudio hardvera.</p>'+
  '</div><span>LOCAL TEST · NO HARDWARE / BILLING</span></div>'+
+ '<div class="raw-dpm-handoff">'+
+ '<label>PCM HANDOFF PROFILE <select data-v59-handoff-profile>'+
+ '<option value="custom" selected>CUSTOM · ručne postavke</option>'+
+ '<option value="archive24">STUDIO ARCHIVE · 24-bit WAV</option>'+
+ '<option value="pcm16">DIGITAL PCM · 16-bit WAV</option>'+
+ '</select></label>'+
+ '<small>Profil mijenja samo bit-depth, dither i sample-peak ceiling; čuva izvorni sample rate. Ne certificira CD ni streaming master.</small>'+
+ '</div>'+
  '<div class="raw-dpm-settings">'+
  '<label>HIGH PASS Hz<input type="number" min="0" max="120" step="1" value="25" data-v59-setting="lowCutHz"></label>'+
  '<label>LOW SHELF 110 Hz · dB<input type="number" min="-12" max="12" step=".5" value="0" data-v59-setting="lowShelfDb"></label>'+
@@ -348,6 +383,9 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  '<label>ATTACK · ms<input type="number" min=".2" max="200" step=".1" value="20" data-v59-setting="attackMs"></label>'+
  '<label>RELEASE · ms<input type="number" min="20" max="2000" step="10" value="180" data-v59-setting="releaseMs"></label>'+
  '<label>MAKEUP · dB<input type="number" min="-12" max="12" step=".5" value="0" data-v59-setting="makeupDb"></label>'+
+ '<label>M/S STEREO WIDTH · %<input type="number" min="0" max="200" step="5" value="100" data-v59-setting="stereoWidthPercent"></label>'+
+ '<label>MID TRIM · dB<input type="number" min="-6" max="6" step=".25" value="0" data-v59-setting="midTrimDb"></label>'+
+ '<label>SIDE TRIM · dB<input type="number" min="-6" max="6" step=".25" value="0" data-v59-setting="sideTrimDb"></label>'+
  '<label>PEAK CEILING · dBFS<input type="number" min="-12" max="-.1" step=".1" value="-1" data-v59-setting="ceilingDb"></label>'+
  '<label>WAV BIT DEPTH<select data-v59-setting="bits"><option value="24">24-bit PCM</option><option value="16">16-bit PCM</option></select></label>'+
  '<label class="raw-dpm-check"><input type="checkbox" checked data-v59-setting="dither"> TPDF dither on integer export</label>'+
@@ -390,14 +428,26 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  section.querySelectorAll("[data-v59-setting]").forEach(control=>
   control.addEventListener("change",()=>{
    if(!panel)return;
-   resetRender();
-   const start=el("[data-v59-start]");if(start)start.disabled=!allowed();
-   const cancel=el("[data-v59-cancel]");if(cancel)cancel.disabled=true;
-   const metrics=el("[data-v59-metrics]");
-   if(metrics)metrics.textContent="Digital settings changed · render again to refresh audio and measurements.";
-   status("SETTINGS CHANGED · DIGITAL PREMASTER MUST BE RENDERED AGAIN");
+   const select=el("[data-v59-handoff-profile]");
+   if(select)select.value="custom";
+   invalidateDigitalRender();
   })
  );
+ el("[data-v59-handoff-profile]").addEventListener("change",()=>{
+  if(!panel||!allowed())return;
+  try{
+   const selected=profileId();
+   const next=global.RAWDigitalHandoffV521.apply(selected,settings());
+   for(const key of ["bits","dither","ceilingDb"]){
+    const field=el('[data-v59-setting="'+key+'"]');
+    if(!field)continue;
+    if(key==="dither")field.checked=next[key];else field.value=String(next[key]);
+   }
+   invalidateDigitalRender("DIGITAL PCM PROFILE SELECTED · RENDER REQUIRED");
+  }catch(error){
+   status("PROFILE REJECTED · "+String(error?.message||error).slice(0,130));
+  }
+ });
  if(typeof presetUserId==="string"&&presetUserId&&global.RAWDigitalPresetsV511?.create){
   try{
    presetStore=global.RAWDigitalPresetsV511.create({
