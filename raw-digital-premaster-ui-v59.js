@@ -7,7 +7,7 @@
 let panel=null,generation=0,run=null,previewUrl=null,originalUrl=null,rendered=null;
 let fileGetter=()=>null,guard=()=>false,sourceAtMount=null,presetStore=null;
 let monitorVolumes={original:1,digital:1};
-let pendingPresetAction=null,presetBusy=false;
+let pendingPresetAction=null,presetBusy=false,verifyGeneration=0;
 const raw=()=>global.RAWDigitalPremasterV59;
 function allowed(){
  try{return guard()===true&&fileGetter()===sourceAtMount;}catch{return false;}
@@ -19,7 +19,7 @@ function revoke(){
  if(originalUrl){try{global.URL.revokeObjectURL(originalUrl);}catch{}originalUrl=null;}
 }
 function resetRender(){
- generation++;if(run)run.cancelled=true;run=null;
+ generation++;verifyGeneration++;if(run)run.cancelled=true;run=null;
  rendered=null;monitorVolumes={original:1,digital:1};revoke();
  const player=el("[data-v59-player]");
  if(player){try{player.pause();player.removeAttribute("src");player.load();}catch{}}
@@ -27,6 +27,8 @@ function resetRender(){
   const button=el(selector);if(button)button.disabled=true;
  }
  const progress=el("[data-v59-progress]");if(progress)progress.value=0;
+ const check=el("[data-v59-verify-status]");
+ if(check)check.textContent="Choose a downloaded WAV and its QC JSON to independently check the file bytes.";
 }
 function measure(m){
  const fmt=n=>typeof n==="number"&&Number.isFinite(n)?n.toFixed(2):"—";
@@ -247,6 +249,51 @@ function downloadQC(){
   global.setTimeout(()=>global.URL.revokeObjectURL(url),10000);
  }
  status("DIGITAL QC REPORT DOWNLOADED · SHA-256 "+rendered.qc.sha256.slice(0,12)+"… · LOCAL ONLY");
+}
+async function verifyDownloadedFiles(){
+ if(!panel||!allowed())return;
+ const host=panel,version=++verifyGeneration;
+ const output=el("[data-v59-verify-status]");
+ const button=el("[data-v59-verify-files]");
+ const wav=el("[data-v59-verify-wav]")?.files?.[0];
+ const qc=el("[data-v59-verify-qc]")?.files?.[0];
+ if(!wav||!qc){
+  if(output)output.textContent="SELECT BOTH FILES · downloaded WAV and corresponding QC JSON";
+  return;
+ }
+ if(!global.RAWDigitalExportVerifierV525?.verifyFiles){
+  if(output)output.textContent="LOCAL VERIFIER UNAVAILABLE · no integrity claim";
+  return;
+ }
+ if(button)button.disabled=true;
+ if(output)output.textContent="CHECKING FILES ON DISK · canonical PCM header + independent SHA-256";
+ try{
+  const report=await global.RAWDigitalExportVerifierV525.verifyFiles({
+   wavFile:wav,qcFile:qc
+  });
+  if(host!==panel||version!==verifyGeneration||!allowed())return;
+  if(output)output.textContent=
+   "MATCH · "+report.bits+"-BIT / "+report.sampleRate+" Hz / "+report.frames+
+   " FRAMES · SHA-256 "+report.sha256+
+   " · FILE INTEGRITY ONLY; QC JSON IS UNSIGNED; NOT AN ANALOG MASTER";
+ }catch(error){
+  if(host!==panel||version!==verifyGeneration||!allowed())return;
+  if(output)output.textContent="FILE CHECK FAILED · "+
+    String(error?.code||"ERROR")+" · "+
+    String(error?.message||error).slice(0,170);
+ }finally{
+  if(host===panel&&version===verifyGeneration&&allowed()&&button)
+   button.disabled=false;
+ }
+}
+function invalidateDownloadedFileCheck(){
+ // File changes invalidate any previous MATCH/FAIL status and in-flight check.
+ // Its async completion must not claim that the newly selected files match.
+ verifyGeneration++;
+ const output=el("[data-v59-verify-status]");
+ const button=el("[data-v59-verify-files]");
+ if(button)button.disabled=false;
+ if(output)output.textContent="FILES CHANGED · previous file-check result cleared · click VERIFY FILES · SHA-256 again";
 }
 function updateMonitorVolume(){
  const player=el("[data-v59-player]");
@@ -500,6 +547,14 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  '<progress data-v59-progress value="0" max="100"></progress>'+
  '<div data-v59-status role="status" aria-live="polite">READY · local source only · no digital output generated</div>'+
  '<pre data-v59-metrics>RMS, sample peak, stereo correlation and DSP metrics appear after render. No LUFS/true-peak certification.</pre>'+
+ '<fieldset class="raw-dpm-verifier"><legend>V5.25 · CHECK DOWNLOADED FILES (OFFLINE)</legend>'+
+ '<p>Select the WAV and QC JSON that were actually saved on your disk; this is separate from the in-memory render.</p>'+
+ '<div class="raw-dpm-verifier-fields">'+
+ '<label>DOWNLOADED WAV<input type="file" accept=".wav,audio/wav" data-v59-verify-wav></label>'+
+ '<label>QC JSON<input type="file" accept=".json,application/json" data-v59-verify-qc></label>'+
+ '<button type="button" data-v59-verify-files>VERIFY FILES · SHA-256</button></div>'+
+ '<div role="status" aria-live="polite" data-v59-verify-status>Select both files to check disk integrity. QC JSON is not a cryptographic signature.</div>'+
+ '</fieldset>'+
  '<label class="raw-dpm-monitor"><input type="checkbox" checked data-v59-monitor-match> A/B MONITOR: MATCH UNWEIGHTED RMS (NOT LUFS) · DOES NOT CHANGE WAV</label>'+
  '<audio data-v59-player controls preload="none" aria-label="Local A/B digital premaster listening"></audio>'+
  '<p class="raw-dpm-footnote">V5.9 sample-peak safety uses transparent whole-file attenuation, NOT a true-peak limiter. Digital settings are independent from the virtual hardware rack. No analog master is available.</p>';
@@ -510,6 +565,9 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  });
  el("[data-v59-download]").addEventListener("click",download);
  el("[data-v59-qc]").addEventListener("click",downloadQC);
+ el("[data-v59-verify-files]").addEventListener("click",()=>void verifyDownloadedFiles());
+ el("[data-v59-verify-wav]").addEventListener("change",invalidateDownloadedFileCheck);
+ el("[data-v59-verify-qc]").addEventListener("change",invalidateDownloadedFileCheck);
  el("[data-v59-ab-a]").addEventListener("click",()=>listen(true));
  el("[data-v59-ab-b]").addEventListener("click",()=>listen(false));
  el("[data-v59-monitor-match]").addEventListener("change",updateMonitorVolume);
