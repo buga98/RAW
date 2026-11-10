@@ -47,7 +47,8 @@ function invalidateDigitalRender(message="SETTINGS CHANGED · DIGITAL PREMASTER 
 }
 function settings(){
  const numeric=["lowCutHz","lowShelfDb","presenceDb","airDb","thresholdDb","ratio",
-   "attackMs","releaseMs","makeupDb","ceilingDb","stereoWidthPercent","midTrimDb","sideTrimDb"];
+   "attackMs","releaseMs","makeupDb","ceilingDb","stereoWidthPercent","midTrimDb","sideTrimDb",
+   "limiterDriveDb","limiterLookaheadMs","limiterReleaseMs"];
  const values={};
  for(const name of numeric){
   const control=el('[data-v59-setting="'+name+'"]');
@@ -55,6 +56,7 @@ function settings(){
  }
  values.bits=Number(el('[data-v59-setting="bits"]')?.value);
  values.dither=el('[data-v59-setting="dither"]')?.checked===true;
+ values.limiterEnabled=el('[data-v59-setting="limiterEnabled"]')?.checked===true;
  return raw().settingsOf(values);
 }
 async function decodeFile(file){
@@ -134,6 +136,7 @@ async function process(){
   const overPeak=typeof digitalTruePeak.estimatedTruePeakDbtp==="number"&&
     digitalTruePeak.estimatedTruePeakDbtp>out.settings.ceilingDb+0.1;
   const qc=Object.freeze({...rawQc,
+    digitalLimiter:out.limiter,
     digitalLoudness:Object.freeze({source:sourceLufs,output:digitalLufs}),
     intersamplePeakEstimate:Object.freeze({source:sourceTruePeak,output:digitalTruePeak}),
     estimatedIntersampleOverCeiling:overPeak,
@@ -162,6 +165,13 @@ async function process(){
    "OUTPUT | "+measure(out.outputMeter)+"\n"+
    "PEAK SAFETY ATTENUATION: "+(out.peakSafetyAttenuationDb??0).toFixed(2)+" dB"+
    " · COMPRESSOR MAX REDUCTION: "+out.maxCompressorReductionDb.toFixed(2)+" dB\n"+
+   "DIGITAL LIMITER: "+(out.limiter.enabled?"ON · DRIVE +"+out.limiter.driveDb+
+     " dB · LOOKAHEAD "+out.limiter.lookaheadMs+" ms · RELEASE "+out.limiter.releaseMs+
+     " ms · MAX REDUCTION "+out.limiter.gainReductionMaxDb.toFixed(2)+
+     " dB · ACTIVE FRAMES "+out.limiter.limitedFrames+
+     " · 4x SAFETY "+out.limiter.constantIntersampleSafetyDb.toFixed(2)+" dB":
+     "OFF · EXACT LEGACY PCM BYPASS")+
+   " · NOT CERTIFIED TRUE-PEAK LIMITER\n"+
    "DIGITAL WAV "+out.outputBits+"-BIT · "+out.frames+" FRAMES · "+
    out.sampleRate+" Hz · "+(out.outputDither?"TPDF DITHER":"NO DITHER")+"\n"+
    "BS.1770-5 GATED INTEGRATED LUFS (REFERENCE VALIDATION PENDING): "+
@@ -390,6 +400,15 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  '<label>WAV BIT DEPTH<select data-v59-setting="bits"><option value="24">24-bit PCM</option><option value="16">16-bit PCM</option></select></label>'+
  '<label class="raw-dpm-check"><input type="checkbox" checked data-v59-setting="dither"> TPDF dither on integer export</label>'+
  '</div>'+
+ '<div class="raw-dpm-limiter">'+
+ '<div class="raw-dpm-limiter-title"><span>LOOKAHEAD LIMITER · V5.22</span>'+
+ '<label><input type="checkbox" data-v59-setting="limiterEnabled"> ENABLE DIGITAL LIMITER</label></div>'+
+ '<p>4× intersample-aware PCM gain reduction · no analog processing. Not a certified true-peak limiter.</p>'+
+ '<div class="raw-dpm-limiter-fields">'+
+ '<label>INPUT DRIVE · dB<input type="number" min="0" max="12" step=".5" value="0" data-v59-setting="limiterDriveDb"></label>'+
+ '<label>LOOKAHEAD · ms<input type="number" min="1" max="10" step="1" value="5" data-v59-setting="limiterLookaheadMs"></label>'+
+ '<label>RELEASE · ms<input type="number" min="20" max="1000" step="10" value="120" data-v59-setting="limiterReleaseMs"></label>'+
+ '</div></div>'+
  '<div class="raw-dpm-presets">'+
  '<label>SAVED DIGITAL PRESET <select data-v59-preset-select><option value="">— Odaberi spremljene postavke —</option></select></label>'+
  '<button type="button" data-v59-preset-save>SAVE PRESET</button>'+
