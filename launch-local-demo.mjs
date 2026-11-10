@@ -5,7 +5,7 @@ import {createRequire} from "node:module";
 const require=createRequire(import.meta.url);
 const electron=require("electron");
 const child=spawn(electron,["."],{
- env:{...process.env,RAW_TEST_MODE:"1"},
+ env:{...process.env,RAW_TEST_MODE: "1"},
  stdio:"inherit",shell:false
 });
 child.on("exit",code=>{process.exitCode=code??1;});
