@@ -46,3 +46,19 @@ body.sidebar-collapsed #plugin.active .audio-region-panel.raw-source-safe-inline
 #plugin.active:has(.audio-region-panel.raw-source-safe-inline) #pluginHost{
   padding-bottom:0!important;
 }
+
+/* V5.24: in-page confirmation, never an Electron native confirm dialog.
+   Keeps the BrowserWindow input layer focusable after signout. */
+#rawLogoutConfirm[hidden],#rawAccountLogoutError[hidden]{display:none!important}
+#account .raw-logout-confirm{
+ margin-top:17px;padding:20px 22px;border-radius:13px;
+ background:linear-gradient(125deg,#172b33,#0c1c28);
+ border:1px solid rgba(180,208,194,.35);
+ color:#ebf8f5
+}
+#account .raw-logout-confirm strong{font-size:12px;letter-spacing:.06em}
+#account .raw-logout-confirm p{font-size:13px;line-height:1.6;color:#cbd9d5;margin:11px 0 16px}
+#account .raw-logout-actions{display:flex;flex-wrap:wrap;gap:10px}
+#account .raw-logout-yes{background:#8c473c;border-color:#c87c72;color:#fff}
+#account .raw-logout-actions button:focus-visible{outline:2px solid #8cdcca;outline-offset:2px}
+#account .raw-logout-error{margin:15px 0;color:#ffd3ca;font-size:12px}
