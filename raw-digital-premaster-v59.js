@@ -8,6 +8,7 @@ const MAX_FRAMES=16000000,MAX_WAV_BYTES=128*1024*1024;
 const DEFAULTS=Object.freeze({
  lowCutHz:25,lowShelfDb:0,presenceDb:0,airDb:0,
  thresholdDb:-18,ratio:1,attackMs:20,releaseMs:180,makeupDb:0,
+ stereoWidthPercent:100,midTrimDb:0,sideTrimDb:0,
  ceilingDb:-1,bits:24,dither:true
 });
 const SETTINGS=Object.keys(DEFAULTS);
@@ -22,7 +23,8 @@ function settingsOf(input={}){
  const x={...DEFAULTS,...input};
  const ranges={lowCutHz:[0,120],lowShelfDb:[-12,12],presenceDb:[-12,12],
   airDb:[-12,12],thresholdDb:[-36,0],ratio:[1,8],attackMs:[0.2,200],
-  releaseMs:[20,2000],makeupDb:[-12,12],ceilingDb:[-12,-0.1]};
+  releaseMs:[20,2000],makeupDb:[-12,12],ceilingDb:[-12,-0.1],
+  stereoWidthPercent:[0,200],midTrimDb:[-6,6],sideTrimDb:[-6,6]};
  for(const [key,[min,max]] of Object.entries(ranges))
   if(typeof x[key]!=="number"||!Number.isFinite(x[key])||
      x[key]<min||x[key]>max)reject("CONFIG",key+" out of range");
@@ -138,6 +140,8 @@ async function render(audio,options={},control={}){
  const attack=Math.exp(-1/(rate*s.attackMs/1000));
  const release=Math.exp(-1/(rate*s.releaseMs/1000));
  const makeup=gain(s.makeupDb);
+ const midSideActive=s.stereoWidthPercent!==100||s.midTrimDb!==0||s.sideTrimDb!==0;
+ const midMultiplier=gain(s.midTrimDb),sideMultiplier=gain(s.sideTrimDb)*s.stereoWidthPercent/100;
  let envelope=0;
  let mostGainReductionDb=0,rawPeak=0;
  for(let start=0;start<frames;start+=yieldEveryFrames){
@@ -147,6 +151,14 @@ async function render(audio,options={},control={}){
    let a=input[0][i],b=input[1][i];
    for(const run of filters[0])a=run(a);
    for(const run of filters[1])b=run(b);
+   // V5.20: real M/S processing on DSP samples. Defaults are an exact
+   // stereo bypass; width=0 collapses to mono. Symmetric M/S conversion
+   // retains L+R mono fold-down whenever mid trim is 0 dB.
+   if(midSideActive){
+    const mid=(a+b)*0.5*midMultiplier;
+    const side=(a-b)*0.5*sideMultiplier;
+    a=mid+side;b=mid-side;
+   }
    const level=Math.max(Math.abs(a),Math.abs(b));
    const coef=level>envelope?attack:release;
    envelope=coef*envelope+(1-coef)*level;
@@ -189,7 +201,11 @@ async function render(audio,options={},control={}){
   kind:"RAW_LOCAL_DIGITAL_PREMASTER_V59",settings:s,sampleRate:rate,frames,
   channels:output,inputMeter,outputMeter,
   peakSafetyAttenuationDb:db(attenuation)??null,
-  maxCompressorReductionDb:mostGainReductionDb,byteLength:encoded.byteLength,
+  maxCompressorReductionDb:mostGainReductionDb,
+  midSideProcessed:midSideActive,
+  midSideSettings:Object.freeze({widthPercent:s.stereoWidthPercent,
+   midTrimDb:s.midTrimDb,sideTrimDb:s.sideTrimDb}),
+  byteLength:encoded.byteLength,
   chunks:encoded.chunks,outputBits:s.bits,outputDither:s.dither,
   localDigitalProcessing:true,simulationOnly:false,analogCaptured:false,
   physicalReadback:false,hardwareProcessed:false,verifiedAnalogMaster:false,
