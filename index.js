@@ -43,6 +43,18 @@ ipcMain.handle("raw-runtime-info",event=>({
   testMode:TEST_MODE&&isLocalAppUrl(event.sender.getURL()),
   localApp:isLocalAppUrl(event.sender.getURL())
 }));
+ipcMain.handle("raw-restore-login-focus",event=>{
+  const sender=event?.sender;
+  const owner=sender?BrowserWindow.fromWebContents(sender):null;
+  if(!owner||owner.isDestroyed()||!isLocalAppUrl(sender.getURL()))
+    return {ok:false,code:"UNTRUSTED_RENDERER"};
+  if(owner.isMinimized())return {ok:false,code:"WINDOW_MINIMIZED"};
+  // Validated IPC can only refocus its own RAW BrowserWindow. Never launch
+  // another app, run arbitrary commands or change the OS-wide focus policy.
+  owner.focus();
+  owner.webContents.focus();
+  return {ok:true};
+});
 ipcMain.handle("open-plugin-session",async event=>{
   // Fixed command only. No arbitrary user-supplied binary, arguments, paths or shell.
   const owner=BrowserWindow.fromWebContents(event.sender);
