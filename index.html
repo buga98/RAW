@@ -139,6 +139,15 @@
           <button class="ghost-btn" type="button" onclick="goTo('plugin')">Control Room</button>
           <button class="ghost-btn" type="button" onclick="goTo('sessions')">Moje sesije</button>
         </div>
+        <div id="rawAccountLogoutError" class="raw-logout-error" role="status" hidden></div>
+        <div id="rawLogoutConfirm" class="raw-logout-confirm" hidden role="group" aria-label="Potvrda odjave">
+          <strong>ZAVRŠETAK SESIJE I ODJAVA</strong>
+          <p id="rawLogoutMessage">Želiš završiti aktivnu sesiju i odjaviti se?</p>
+          <div class="raw-logout-actions">
+            <button type="button" class="ghost-btn" id="rawLogoutNo">ODUSTANI</button>
+            <button type="button" class="ghost-btn raw-logout-yes" id="rawLogoutYes">ZAVRŠI SESIJU I ODJAVI SE</button>
+          </div>
+        </div>
       </section>
       <section id="upload" class="screen">
         <div class="screen-head">
@@ -290,6 +299,7 @@
   <script src="raw-professional-loudness-v517.js"></script>
   <script src="raw-digital-premaster-ui-v59.js"></script>
   <script src="raw-auth-navigation-v515.js"></script>
+  <script src="raw-logout-focus-v524.js"></script>
   <script src="raw-audio-dock-v516.js"></script>
   <script src="raw-chain-archive-v1.js"></script>
   <script src="raw-chain-recall-planner-v2.js"></script>
@@ -617,12 +627,7 @@ window.goTo = function(screenId) {
   if(audioDock)audioDock.hidden=screenId!=="plugin";
   window.RAWAudioDockV516?.update?.();
   if(screenId==="login"){
-    const emailInput=document.getElementById("loginEmail");
-    emailInput?.focus({preventScroll:true});
-    window.requestAnimationFrame?.(()=>{
-      if(document.getElementById("login")?.classList.contains("active"))
-        emailInput?.focus({preventScroll:true});
-    });
+    window.RAWLogoutFocusV524?.restoreLoginFocus?.();
   }
 
   // V5.6 hotfix: discover the previous owner-scoped recovery journal as soon as
@@ -730,40 +735,44 @@ window.registerUser = async function() {
   }
 };
 
+let rawLogoutInProgress=false;
 window.logoutUser = async function() {
+  if(rawLogoutInProgress)return;
+  rawLogoutInProgress=true;
   try {
-    if (activeSessionId) {
+    if(activeSessionId){
+      // Native Electron confirm() could leave focus stuck in the closing
+      // native dialog: use an explicit in-page confirmation instead.
       const unsaved=window.RAWWorkspaceActiveProjectStatus?.getStatus?.()?.dirty===true;
-      const ok = confirm(unsaved
-        ? "Imaš NESPREMLJENE rack postavke. Prije odjave možeš spremiti novu verziju u Moji projekti. Želiš svejedno završiti sesiju i odjaviti se?"
-        : "Imaš aktivnu session. Želiš završiti session i odjaviti se?");
-      if (!ok) return;
-
+      const ok=await window.RAWLogoutFocusV524?.request?.({unsaved});
+      if(ok!==true)return;
       await window.endChainSession({
-        silent: true,
-        stayOnPage: true,
-        reason: "logout"
+        silent:true,stayOnPage:true,reason:"logout"
       });
+      // A failed session close must not silently sign the owner out with
+      // hardware/session resources potentially still allocated.
+      if(activeSessionId)throw new Error("Session nije završena. Odjava je zaustavljena.");
     }
-
     stopWave();
     stopBillingTimer();
     stopHeartbeat();
-
     window.RAWAutoSaveV55UI?.stop?.();
     revokeDeveloperLabs();
     await signOut(auth);
-
-    currentUser = null;
-    currentUserData = null;
-    activeSessionId = null;
-
+    currentUser=null;
+    currentUserData=null;
+    activeSessionId=null;
     updateUserPanel();
     window.goTo("login");
-  } catch (err) {
-    console.error("LOGOUT ERROR:", err);
-    alert(err.message || "Greška kod odjave.");
-  }
+    // Re-activate the application input focus even if Firebase auth observer
+    // independently navigated to login during signOut().
+    await window.RAWLogoutFocusV524?.restoreLoginFocus?.({native:true});
+  }catch(err){
+    console.error("LOGOUT ERROR:",err);
+    // Avoid another native modal dialog that can recreate the focus problem.
+    const status=document.getElementById("rawAccountLogoutError");
+    if(status){status.textContent=err?.message||"Greška kod odjave.";status.hidden=false;}
+  }finally{rawLogoutInProgress=false;}
 };
 onAuthStateChanged(auth, async (user) => {
   authReady = true;
@@ -775,6 +784,7 @@ onAuthStateChanged(auth, async (user) => {
     currentUserData = null;
     updateUserPanel();
     window.goTo("login");
+    window.RAWLogoutFocusV524?.restoreLoginFocus?.();
     return;
   }
 
