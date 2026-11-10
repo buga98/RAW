@@ -69,3 +69,9 @@ Further audio engineering acceptance is still required for BS.1770 integrated LU
 **V5.23 FIX IN CODE, OWNER RETEST PENDING:** `SAVE PRESET` now opens a local inline name field with **SPREMI / ODUSTANI** (Enter/Escape supported). Empty names and storage errors show visible status below the toolbar. `LOAD PRESET` and `DELETE PRESET` now require an explicit in-page confirmation without native dialogs. Owner guard, session scope, SHA-256 checks and legacy preset migration remain unchanged. No rack or physical hardware writes.
 
 **Next manual test:** restart RAW after `git pull --ff-only origin feature/studio-audio-worker-v5`; in verified LOCAL TEST session set limiter ON (+10 dB / 5 ms / 120 ms), click `SAVE PRESET`, enter `Test Limiter V522` and click `SPREMI`. Confirm `LOCAL DIGITAL PRESETS 1/20` and selected name. Then change limiter OFF, `LOAD PRESET`, confirm inline and validate settings restored. Logout/re-login on the same machine to verify IndexedDB persistence. Do not mark save/load persistence manually verified until the user confirms it.
+
+## V5.23 preset UI manual QA — 2026-11-10
+
+- **TEST 04A SAVE PRESET: PASS (owner screenshot).** The new in-panel Electron-safe name editor saved `Test Limiter V522 +10dB`. Selected preset visible and status confirmed `SAVED DIGITAL PRESET · LOCAL SETTINGS ONLY`.
+- **TEST 04B LOAD PRESET: PASS (owner confirmation).** After intentionally changing the digital limiter and M/S values, owner clicked LOAD PRESET and confirmed prior saved settings returned. This confirms recall behavior in the current login/session; no separate automated physical-device changes were involved.
+- **NEXT TEST 04C PERSISTENCE: PENDING.** Owner will sign out via `Moj račun`, sign back in as the same verified account, re-open a local source/session and confirm the existing preset still appears without saving it again. Do not mark re-login persistence PASS yet.
