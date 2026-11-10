@@ -323,7 +323,7 @@ async function loadPreset(){
   for(const [key,value] of Object.entries(saved.settings)){
    const input=el('[data-v59-setting="'+key+'"]');
    if(!input)continue;
-   if(key==="dither")input.checked=value;
+   if(key==="dither"||key==="limiterEnabled")input.checked=value;
    else input.value=String(value);
   }
   const handoffSelect=el("[data-v59-handoff-profile]");
