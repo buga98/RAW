@@ -12,6 +12,7 @@ on:
       - feature/raw-v536-studio-calibration
       - feature/raw-v537-site-desktop-distribution
       - feature/raw-v538-desktop-beta-stability
+      - feature/raw-v539-local-windows-installer
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -64,5 +65,7 @@ jobs:
         run: npm run desktop:v537:package
       - name: V5.38 nested Electron boot + offline-only installer audit
         run: npm run desktop:v538:check
+      - name: V5.39 local Windows-only installer build policy
+        run: npm run desktop:v539:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
