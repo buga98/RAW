@@ -1,0 +1,84 @@
+{
+  "name": "raw-desktop-beta-installer",
+  "version": "0.1.0",
+  "private": true,
+  "productName": "RAW Desktop Beta",
+  "description": "RAW Remote Audio Workstation — private, strictly local test build",
+  "license": "UNLICENSED",
+  "main": "main.cjs",
+  "author": "RAW",
+  "scripts": {
+    "build:windows": "electron-builder --win nsis --x64 --publish never",
+    "build:mac-intel": "electron-builder --mac dmg --x64 --publish never",
+    "build:mac-arm": "electron-builder --mac dmg --arm64 --publish never"
+  },
+  "devDependencies": {
+    "electron": "42.11.18",
+    "electron-builder": "26.0.12"
+  },
+  "build": {
+    "appId": "com.raw.mastering.desktop.beta",
+    "productName": "RAW Desktop Beta",
+    "asar": true,
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.cjs",
+      "app/**/*",
+      "!app/**/*.map",
+      "!app/**/node_modules/**"
+    ],
+    "publish": null,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico",
+      "artifactName": "RAW-Desktop-Beta-${version}-Windows-${arch}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "identity": null,
+      "icon": "build/icon.icns",
+      "category": "public.app-category.music",
+      "minimumSystemVersion": "12.0",
+      "artifactName": "RAW-Desktop-Beta-${version}-macOS-${arch}.${ext}"
+    },
+    "dmg": {
+      "title": "RAW Desktop Beta — LOCAL TEST",
+      "contents": [
+        {
+          "x": 145,
+          "y": 180
+        },
+        {
+          "x": 440,
+          "y": 180,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}

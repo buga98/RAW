@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="RAW Mastering studio monogram">
+ <defs>
+  <linearGradient id="base" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#192c34"/><stop offset=".62" stop-color="#0a1822"/><stop offset="1" stop-color="#060d16"/></linearGradient>
+  <linearGradient id="silver" x1="0" y1="0" x2=".8" y2="1"><stop stop-color="#ffffff"/><stop offset="1" stop-color="#aebdc0"/></linearGradient>
+  <linearGradient id="bronze" x1="0" y1="0" x2="1" y2="0"><stop stop-color="#e6ca91"/><stop offset="1" stop-color="#ad8851"/></linearGradient>
+ </defs>
+ <rect x="12" y="12" width="488" height="488" rx="102" fill="url(#base)" stroke="#3d5660" stroke-width="9"/>
+ <path d="M88 377V135" stroke="#6ddcc7" stroke-width="9" stroke-linecap="round" opacity=".75"/>
+ <path d="M101 92H411" stroke="#b8d6d3" stroke-opacity=".18" stroke-width="4" stroke-linecap="round"/>
+ <g fill="url(#bronze)" opacity=".97">
+  <rect x="166" y="124" width="12" height="51" rx="6"/>
+  <rect x="193" y="105" width="12" height="90" rx="6"/>
+  <rect x="220" y="86" width="12" height="128" rx="6"/>
+  <rect x="247" y="101" width="12" height="98" rx="6"/>
+  <rect x="274" y="119" width="12" height="63" rx="6"/>
+  <rect x="301" y="133" width="12" height="36" rx="6"/>
+ </g>
+ <path fill="url(#silver)" fill-rule="evenodd" d="M155 240H279C335 240 371 270 371 312C371 343 352 363 321 375L384 441H309L252 381H219V441H155V240ZM219 293V332H273C296 332 306 326 306 313C306 300 294 293 273 293H219Z"/>
+ <path d="M158 460H384" stroke="#64d0be" stroke-width="7" stroke-linecap="round" opacity=".75"/>
+</svg>

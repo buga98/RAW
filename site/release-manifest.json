@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "channel": "private-beta",
+  "updated": "2026-11-11",
+  "platforms": {
+    "windows": {
+      "status": "unavailable",
+      "version": null,
+      "architecture": "x64",
+      "url": null,
+      "sha256": null
+    },
+    "macos": {
+      "status": "unavailable",
+      "version": null,
+      "architecture": "x64 / arm64",
+      "url": null,
+      "sha256": null
+    }
+  }
+}

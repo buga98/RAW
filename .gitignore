@@ -12,3 +12,11 @@ recordings/
 *.aiff
 *service-account*.json
 serviceAccountKey.json
+
+# RAW V5.37 private desktop builder — not distributable from source control
+desktop-beta/app/
+desktop-beta/build/
+desktop-beta/dist/
+desktop-beta/node_modules/
+desktop-beta/package-lock.json
+calibration-output-v536/
