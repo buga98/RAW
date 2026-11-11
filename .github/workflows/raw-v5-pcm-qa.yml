@@ -4,10 +4,12 @@ on:
     branches:
       - feature/studio-audio-worker-v5
       - feature/raw-v529-trusted-sessions
+      - feature/raw-v530-self-hosted-mariadb
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
       - feature/raw-v528-integrated-local-acceptance
+      - feature/raw-v529-trusted-sessions
   workflow_dispatch:
 
 permissions:
@@ -32,5 +34,7 @@ jobs:
         run: npm run studio:audio:v5:check
       - name: V5.29 trusted booking auth and tenant-isolation tests
         run: npm run security:v529:check
+      - name: V5.30 MySQL local identity and booking regression
+        run: npm run security:v530:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
