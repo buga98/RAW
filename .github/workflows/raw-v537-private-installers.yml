@@ -1,0 +1,80 @@
+name: RAW Private Beta Desktop Installers (NO PUBLIC RELEASE)
+
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+
+jobs:
+  build-private-beta:
+    name: Private beta ${{ matrix.label }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - label: Windows-x64
+            runner: windows-latest
+            target: windows
+            arch: x64
+            output: "*.exe"
+          - label: macOS-Intel
+            runner: macos-15-intel
+            target: mac
+            arch: x64
+            output: "*.dmg"
+          - label: macOS-AppleSilicon
+            runner: macos-15
+            target: mac
+            arch: arm64
+            output: "*.dmg"
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Prepare private forced LOCAL TEST client
+        run: node scripts/raw-v537-package-desktop.mjs
+      - name: Generate platform icons
+        shell: bash
+        run: |
+          python -m pip install --disable-pip-version-check Pillow==11.3.0
+          python scripts/raw-v537-create-icons.py
+      - name: Install isolated pinned Electron tooling
+        working-directory: desktop-beta
+        run: npm install --no-audit --no-fund
+      - name: Windows NSIS unsigned PRIVATE TEST installer
+        if: matrix.target == 'windows'
+        working-directory: desktop-beta
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:windows
+      - name: macOS Intel unsigned PRIVATE TEST DMG
+        if: matrix.target == 'mac' && matrix.arch == 'x64'
+        working-directory: desktop-beta
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:mac-intel
+      - name: macOS Apple Silicon unsigned PRIVATE TEST DMG
+        if: matrix.target == 'mac' && matrix.arch == 'arm64'
+        working-directory: desktop-beta
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:mac-arm
+      - name: Verify the installer file exists
+        shell: bash
+        run: |
+          set -euo pipefail
+          ls -lh desktop-beta/dist/
+          find desktop-beta/dist -maxdepth 1 -name '${{ matrix.output }}' -type f | grep .
+      - name: Upload PRIVATE artifact for owner only
+        uses: actions/upload-artifact@v4
+        with:
+          name: RAW-PRIVATE-BETA-${{ matrix.label }}
+          path: desktop-beta/dist/${{ matrix.output }}
+          retention-days: 7
+          if-no-files-found: error
