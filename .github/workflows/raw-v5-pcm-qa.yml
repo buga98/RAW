@@ -11,6 +11,7 @@ on:
       - feature/raw-v535-hardware-readiness
       - feature/raw-v536-studio-calibration
       - feature/raw-v537-site-desktop-distribution
+      - feature/raw-v538-desktop-beta-stability
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -61,5 +62,7 @@ jobs:
         run: npm run site:v537:check
       - name: Stage private Electron client with all local assets
         run: npm run desktop:v537:package
+      - name: V5.38 nested Electron boot + offline-only installer audit
+        run: npm run desktop:v538:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke

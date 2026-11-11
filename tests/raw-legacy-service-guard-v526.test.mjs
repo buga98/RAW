@@ -44,6 +44,7 @@ test("V5.26 local launcher starts Electron once, with explicit test mode and no 
 test("V5.26 Electron defaults into local test for direct launch when env is absent",()=>{
  const main=read("index.js");
  assert.match(main,/process\.env\.RAW_TEST_MODE === "1" \|\| process\.env\.RAW_TEST_MODE === undefined/);
- assert.match(main,/win\.loadFile\("index\.html",TEST_MODE\?/);
+ assert.match(main,/const INDEX_FILE = path\.join\(__dirname, "index\.html"\)/);
+ assert.match(main,/win\.loadFile\(INDEX_FILE,TEST_MODE\?/);
  assert.match(main,/if\(TEST_MODE\)return \{ok:false,code:"DISABLED_IN_TEST_MODE"\}/);
 });
