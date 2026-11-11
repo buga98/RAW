@@ -22,6 +22,6 @@ test("V5.32: app subscribes only to own verified wallet, cleans up on logout",()
  assert.match(html,/onSnapshot\(doc\(db,"rawWalletsV531",user\.uid\)/);
  assert.match(html,/if\(TEST_MODE\|\|!user\?\.uid\|\|user\.emailVerified!==true\)return/);
  assert.match(html,/stopRawWalletListenerV532\(\)/);
- assert.match(html,/window\.RAWTokenDisplayV532\.label\(currentRawWalletMicros/);
+ assert.match(html,/window\.RAWTokenDisplayV532\?\.label\?\.\(currentRawWalletMicros/);
  assert.doesNotMatch(html,/creditsEl\.textContent = .*currentUserData\?\.credits/);
 });

@@ -624,7 +624,7 @@ window.goTo = function(screenId) {
   window.RAWAuthNavigationV515?.apply?.(document,{
     authenticated:!!currentUser?.uid&&currentUser?.emailVerified===true,
     email:currentUser?.email||"",
-    creditsLabel:window.RAWTokenDisplayV532.label(currentRawWalletMicros,{testMode:TEST_MODE}),
+    creditsLabel:(window.RAWTokenDisplayV532?.label?.(currentRawWalletMicros,{testMode:TEST_MODE}) ?? (TEST_MODE?"TEST — bez naplate":"RAW saldo nije dostupan")),
     verifiedOwner:developerAllowed()
   });
 
@@ -1275,7 +1275,7 @@ function updateUserPanel() {
   window.RAWAuthNavigationV515?.apply?.(document,{
     authenticated:!!currentUser?.uid&&currentUser?.emailVerified===true,
     email:currentUser?.email||"",
-    creditsLabel:window.RAWTokenDisplayV532.label(currentRawWalletMicros,{testMode:TEST_MODE}),
+    creditsLabel:(window.RAWTokenDisplayV532?.label?.(currentRawWalletMicros,{testMode:TEST_MODE}) ?? (TEST_MODE?"TEST — bez naplate":"RAW saldo nije dostupan")),
     verifiedOwner:developerAllowed()
   });
   const panel = document.getElementById("userPanel");
@@ -1289,7 +1289,7 @@ function updateUserPanel() {
 
   panel.style.display = "grid";
   emailEl.textContent = currentUser.email || "-";
-  creditsEl.textContent = window.RAWTokenDisplayV532.label(currentRawWalletMicros,{testMode:TEST_MODE});
+  creditsEl.textContent = (window.RAWTokenDisplayV532?.label?.(currentRawWalletMicros,{testMode:TEST_MODE}) ?? (TEST_MODE?"TEST — bez naplate":"RAW saldo nije dostupan"));
 }
 window.endChainSession = async function(options = {}) {
   const {
