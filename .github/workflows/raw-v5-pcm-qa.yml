@@ -6,6 +6,7 @@ on:
       - feature/raw-v529-trusted-sessions
       - feature/raw-v531-firebase-wallet-stripe
       - feature/raw-v532-firebase-stripe-staging
+      - feature/raw-v533-studio-lease-billing-safety
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -44,5 +45,7 @@ jobs:
         run: |
           npm run studio:firebase:v532:package
           node --check functions-v532/index.mjs
+      - name: V5.33 signed studio agent lease and stop safety
+        run: npm run security:v533:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
