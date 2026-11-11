@@ -6,8 +6,10 @@
 import express from "express";
 import {RawAccessError} from "./raw-v529-identity.mjs";
 import {createTrustedBookingServiceV529} from "./raw-v529-trusted-bookings.mjs";
-export function createTrustedBookingApiV529({firebaseAuth,store,now}={}){
- const service=createTrustedBookingServiceV529({firebaseAuth,store,now});
+export function createTrustedBookingApiV529({firebaseAuth,identity,store,now,routePrefix="/api/v529"}={}){
+ const service=createTrustedBookingServiceV529({firebaseAuth,identity,store,now});
+ if(!["/api/v529","/api/v530"].includes(routePrefix))
+  throw new RawAccessError("INVALID_API_PREFIX",503);
  const app=express();
  app.disable("x-powered-by");
  app.set("trust proxy",false);
@@ -25,23 +27,23 @@ export function createTrustedBookingApiV529({firebaseAuth,store,now}={}){
   try{await fn(req,res);}catch(error){next(error);}
  };
  const bearer=req=>req.headers.authorization;
- app.get("/api/v529/bookings",wrap(async(req,res)=>{
+ app.get(routePrefix+"/bookings",wrap(async(req,res)=>{
   const items=await service.list({authorization:bearer(req)});
   res.status(200).json({bookings:items});
  }));
- app.post("/api/v529/bookings",wrap(async(req,res)=>{
+ app.post(routePrefix+"/bookings",wrap(async(req,res)=>{
   const booking=await service.book({authorization:bearer(req),input:req.body});
   res.status(201).json({booking});
  }));
- app.get("/api/v529/bookings/:bookingId",wrap(async(req,res)=>{
+ app.get(routePrefix+"/bookings/:bookingId",wrap(async(req,res)=>{
   const booking=await service.get({authorization:bearer(req),bookingId:req.params.bookingId});
   res.status(200).json({booking});
  }));
- app.delete("/api/v529/bookings/:bookingId",wrap(async(req,res)=>{
+ app.delete(routePrefix+"/bookings/:bookingId",wrap(async(req,res)=>{
   const booking=await service.cancel({authorization:bearer(req),bookingId:req.params.bookingId});
   res.status(200).json({booking});
  }));
- app.post("/api/v529/bookings/:bookingId/eligibility",wrap(async(req,res)=>{
+ app.post(routePrefix+"/bookings/:bookingId/eligibility",wrap(async(req,res)=>{
   const eligibility=await service.checkStudioEligibility({
    authorization:bearer(req),bookingId:req.params.bookingId
   });

@@ -26,8 +26,9 @@ export function validateBookingV529(input,nowMs){
   fail("INVALID_BOOKING");
  return Object.freeze({studioId,startsAtMs,endsAtMs});
 }
-export function createTrustedBookingServiceV529({firebaseAuth,store,now=()=>Date.now()}={}){
- const identity=createTrustedIdentityV529(firebaseAuth);
+export function createTrustedBookingServiceV529({firebaseAuth,identity:trustedIdentity,store,now=()=>Date.now()}={}){
+ const identity=trustedIdentity||createTrustedIdentityV529(firebaseAuth);
+ if(!identity||typeof identity.verify!=="function")fail("AUTH_ADAPTER_MISSING",503);
  if(!store||["book","list","get","cancel"].some(k=>typeof store[k]!=="function"))
   fail("BOOKING_STORE_MISSING",503);
  const checkNow=()=>{
