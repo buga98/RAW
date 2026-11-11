@@ -63,7 +63,8 @@
     "studio:hardware:v535:check": "node --test tests/raw-v535-hardware-readiness.test.mjs",
     "studio:calibration:v536:prepare": "node scripts/raw-v536-calibration-cli.mjs prepare",
     "studio:calibration:v536:analyze": "node scripts/raw-v536-calibration-cli.mjs analyze",
-    "studio:calibration:v536:check": "node --test tests/raw-v536-external-capture.test.mjs"
+    "studio:calibration:v536:check": "node --test tests/raw-v536-external-capture.test.mjs tests/raw-v536-audio-interface-scan.test.mjs",
+    "studio:interfaces:v536:scan": "node scripts/raw-v536-audio-interface-scan.mjs"
   },
   "keywords": [],
   "author": "",
