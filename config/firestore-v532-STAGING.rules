@@ -12,10 +12,11 @@ service cloud.firestore {
    return verified() && request.auth.uid == uid;
   }
   match /users/{uid} {
-   // Account metadata ONLY. Monetary values and admin roles are never mutable.
+   // Minimal profile can be created before email verification; this is NOT
+   // authorization to enter studio or edit money, roles, prices or sessions.
    allow get: if own(uid);
    allow list, update, delete: if false;
-   allow create: if own(uid)
+   allow create: if request.auth != null && request.auth.uid == uid
     && request.resource.data.keys().hasOnly([
       'email','ime','prezime','lang','createdAt'
     ])
