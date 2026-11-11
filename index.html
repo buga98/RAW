@@ -805,8 +805,9 @@ window.logoutUser = async function() {
     stopBillingTimer();
     stopHeartbeat();
     window.RAWAutoSaveV55UI?.stop?.();
+    // Release read-only wallet listener, including under isolated logout test harnesses.
+    if(typeof stopRawWalletListenerV532==="function")stopRawWalletListenerV532();
     revokeDeveloperLabs();
-    stopRawWalletListenerV532();
     await signOut(auth);
     currentUser=null;
     currentUserData=null;
