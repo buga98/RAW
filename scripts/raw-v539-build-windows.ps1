@@ -52,6 +52,9 @@ try {
     Invoke-Checked "Run v5.38 nested boot and staging tests" {
         & node --test tests/raw-v538-desktop-beta-stability.test.mjs
     }
+    Invoke-Checked "Verify unsigned v5.39 Windows beta builder policy" {
+        & node --test tests/raw-v539-windows-installer-contract.test.mjs
+    }
     Invoke-Checked "Check Python Pillow dependency" {
         & $PythonProgram @PythonPrefix -c "import PIL; print('Pillow ready')"
     }
