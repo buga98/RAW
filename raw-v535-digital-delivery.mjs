@@ -10,6 +10,7 @@ const fail=(code,status=403)=>{throw new RawAccessError(code,status);};
 const UID=/^[A-Za-z0-9_-]{1,128}$/;
 const ID=/^dig_[a-f0-9]{32}$/;
 const SHA=/^[a-f0-9]{64}$/;
+const GENERATION=/^[1-9][0-9]{5,24}$/;
 const BYTES_MAX=4*1024*1024*1024-1;
 const LINK_MS=5*60*1000;
 const valid=(value,re)=>typeof value==="string"&&re.test(value);
@@ -68,6 +69,8 @@ export function createRawDigitalPublisherV535({db,bucket,verifyProducer,now=()=>
     fail("DIGITAL_OBJECT_UNAVAILABLE",503);
    const [meta]=await file.getMetadata();
    const expectedLength=parseLength(meta?.size);
+   const generation=String(meta?.generation||"");
+   if(!valid(generation,GENERATION))fail("DIGITAL_GENERATION_MISSING",503);
    if(!["audio/wav","audio/x-wav","application/octet-stream"]
        .includes(meta?.contentType))
     fail("DIGITAL_CONTENT_TYPE_INVALID",422);
@@ -91,7 +94,7 @@ export function createRawDigitalPublisherV535({db,bucket,verifyProducer,now=()=>
    const sha256=hash.digest("hex");
    const createdAtMs=now();
    if(!integer(createdAtMs))fail("SERVER_CLOCK_INVALID",503);
-   const document={ownerUid,artifactId,objectPath:path,sha256,
+   const document={ownerUid,artifactId,objectPath:path,objectGeneration:generation,sha256,
     bytes,channels:wav.channels,bits:wav.bits,
     sampleRate:wav.sampleRate,frames:wav.frames,
     status:"ready",integrityVerified:true,
@@ -127,18 +130,23 @@ export function createRawDigitalDeliveryV535({db,bucket,identity,now=()=>Date.no
       !integer(item.frames)||item.frames<=0||
       item.channels!==2||![16,24].includes(item.bits)||
       ![44100,48000,96000].includes(item.sampleRate)||
-      item.objectPath!==safePath(actor.uid,artifactId))
+      item.objectPath!==safePath(actor.uid,artifactId)||
+      !valid(item.objectGeneration,GENERATION))
     fail("DIGITAL_ARTIFACT_UNVERIFIED",409);
    const file=bucket.file(item.objectPath);
    const [meta]=await file.getMetadata();
-   if(parseLength(meta?.size)!==item.bytes)
+   if(parseLength(meta?.size)!==item.bytes||
+      String(meta?.generation||"")!==item.objectGeneration)
     fail("DIGITAL_OBJECT_CHANGED",503);
    const timestamp=now();
    if(!integer(timestamp))fail("SERVER_CLOCK_INVALID",503);
    if(typeof file.getSignedUrl!=="function")
     fail("DIGITAL_SIGNER_UNAVAILABLE",503);
    const expiresAtMs=timestamp+LINK_MS;
-   const [url]=await file.getSignedUrl({
+   // GCS signed URL pins the exact generation verified by SHA-256.
+   // Any later overwrite cannot change the bytes delivered to this user.
+   const immutableFile=bucket.file(item.objectPath,{generation:item.objectGeneration});
+   const [url]=await immutableFile.getSignedUrl({
     version:"v4",action:"read",expires:expiresAtMs,
     responseType:"audio/wav",
     responseDisposition:"attachment; filename=\"RAW-digital-"+artifactId+".wav\""
