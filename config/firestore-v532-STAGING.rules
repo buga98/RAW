@@ -1,0 +1,52 @@
+// RAW V5.32 STAGING ONLY. Review in Firebase Rules Playground/emulator
+// BEFORE deploy. This replaces ALL existing Firestore rules in the target
+// project, therefore NEVER deploy to live RAW project.
+rules_version = '2';
+service cloud.firestore {
+ match /databases/{database}/documents {
+  function verified() {
+   return request.auth != null
+    && request.auth.token.email_verified == true;
+  }
+  function own(uid) {
+   return verified() && request.auth.uid == uid;
+  }
+  match /users/{uid} {
+   // Account metadata ONLY. Monetary values and admin roles are never mutable.
+   allow get: if own(uid);
+   allow list, update, delete: if false;
+   allow create: if own(uid)
+    && request.resource.data.keys().hasOnly([
+      'email','ime','prezime','lang','createdAt'
+    ])
+    && request.resource.data.email == request.auth.token.email
+    && request.resource.data.ime is string
+    && request.resource.data.prezime is string
+    && request.resource.data.lang in ['hr','en'];
+  }
+  match /rawWalletsV531/{uid} {
+   allow get: if own(uid);
+   allow list, create, update, delete: if false;
+  }
+  match /rawTokenOrdersV531/{id} {
+   allow read, write: if false;
+  }
+  match /rawTokenLedgerV531/{id} {
+   allow read, write: if false;
+  }
+  match /rawProcessingRunsV531/{id} {
+   allow read, write: if false;
+  }
+  match /rawDeviceRatesV531/{id} {
+   allow read, write: if false;
+  }
+  match /rawCheckoutThrottleV532/{uid} {
+   allow read, write: if false;
+  }
+  // Existing client-side sessions/device mutations are intentionally blocked.
+  // Only trusted Admin SDK may ever issue equipment commands and money writes.
+  match /{document=**} {
+   allow read, write: if false;
+  }
+ }
+}
