@@ -38,6 +38,24 @@ Skripta:
 
 Tipična izlazna lokacija: `C:\remote-audio-workstation\desktop-beta\dist\RAW-Desktop-Beta-0.1.0-Windows-x64.exe`. Datoteka neće biti automatski pokrenuta niti prenesena na GitHub ili VPS.
 
+## Windows `winCodeSign` symlink kompatibilnost (hotfix)
+
+Prvi pokušaj korisnikova Windows builda uspješno je pakirao aplikaciju, ali je `electron-builder@26.0.12` odbio raspakirati `winCodeSign-2.6.0.7z`, jer za dva macOS `*.dylib` simbolička linka Windows nije dodijelio korisniku potrebnu privilegiju. Ovo nije audio-runtime bug.
+
+**Lokalni unsigned beta workaround:** `desktop-beta/package.json` eksplicitno postavlja `build.win.signAndEditExecutable=false` i `build.win.signExecutable=false`. Time v26 zaobilazi Windows `rcedit`/sign obradu koja zahtijeva sporni alat. NSIS installer koristi stvarni RAW `build/icon.ico` preko `nsis.installerIcon` i `nsis.uninstallerIcon`.
+
+**Ograničenje:** Windows aplikacijski `.exe` nema tijekom ovog testa dodatno ugrađenu vlastitu ikonu, izvršne metapodatke ni Authenticode potpis. Instaler je i dalje nepotpisan. Ispravnu ugrađenu RAW ikonu, potpis i Windows metadata vratiti u budućoj release verziji kroz popravljeni/signing build lanac. Izvorna RAW UI grafika u paketu ostaje netaknuta.
+
+Hotfix ne zahtijeva Developer Mode, pokretanje PowerShella kao administrator niti gašenje antivirusnih/SmartScreen zaštita.
+
+Ako prvi pokušaj prethodno nije uspio, dovoljno je:
+```powershell
+cd C:\remote-audio-workstation
+git status --short
+git pull --ff-only
+.\scripts\raw-v539-build-windows.ps1
+```
+
 ## Ručni Windows test instalacije — nakon uspješnog builda
 - Najprije provjeriti rezultat builda i SHA-256.
 - Pokrenuti instalaciju samo ako Windows dopušta normalan sigurnosni postupak. **Ne onemogućivati SmartScreen niti druge zaštite.**
