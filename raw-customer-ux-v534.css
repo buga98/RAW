@@ -1,0 +1,29 @@
+/* RAW V5.34 — user-facing digital mastering view vs verified LOCAL LAB.
+ * Hiding QA controls is presentation only, not access control.
+ * Server API authorization remains independent of all UI visibility.
+ */
+html:not(.raw-qa-visible) .raw-dpm-verifier {display:none!important}
+.raw-qa-toggle-note {
+  color:rgba(245,247,251,.68);
+  font-size:12px;
+  max-width:520px;
+  margin:8px 0;
+  line-height:1.5;
+}
+.raw-customer-status-note {
+  display:flex;
+  align-items:flex-start;
+  gap:10px;
+  border:1px solid rgba(79,209,255,.22);
+  background:rgba(79,209,255,.06);
+  border-radius:16px;
+  padding:12px 16px;
+  margin:12px 0;
+  color:rgba(245,247,251,.88);
+  font-size:13px;
+  line-height:1.5;
+}
+.raw-customer-status-note strong {color:#a3e8fc}
+@media (max-width:700px) {
+  .raw-customer-status-note{padding:10px 12px;font-size:12px}
+}

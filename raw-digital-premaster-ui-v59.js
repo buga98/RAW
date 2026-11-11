@@ -496,7 +496,7 @@ function attach(host,{getFile,canUse,presetUserId}={}){
  section.id="rawDigitalPremasterV59";
  section.className="raw-digital-premaster";
  section.innerHTML=
- '<div class="raw-dpm-head"><div><small>RAW / OFFLINE DIGITAL LAB · V5.9</small>'+
+ '<div class="raw-dpm-head"><div><small>RAW · DIGITALNI PREMASTER (SAMO DIGITALNI IZLAZ)</small>'+
  '<h3>DIGITAL PREMASTER</h3>'+
  '<p>Stvarna lokalna obrada stereo audija. Zaseban digitalni lanac — ne simulira identičan zvuk Bettermaker/WesAudio hardvera.</p>'+
  '</div><span>LOCAL TEST · NO HARDWARE / BILLING</span></div>'+
