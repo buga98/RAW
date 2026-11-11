@@ -1,0 +1,13 @@
+// V5.29 RESTRICTIVE RULES FRAGMENT: merge these matches into existing
+// Firebase rules after a security review, DO NOT deploy alone (overwrites rules).
+// Firebase Admin SDK bypasses Firestore rules; never expose its credentials.
+// Direct browser clients cannot read/write production booking authority.
+match /rawV529Bookings/{bookingId} {
+  allow read, write: if false;
+}
+match /rawV529Slots/{slotId} {
+  allow read, write: if false;
+}
+match /rawV529Studios/{studioId} {
+  allow read, write: if false;
+}
