@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {createHash} from "node:crypto";
 import {Readable} from "node:stream";
+import {readFileSync} from "node:fs";
 import {
  createRawDigitalPublisherV535,createRawDigitalDeliveryV535,
  RAW_V535_DOWNLOAD_TTL_MS
@@ -186,4 +187,25 @@ test("V5.35: malformed/truncated/unsupported WAVs fail without creating delivera
     "DIGITAL_OBJECT_TRUNCATED"].includes(error?.code));
   assert.equal(f.db.data.size,0);
  }
+});
+
+test("V5.35: staging Cloud Function authorizes digital downloads, all direct Storage and Firestore access denied",()=>{
+ const fs=requireNothing=>requireNothing;
+ void fs;
+ const root=new URL("../",import.meta.url);
+ const read=name=>readFileSync(new URL(name,root),"utf8");
+ const f=read("functions-v532/index.mjs");
+ const builder=read("scripts/raw-v532-package-functions.mjs");
+ const storageRules=read("config/storage-v535-STAGING.rules");
+ const firestoreRules=read("config/firestore-v532-STAGING.rules");
+ const config=JSON.parse(read("firebase-v532-staging.json"));
+ assert.match(f,/rawV535DigitalDownload=onRequest/);
+ assert.match(f,/createRawDigitalDeliveryV535/);
+ assert.match(f,/identity:identity\(\)/);
+ assert.match(f,/assertRawStagingReadV532\(config\(\)\)/);
+ assert.match(builder,/raw-v535-digital-delivery\.mjs/);
+ assert.equal(config.storage.rules,"config/storage-v535-STAGING.rules");
+ assert.match(storageRules,/allow read, write: if false/);
+ assert.match(firestoreRules,/rawDigitalDeliveriesV535/);
+ assert.doesNotMatch(f,/publishVerifiedDigital/);
 });
