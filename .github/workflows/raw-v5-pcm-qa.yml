@@ -12,6 +12,7 @@ on:
       - feature/raw-v536-studio-calibration
       - feature/raw-v537-site-desktop-distribution
       - feature/raw-v538-desktop-beta-stability
+      - feature/raw-v539-local-windows-installer
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -64,5 +65,31 @@ jobs:
         run: npm run desktop:v537:package
       - name: V5.38 nested Electron boot + offline-only installer audit
         run: npm run desktop:v538:check
+      - name: V5.39 local Windows-only installer build policy
+        run: npm run desktop:v539:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
+      - name: V5.39 Windows NSIS EXE build smoke (unsigned, never uploaded)
+        if: runner.os == 'Windows' && github.ref == 'refs/heads/feature/raw-v539-local-windows-installer'
+        shell: pwsh
+        run: |
+          python -m pip install Pillow==11.3.0
+          if ($LASTEXITCODE -ne 0) { throw "Pillow install failed" }
+          python scripts/raw-v537-create-icons.py
+          if ($LASTEXITCODE -ne 0) { throw "Icon generation failed" }
+          Push-Location desktop-beta
+          try {
+            npm install --no-audit --no-fund
+            if ($LASTEXITCODE -ne 0) { throw "Desktop dependencies failed" }
+            npm run build:windows
+            if ($LASTEXITCODE -ne 0) { throw "Unsigned NSIS build failed" }
+            $installer = Get-ChildItem -Path dist -Filter 'RAW-Desktop-Beta-*-Windows-x64.exe' -File |
+              Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
+            if ($null -eq $installer -or $installer.Length -lt 1000000) {
+              throw "Expected private NSIS installer missing or too small"
+            }
+            Write-Host ("Unsigned NSIS PASS (not uploaded): " + $installer.Name + ", " + $installer.Length + " bytes")
+          } finally {
+            Pop-Location
+          }
+
