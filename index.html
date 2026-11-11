@@ -751,27 +751,33 @@ window.registerUser = async function() {
   if (TEST_MODE) { alert("Registracija je isključena u lokalnom testnom načinu."); return; }
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
-
+  let cred=null;
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-
-    await setDoc(doc(db, "users", cred.user.uid), {
-      email,
-      ime: "",
-      prezime: "",
-      // Monetary balance/role/billing privileges are server-owned.
-      // New wallet: rawWalletsV531; no credits created in the browser.
-      lang: "hr",
-      createdAt: serverTimestamp()
-    });
-
+    cred = await createUserWithEmailAndPassword(auth, email, password);
+    // Critical: send confirmation first. A denied Firestore profile write
+    // must never prevent the user receiving the verification link.
     await sendEmailVerification(cred.user);
-
-    alert("Registracija uspjela. Provjeri email za potvrdu.");
-    await signOut(auth);
+    try{
+      await setDoc(doc(db, "users", cred.user.uid), {
+        email,
+        ime: "",
+        prezime: "",
+        // No client-minted tokens, credits, billing roles or permissions.
+        lang: "hr",
+        createdAt: serverTimestamp()
+      });
+    }catch(profileError){
+      // A server-side profile initializer must eventually reconcile this.
+      console.warn("RAW profile creation pending",profileError?.code||"unavailable");
+    }
+    alert("Registracija uspjela. Potvrdi e-mail klikom na poveznicu iz poruke.");
   } catch (err) {
-    console.error(err);
-    alert(err.message);
+    console.warn("RAW registration/verification error",err?.code||"unavailable");
+    alert(cred
+      ?"Račun je napravljen, ali potvrdu nije moguće poslati. Na prijavi klikni 'Ponovno pošalji potvrdu e-maila'."
+      :"Registracija nije uspjela. Provjeri e-mail i lozinku.");
+  } finally {
+    if(cred)try{await signOut(auth);}catch{}
   }
 };
 
