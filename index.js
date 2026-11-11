@@ -9,7 +9,8 @@ const { pathToFileURL } = require("node:url");
 
 const REAPER_PATH = "C:\\Program Files\\REAPER (x64)\\reaper.exe";
 const PROJECT_PATH = "C:\\RAW\\hardware-test.rpp";
-const INDEX_URL = pathToFileURL(path.join(__dirname, "index.html")).href;
+const INDEX_FILE = path.join(__dirname, "index.html");
+const INDEX_URL = pathToFileURL(INDEX_FILE).href;
 // Fail closed to LOCAL TEST even when Electron is launched directly without npm.
 const TEST_MODE = process.env.RAW_TEST_MODE === "1" || process.env.RAW_TEST_MODE === undefined;
 function isLocalAppUrl(candidate){
@@ -38,7 +39,8 @@ function createWindow(){
   win.webContents.on("will-navigate",(event,url)=>{
     if(!isLocalAppUrl(url))event.preventDefault();
   });
-  win.loadFile("index.html",TEST_MODE?{query:{testMode:"1"}}:undefined);
+  // Absolute path works both in source checkout and when packed in desktop-beta/app.
+  win.loadFile(INDEX_FILE,TEST_MODE?{query:{testMode:"1"}}:undefined);
 }
 ipcMain.handle("raw-runtime-info",event=>({
   testMode:TEST_MODE&&isLocalAppUrl(event.sender.getURL()),
