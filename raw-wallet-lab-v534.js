@@ -15,7 +15,15 @@
   if(typeof now!=="function")throw Error("INVALID_DEMO_CLOCK");
   let funded=false,startedAt=null,rate=0,runDevices=[],costNumerator=0,
       baseMs=0,finalizedCost=0,status="empty",history=[];
-  const clock=()=>{const t=now();if(!valid(t))throw Error("INVALID_DEMO_CLOCK");return t;};
+  // performance.now() in Electron returns fractional milliseconds. The model
+  // bills in whole milliseconds; accept a finite monotonic clock and round
+  // DOWN once so START / PAUSE / heartbeat use the same integer precision.
+  const clock=()=>{
+   const t=now();
+   if(typeof t!=="number"||!Number.isFinite(t)||t<0||
+      t>Number.MAX_SAFE_INTEGER)throw Error("INVALID_DEMO_CLOCK");
+   return Math.floor(t);
+  };
   function sample(){
    const elapsed=startedAt===null?0:Math.min(MAX_MS,Math.max(0,clock()-startedAt));
    const numerator=costNumerator+rate*10000*elapsed;
