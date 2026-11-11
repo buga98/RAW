@@ -128,6 +128,8 @@ export function createRawStudioLeaseRegistryV533({
      fail("AGENT_REPLAY_OR_ROLLBACK",409);
     const was=lease.state;
     if(proof.phase==="started"){
+     if(atMs-lease.createdAtMs>30_000)
+      fail("PENDING_LEASE_EXPIRED",409);
      if(was!=="pending_agent"||!proof.hardwareAck||
         !proof.audioProcessing||proof.pcmFrames===0)
       fail("INVALID_START_ACK",409);
@@ -163,6 +165,25 @@ export function createRawStudioLeaseRegistryV533({
     if(data.state!=="stop_requested")
      tx.update(ref,{state:"stop_requested",stopRequestedAtMs:atMs});
     // A requested STOP is NOT a hardware STOP; do not recycle this lease.
+    return Object.freeze({state:"stop_requested",stopRequired:true});
+   });
+  },
+  async suspendStale(studioId){
+   if(!valid(studioId,STUDIO))fail("INVALID_STUDIO",400);
+   const atMs=clock(),ref=leases.doc(studioId);
+   return db.runTransaction(async tx=>{
+    const snap=await tx.get(ref),data=snap.exists?snap.data():null;
+    if(!data)return Object.freeze({state:"unassigned",stopRequired:false});
+    const due=data.state==="active"
+      ?data.lastAgentAtMs+V533_LEASE_MAX_GAP_MS
+      :data.state==="pending_agent"
+       ?data.createdAtMs+30_000:Infinity;
+    if(atMs<=due)return Object.freeze({
+     state:data.state,stopRequired:data.state==="stop_requested"
+    });
+    // This is NOT a physical STOP; always require a signed studio STOP ACK.
+    tx.update(ref,{state:"stop_requested",stopRequestedAtMs:atMs,
+     stopReason:"AGENT_PROOF_TIMEOUT"});
     return Object.freeze({state:"stop_requested",stopRequired:true});
    });
   },
