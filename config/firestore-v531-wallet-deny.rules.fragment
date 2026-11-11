@@ -1,0 +1,21 @@
+// V5.31 fragment ONLY — merge into existing firestore.rules after review.
+// Deployed rules are a separate task; do not replace all project rules with
+// this fragment. Firebase Admin bypasses Security Rules.
+match /rawWalletsV531/{ownerUid} {
+  allow get: if request.auth != null
+    && request.auth.uid == ownerUid
+    && request.auth.token.email_verified == true;
+  allow list, create, update, delete: if false;
+}
+match /rawTokenOrdersV531/{orderId} {
+  allow read, write: if false;
+}
+match /rawTokenLedgerV531/{entryId} {
+  allow read, write: if false;
+}
+match /rawProcessingRunsV531/{runId} {
+  allow read, write: if false;
+}
+match /rawDeviceRatesV531/{deviceId} {
+  allow read, write: if false;
+}

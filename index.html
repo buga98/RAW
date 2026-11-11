@@ -117,6 +117,10 @@
 <button class="primary" onclick="registerUser()" style="margin-top:10px;background:rgba(255,255,255,.1);color:white;">
   Registriraj se
 </button>
+<div class="raw-auth-email-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+  <button type="button" class="ghost-btn" onclick="resendVerificationEmail()">Ponovno pošalji potvrdu e-maila</button>
+  <button type="button" class="ghost-btn" onclick="requestPasswordReset()">Zaboravljena lozinka?</button>
+</div>
         </div>
       </section>
 
@@ -349,6 +353,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendEmailVerification,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   signOut,
   setPersistence,
@@ -371,6 +376,7 @@ const firebaseConfig = {
 const appFirebase = initializeApp(firebaseConfig);
 const db = getFirestore(appFirebase);
 const auth = getAuth(appFirebase);
+auth.languageCode = "hr"; // Prepare Firebase default noreply template in Croatian
 // The Electron main process passes testMode=1 only when RAW_TEST_MODE=1.
 // Local testing never writes sessions, uploads, hardware state, or credits.
 const TEST_MODE = (await window.RAWNative?.getRuntimeInfo?.())?.testMode === true;
@@ -700,7 +706,10 @@ await setPersistence(
     const cred = await signInWithEmailAndPassword(auth, email, password);
 
     if (!cred.user.emailVerified) {
-      alert("Prvo potvrdi email.");
+      await cred.user.reload(); // refresh stale email verification from Firebase Auth
+    }
+    if (!cred.user.emailVerified) {
+      alert("Prvo potvrdi e-mail klikom na poveznicu. Po potrebi zatraži novu poruku.");
       await signOut(auth);
       return;
     }
@@ -712,35 +721,63 @@ await setPersistence(
   }
 };
 
+window.resendVerificationEmail = async function(){
+  if(TEST_MODE){alert("Slanje poruka nije dostupno u LOCAL TEST načinu.");return;}
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  if(!email||!password){alert("Za ponovno slanje unesi e-mail i lozinku.");return;}
+  try{
+    const cred=await signInWithEmailAndPassword(auth,email,password);
+    await cred.user.reload();
+    if(!cred.user.emailVerified)await sendEmailVerification(cred.user);
+    alert("Ako račun još nije potvrđen, na e-mail je poslana nova poveznica.");
+  }catch(error){
+    console.warn("RAW resend verification unavailable",error?.code||"unknown");
+    alert("Nije moguće ponovno poslati potvrdu. Provjeri podatke ili pokušaj kasnije.");
+  }finally{
+    try{await signOut(auth);}catch{}
+  }
+};
+window.requestPasswordReset = async function(){
+  if(TEST_MODE){alert("Slanje poruka nije dostupno u LOCAL TEST načinu.");return;}
+  const email=document.getElementById("loginEmail").value.trim();
+  if(!email){alert("Najprije upiši e-mail.");return;}
+  try{await sendPasswordResetEmail(auth,email);}
+  catch(error){console.warn("RAW password reset request",error?.code||"unknown");}
+  alert("Ako račun postoji, dobit ćeš upute za promjenu lozinke.");
+};
+
 window.registerUser = async function() {
   if (TEST_MODE) { alert("Registracija je isključena u lokalnom testnom načinu."); return; }
   const email = document.getElementById("loginEmail").value.trim();
   const password = document.getElementById("loginPassword").value;
-
+  let cred=null;
   try {
-    const cred = await createUserWithEmailAndPassword(auth, email, password);
-
-    await setDoc(doc(db, "users", cred.user.uid), {
-      email,
-      ime: "",
-      prezime: "",
-      credits: 0,
-      role: "user",
-      plan: "free",
-      lang: "hr",
-      activeSessionId: null,
-      totalSpent: 0,
-      billingEnabled: false,
-      createdAt: serverTimestamp()
-    });
-
+    cred = await createUserWithEmailAndPassword(auth, email, password);
+    // Critical: send confirmation first. A denied Firestore profile write
+    // must never prevent the user receiving the verification link.
     await sendEmailVerification(cred.user);
-
-    alert("Registracija uspjela. Provjeri email za potvrdu.");
-    await signOut(auth);
+    try{
+      await setDoc(doc(db, "users", cred.user.uid), {
+        email,
+        ime: "",
+        prezime: "",
+        // No client-minted tokens, credits, billing roles or permissions.
+        lang: "hr",
+        createdAt: serverTimestamp()
+      });
+    }catch(profileError){
+      // A server-side profile initializer must eventually reconcile this.
+      console.warn("RAW profile creation pending",profileError?.code||"unavailable");
+    }
+    alert("Registracija uspjela. Potvrdi e-mail klikom na poveznicu iz poruke.");
   } catch (err) {
-    console.error(err);
-    alert(err.message);
+    console.warn("RAW registration/verification error",err?.code||"unavailable");
+    alert(cred
+      ?"Račun je napravljen, ali potvrdu nije moguće poslati. Na prijavi klikni 'Ponovno pošalji potvrdu e-maila'."
+      :"Registracija nije uspjela. Provjeri e-mail i lozinku.");
+  } finally {
+    if(cred)try{await signOut(auth);}catch{}
   }
 };
 
@@ -917,6 +954,10 @@ function getChainTotalPrice() {
 }
 
 window.startChainSession = async function() {
+  if(!TEST_MODE){
+    alert("RAW produkcijski rad još nije uključen: stari obračun iz klijenta je blokiran do potvrde sigurnog servera.");
+    return;
+  }
   try {
     const devices = getChainDeviceObjects();
 
@@ -1100,6 +1141,10 @@ function renderDeviceCard(device) {
 }
 async function chargeSessionFor(sessionId) {
   if (TEST_MODE) return;
+  // V5.31: never debit money from Electron. Only trusted wallet
+  // transactions may debit credits after verified studio processing.
+  console.warn("RAW LEGACY CLIENT CREDIT DEBIT DISABLED");
+  return;
   if (!currentUser || !sessionId) return;
   if (spentThisSession <= 0) return;
 
@@ -1143,6 +1188,10 @@ async function chargeSession() {
 
 
 async function startSession(device) {
+  if(!TEST_MODE){
+    alert("RAW produkcijski studio nije aktiviran. Nije dopušteno rezervirati uređaje starim klijentskim API-jem.");
+    return;
+  }
   if (TEST_MODE) {
     chainDevices = [device.id];
     return window.startChainSession();
@@ -3182,6 +3231,9 @@ function knobTemplateForDevice(c, deviceId) {
 
 function startBillingTimer(pricePerHour) {
   if (TEST_MODE) return;
+  // Legacy production billing remains disabled until server-side authorizes processing.
+  console.warn("RAW LEGACY CLIENT BILLING TIMER DISABLED — waiting for trusted studio meter");
+  return;
   if (isBillingRunning) return;
 
   const credits = Number(currentUserData?.credits || 0);
@@ -3794,6 +3846,11 @@ async function ensureDraftSession() {
 }
 
 async function simulateUpload() {
+  if(!TEST_MODE){
+    const status=document.getElementById("uploadStatus");
+    if(status)status.textContent="Studio upload privremeno nije aktivan do sigurnog autoriziranog Gatewaya.";
+    return;
+  }
   if (TEST_MODE) {
     const uploadStatus = document.getElementById("uploadStatus");
     if (uploadStatus) uploadStatus.textContent = uploadedFiles.length
