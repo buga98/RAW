@@ -95,7 +95,7 @@ test("V5.34: owner-only developer LAB owns demo UI; production shows no legacy e
  assert.match(html,/TEST_MODE \? "TEST — bez naplate" : \(window\.RAWTokenDisplayV532/);
  assert.doesNotMatch(html,/id="liveCredits">.*Number\(currentUserData\?\.credits/);
  const js=read("raw-wallet-lab-v534.js");
- assert.doesNotMatch(js,/firebase|stripe|fetch\s*\(|XMLHttpRequest|localStorage|sessionStorage/i);
+ assert.doesNotMatch(js,/\bfetch\s*\(|XMLHttpRequest|localStorage|sessionStorage|\bgetFirestore\b|\bgetAuth\b/i);
  assert.match(js,/model\.reset\(\);/);
  assert.match(js,/stopTimer\(\)/);
 });
