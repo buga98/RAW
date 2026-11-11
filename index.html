@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="raw-digital-premaster-v59.css" />
   <link rel="stylesheet" href="raw-v5-autosave.css" />
   <link rel="stylesheet" href="raw-studio-ux-v513.css" />
+  <link rel="stylesheet" href="raw-customer-ux-v534.css" />
 </head>
 <body>
   <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
@@ -78,7 +79,7 @@
   </div>
 
   <div>
-    <small>CREDITS</small>
+    <small>RAW TOKENI</small>
     <strong id="userCredits">0.00 €</strong>
   </div>
 
@@ -100,7 +101,7 @@
             <h2>Prijava</h2>
             <p class="sub">Prijavi se u remote analog studio.</p>
           </div>
-          <span class="badge">verzija 1.0</span>
+          <span class="badge">RAW · DIGITAL PREVIEW</span>
         </div>
 
         <div class="card login-card">
@@ -195,7 +196,7 @@
            <h2>Patch Chain</h2>
            <p class="sub">Složi redoslijed analognih uređaja. Svi uređaji rade u jednoj session.</p>
           </div>
-          <span class="badge">Device engine</span>
+          <span class="badge">DIGITALNI PREGLED · BEZ NAPLATE</span>
         </div>
 
 <div class="patch-app">
@@ -206,8 +207,8 @@
     </div>
 
     <div class="patch-price">
-      <small>TOTAL PRICE</small>
-      <strong id="chainPrice">0 €/h</strong>
+      <small>SATNICA AKTIVNIH UREĐAJA</small>
+      <strong id="chainPrice">0 RAW/h</strong>
     </div>
   </div>
 
@@ -255,11 +256,15 @@
             <p class="sub">Stereo virtual rack · transparentan digitalni preview · spremanje projekta</p>
           </div>
           <div class="status-row">
-            <span class="badge" id="pluginDeviceType">ANALOG DEVICE</span>
+            <span class="badge" id="pluginDeviceType">VIRTUAL DEVICE</span>
             <span class="status" id="status">READY</span>
           </div>
         </div>
 
+        <div class="raw-customer-status-note" role="note">
+          <strong>DIGITALNI PREVIEW</strong>
+          <span>Stvarni studijski uređaji i naplata RAW tokena još nisu aktivirani. Ovdje se radi digitalna obrada, ne analogni master.</span>
+        </div>
         <div id="pluginHost"></div>
       </section>
       <section id="projects" class="screen" aria-label="Moji RAW projekti">
@@ -282,6 +287,8 @@
           <button type="button" class="ghost-btn" id="rawDiagnosticsToggle" onclick="toggleRawDiagnostics()" aria-expanded="false">AUDIO DIAGNOSTICS</button>
           <button type="button" class="ghost-btn" id="rawV5DiagnosticsToggle" onclick="toggleRawV5Diagnostics()" aria-expanded="false">V5 AUDIO ENGINE</button>
           <button type="button" class="ghost-btn" id="rawV54WorkerToggle" onclick="toggleRawV54Worker()" aria-expanded="false">V5 AUDIO WORKER</button>
+          <button type="button" class="ghost-btn" id="rawQaToolsToggle" onclick="toggleRawQaToolsV534()" aria-pressed="false">PRIKAŽI OFFLINE QA U CONTROL ROOMU</button>
+          <p class="raw-qa-toggle-note">Verificirani Developer u LOCAL TEST načinu može prikazati provjeru WAV datoteka. Testovi ostaju u CI-ju.</p>
         </div>
         <div id="developerLabHost" class="raw-developer-labs">
           <p>Pokreni lokalnu testnu sesiju kako bi se prikazali Gateway, Simulator, Chain Archive i DAW Bridge.</p>
@@ -396,8 +403,28 @@ function developerAllowed() {
   return TEST_MODE && developerGranted && currentUser?.emailVerified === true &&
     String(currentUser?.email||"").trim().toLowerCase() === DEVELOPER_EMAIL;
 }
+window.toggleRawQaToolsV534 = function() {
+  if(!developerAllowed())return;
+  const root=document?.documentElement;
+  const on=!root?.classList?.contains("raw-qa-visible");
+  root?.classList?.toggle("raw-qa-visible",on);
+  const b=document.getElementById("rawQaToolsToggle");
+  if(b){
+    b.setAttribute("aria-pressed",String(on));
+    b.textContent=on?"SAKRI OFFLINE QA U CONTROL ROOMU":
+      "PRIKAŽI OFFLINE QA U CONTROL ROOMU";
+  }
+};
 function updateDeveloperUi() {
   const allowed = developerAllowed();
+  if(!allowed){
+    document.documentElement?.classList?.remove("raw-qa-visible");
+    const button=document.getElementById("rawQaToolsToggle");
+    if(button){
+      button.setAttribute("aria-pressed","false");
+      button.textContent="PRIKAŽI OFFLINE QA U CONTROL ROOMU";
+    }
+  }
   developerNav.hidden = !allowed;
   developerScreen.hidden = !allowed;
   const accessTag=document.getElementById("rawDeveloperAccessStatus");
@@ -966,7 +993,7 @@ function renderPatchChain() {
     return sum + Number(d?.pricePerHour || 0);
   }, 0);
 
-  if (chainPrice) chainPrice.textContent = `${total} €/h`;
+  if (chainPrice) chainPrice.textContent = `${total} RAW/h`;
 }
 
 function getChainDeviceObjects() {
@@ -1494,7 +1521,7 @@ function renderPlugin() {
 
         <div class="live-billing">
           <div>
-            <small>CREDITS</small>
+            <small>RAW TOKENI</small>
             <strong id="liveCredits">${TEST_MODE ? "TEST" : Number(currentUserData?.credits || 0).toFixed(2) + " €"}</strong>
           </div>
           <div>
