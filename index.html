@@ -17,6 +17,7 @@
   <link rel="stylesheet" href="raw-digital-premaster-v59.css" />
   <link rel="stylesheet" href="raw-v5-autosave.css" />
   <link rel="stylesheet" href="raw-studio-ux-v513.css" />
+  <link rel="stylesheet" href="raw-wallet-lab-v534.css" />
 </head>
 <body>
   <div id="testModeBanner" style="display:none;position:fixed;top:0;left:0;right:0;z-index:10000;background:#145e51;color:#fff;text-align:center;padding:7px;font-weight:800;letter-spacing:.6px;">LOCAL TEST MODE — nema Firebase zapisa sesija, naplate ni upravljanja hardverom</div>
@@ -283,6 +284,7 @@
           <button type="button" class="ghost-btn" id="rawV5DiagnosticsToggle" onclick="toggleRawV5Diagnostics()" aria-expanded="false">V5 AUDIO ENGINE</button>
           <button type="button" class="ghost-btn" id="rawV54WorkerToggle" onclick="toggleRawV54Worker()" aria-expanded="false">V5 AUDIO WORKER</button>
         </div>
+        <div id="rawWalletLabV534" hidden aria-label="RAW testni tokeni"></div>
         <div id="developerLabHost" class="raw-developer-labs">
           <p>Pokreni lokalnu testnu sesiju kako bi se prikazali Gateway, Simulator, Chain Archive i DAW Bridge.</p>
         </div>
@@ -306,6 +308,7 @@
   <script src="raw-digital-premaster-ui-v59.js"></script>
   <script src="raw-auth-navigation-v515.js"></script>
   <script src="raw-wallet-display-v532.js"></script>
+  <script src="raw-wallet-lab-v534.js"></script>
   <script src="raw-logout-focus-v524.js"></script>
   <script src="raw-audio-dock-v516.js"></script>
   <script src="raw-chain-archive-v1.js"></script>
@@ -381,6 +384,8 @@ auth.languageCode = "hr"; // Prepare Firebase default noreply template in Croati
 // The Electron main process passes testMode=1 only when RAW_TEST_MODE=1.
 // Local testing never writes sessions, uploads, hardware state, or credits.
 const TEST_MODE = (await window.RAWNative?.getRuntimeInfo?.())?.testMode === true;
+// Dedicated in-memory token simulator, attached ONLY in verified owner LOCAL TEST.
+const rawWalletLabV534=window.RAWWalletLabV534?.mount?.(document,{testMode:TEST_MODE});
 const localTestSessions = [];
 // Developer LAB is not a production permission boundary. Server-controlled
 // privileges must be enforced by Firebase Security Rules / verified backend.
@@ -398,6 +403,7 @@ function developerAllowed() {
 }
 function updateDeveloperUi() {
   const allowed = developerAllowed();
+  rawWalletLabV534?.setAccess?.(allowed);
   developerNav.hidden = !allowed;
   developerScreen.hidden = !allowed;
   const accessTag=document.getElementById("rawDeveloperAccessStatus");
@@ -1495,7 +1501,7 @@ function renderPlugin() {
         <div class="live-billing">
           <div>
             <small>CREDITS</small>
-            <strong id="liveCredits">${TEST_MODE ? "TEST" : Number(currentUserData?.credits || 0).toFixed(2) + " €"}</strong>
+            <strong id="liveCredits">${TEST_MODE ? "TEST — bez naplate" : (window.RAWTokenDisplayV532?.label?.(currentRawWalletMicros) || "RAW saldo nije dostupan")}</strong>
           </div>
           <div>
             <small>SPENT</small>

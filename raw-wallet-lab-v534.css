@@ -1,0 +1,22 @@
+/* RAW V5.34 — owner-only LOCAL TEST wallet lab; NEVER production billing. */
+.raw-walletlab-v534{background:linear-gradient(145deg,#10222d,#111922);border:1px solid #315663;border-radius:16px;padding:22px;margin-top:22px;color:#e3f2f3}
+.raw-walletlab-head{display:flex;justify-content:space-between;align-items:start;gap:16px;flex-wrap:wrap}
+.raw-walletlab-head h3{margin:6px 0;color:#f5fcff;font-size:20px}
+.raw-walletlab-head p{margin:0;color:#b1cad1;font-size:13px}
+.raw-walletlab-kicker{color:#64d6c8;font-size:11px;letter-spacing:.11em;font-weight:800}
+.raw-walletlab-state{border:1px solid #358d88;color:#92e7dc;padding:8px 10px;border-radius:10px;font-size:11px;font-weight:800}
+.raw-walletlab-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:12px;margin:20px 0}
+.raw-walletlab-stats>div{padding:13px;background:#1a2b36;border:1px solid #314957;border-radius:11px}
+.raw-walletlab-stats small{display:block;font-size:11px;color:#a8c2c8;margin-bottom:8px}
+.raw-walletlab-stats strong{display:block;font-size:17px;color:#fff;word-break:break-word;font-variant-numeric:tabular-nums}
+.raw-walletlab-devices{display:flex;flex-wrap:wrap;gap:10px;margin:14px 0}
+.raw-walletlab-devices label{display:flex;align-items:center;gap:8px;background:#203642;border:1px solid #3c5863;padding:10px;border-radius:9px;color:#e8f3f4;cursor:pointer}
+.raw-walletlab-devices input{accent-color:#64d6c8}
+.raw-walletlab-actions{display:flex;flex-wrap:wrap;gap:9px}
+.raw-walletlab-actions button{border:1px solid #3e8584;background:#235357;color:#fff;border-radius:9px;padding:10px 12px;cursor:pointer;font-weight:700}
+.raw-walletlab-actions button:disabled{opacity:.38;cursor:not-allowed}
+.raw-walletlab-actions button:focus-visible{outline:2px solid #b4fff2;outline-offset:3px}
+.raw-walletlab-note{min-height:20px;color:#bad8dd;font-size:13px}
+.raw-walletlab-history{border-top:1px solid #355260;margin-top:16px;padding-top:15px}
+.raw-walletlab-history strong{font-size:13px}
+.raw-walletlab-history ul{padding-left:18px;color:#b8d0d7;line-height:1.7;font-size:12px}

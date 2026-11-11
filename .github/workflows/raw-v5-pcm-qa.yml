@@ -7,6 +7,7 @@ on:
       - feature/raw-v531-firebase-wallet-stripe
       - feature/raw-v532-firebase-stripe-staging
       - feature/raw-v533-billing-reliability
+      - feature/raw-v534-token-wallet-lab
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -47,5 +48,7 @@ jobs:
           node --check functions-v532/index.mjs
       - name: V5.33 studio physical fail-closed policy and accounting audit
         run: npm run security:v533:check
+      - name: V5.34 in-memory RAW token countdown and owner-only LAB
+        run: npm run studio:wallet:v534:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
