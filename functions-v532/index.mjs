@@ -7,6 +7,7 @@ import {onRequest} from "firebase-functions/v2/https";
 import {defineSecret} from "firebase-functions/params";
 import {initializeApp,getApps,getApp} from "firebase-admin/app";
 import {getFirestore} from "firebase-admin/firestore";
+import {getStorage} from "firebase-admin/storage";
 import {getAuth} from "firebase-admin/auth";
 import Stripe from "stripe";
 import {createTrustedIdentityV529,RawAccessError} from "./core/raw-v529-identity.mjs";
@@ -14,6 +15,7 @@ import {createRawFirestoreWalletV531} from "./core/raw-v531-firestore-wallet.mjs
 import {createRawStripeTopupsV531} from "./core/raw-v531-stripe-topups.mjs";
 import {createCheckoutThrottleV532} from "./core/raw-v532-checkout-throttle.mjs";
 import {createRawWalletHistoryV532} from "./core/raw-v532-wallet-history.mjs";
+import {createRawDigitalDeliveryV535} from "./core/raw-v535-digital-delivery.mjs";
 import {assertRawStagingV532,assertRawStagingReadV532} from "./core/raw-v532-staging-guard.mjs";
 
 if(getApps().length===0)initializeApp();
@@ -76,6 +78,20 @@ export const rawV532WalletHistory=onRequest(base,async(req,res)=>{
   return res.status(200).json({
    entries:await createRawWalletHistoryV532(getFirestore()).list(owner.uid)
   });
+ }catch(error){return abort(error,res);}
+});
+export const rawV535DigitalDownload=onRequest(base,async(req,res)=>{
+ safeHeaders(res);
+ if(req.method!=="GET")return res.status(405).json({error:"METHOD_NOT_ALLOWED"});
+ try{
+  assertRawStagingReadV532(config());
+  const result=await createRawDigitalDeliveryV535({
+   db:getFirestore(),bucket:getStorage().bucket(),identity:identity()
+  }).authorizeDownload({
+   authorization:req.headers.authorization,
+   artifactId:req.query?.artifactId
+  });
+  return res.status(200).json(result);
  }catch(error){return abort(error,res);}
 });
 export const rawV532CreateCheckout=onRequest({
