@@ -1134,10 +1134,11 @@ function renderDeviceCard(device) {
   deviceGrid.appendChild(card);
 }
 async function chargeSessionFor(sessionId) {
+  if (TEST_MODE) return;
   // V5.31: never debit money from Electron. Only trusted wallet
   // transactions may debit credits after verified studio processing.
-  if (!TEST_MODE){console.warn("RAW LEGACY CLIENT CREDIT DEBIT DISABLED");return;}
-  if (TEST_MODE) return;
+  console.warn("RAW LEGACY CLIENT CREDIT DEBIT DISABLED");
+  return;
   if (!currentUser || !sessionId) return;
   if (spentThisSession <= 0) return;
 
@@ -3223,11 +3224,10 @@ function knobTemplateForDevice(c, deviceId) {
 }
 
 function startBillingTimer(pricePerHour) {
-  if(!TEST_MODE){
-    console.warn("RAW LEGACY CLIENT BILLING TIMER DISABLED — waiting for trusted studio meter");
-    return;
-  }
   if (TEST_MODE) return;
+  // Legacy production billing remains disabled until server-side authorizes processing.
+  console.warn("RAW LEGACY CLIENT BILLING TIMER DISABLED — waiting for trusted studio meter");
+  return;
   if (isBillingRunning) return;
 
   const credits = Number(currentUserData?.credits || 0);

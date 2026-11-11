@@ -43,7 +43,7 @@ function fixture(){
  const db=new MiniFirestore();
  const auth={async verifyIdToken(token,revoked){
   assert.equal(revoked,true);
-  if(token!=="signed.token.value.valid")throw Error("invalid");
+  if(token!=="signedToken.payloadToken.signatureToken")throw Error("invalid");
   return {uid:owner,email_verified:true};
  }};
  const stripe={
@@ -66,7 +66,7 @@ async function withServer(app,callback){
  try{await callback("http://127.0.0.1:"+server.address().port);}
  finally{await new Promise((resolve,reject)=>server.close(error=>error?reject(error):resolve()));}
 }
-const authHeader={Authorization:"Bearer signed.token.value.valid"};
+const authHeader={Authorization:"Bearer signedToken.payloadToken.signatureToken"};
 test("V5.31: real Express route requires Firebase verified identity and never trusts forged UID",async()=>{
  const {app,db}=fixture();
  await withServer(app,async base=>{
