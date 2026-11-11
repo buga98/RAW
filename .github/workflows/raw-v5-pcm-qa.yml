@@ -8,6 +8,7 @@ on:
       - feature/raw-v532-firebase-stripe-staging
       - feature/raw-v533-studio-lease-billing-safety
       - feature/raw-v534-customer-ui-qa-separation
+      - feature/raw-v535-digital-master-delivery
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -50,5 +51,7 @@ jobs:
         run: npm run security:v533:check
       - name: V5.34 customer view and developer QA separation
         run: npm run studio:ux:v534:check
+      - name: V5.35 owner-only signed digital delivery and integrity
+        run: npm run security:v535:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke

@@ -47,6 +47,9 @@ service cloud.firestore {
   match /rawStudioLeasesV533/{studioId} {
    allow read, write: if false;
   }
+  match /rawDigitalDeliveriesV535/{artifactId} {
+   allow read, write: if false;
+  }
   // Existing client-side sessions/device mutations are intentionally blocked.
   // Only trusted Admin SDK may ever issue equipment commands and money writes.
   match /{document=**} {

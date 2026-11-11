@@ -58,7 +58,8 @@
     "security:v532:check": "node --test tests/raw-v532-staging.test.mjs",
     "studio:firebase:v532:package": "node scripts/raw-v532-package-functions.mjs",
     "security:v533:check": "node --test tests/raw-v533-studio-lease.test.mjs",
-    "studio:ux:v534:check": "node --test tests/raw-v534-customer-ux.test.mjs"
+    "studio:ux:v534:check": "node --test tests/raw-v534-customer-ux.test.mjs",
+    "security:v535:check": "node --test tests/raw-v535-digital-delivery.test.mjs"
   },
   "keywords": [],
   "author": "",

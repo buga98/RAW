@@ -1,0 +1,12 @@
+// V5.35 strict STAGING Cloud Storage rules. NEVER deploy to production
+// without reviewing existing application storage paths and needs.
+// Cloud service accounts bypass these rules; only reviewed server code
+// may publish/deliver objects with short-lived generation-bound URLs.
+rules_version = '2';
+service firebase.storage {
+ match /b/{bucket}/o {
+  match /{allPaths=**} {
+   allow read, write: if false;
+  }
+ }
+}
