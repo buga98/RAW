@@ -41,8 +41,7 @@
       ],
       "icon": "build/icon.ico",
       "artifactName": "RAW-Desktop-Beta-${version}-Windows-${arch}.${ext}",
-      "signAndEditExecutable": false,
-      "signExecutable": false
+      "signAndEditExecutable": false
     },
     "nsis": {
       "oneClick": false,
