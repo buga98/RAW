@@ -74,7 +74,7 @@ export function createRawStudioLeaseRegistryV533({
  };
  const leaseId=()=>{
   const v=idFactory();
-  if(typeof v!=="string"||!/^([a-f0-9]{8}-){4}[a-f0-9]{12}$/i.test(v)&&
+  if(typeof v!=="string"||
      !/^[a-f0-9]{8}-[a-f0-9]{4}-[1-8][a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(v))
     fail("LEASE_ID_GENERATOR_INVALID",503);
   return "lease_"+v.replaceAll("-","").toLowerCase();
@@ -148,6 +148,7 @@ export function createRawStudioLeaseRegistryV533({
     return Object.freeze({studioId:proof.studioId,leaseId:proof.leaseId,
      epoch:proof.epoch,state,agentReportedProcessing:state==="active",
      verifiedAnalogHardware:false,canBill:false});
+   });
   },
   async requestStop({studioId,leaseId:currentId,epoch}={}){
    if(!valid(studioId,STUDIO)||!valid(currentId,HEX)||!positive(epoch))
