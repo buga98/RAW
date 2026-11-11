@@ -7,6 +7,7 @@ import {RawAccessError} from "./raw-v529-identity.mjs";
 import {V529_SLOT_MS} from "./raw-v529-trusted-bookings.mjs";
 const denied=(code,status=403)=>{throw new RawAccessError(code,status);};
 const ID=/^[A-Za-z0-9_-]{4,128}$/;
+const UID=/^[A-Za-z0-9_-]{1,128}$/;
 const COLLECTIONS=Object.freeze({
  studios:"rawV529Studios",bookings:"rawV529Bookings",slots:"rawV529Slots"
 });
@@ -31,7 +32,7 @@ export function createFirestoreBookingStoreV529(db){
  const slots=db.collection(COLLECTIONS.slots);
  return Object.freeze({
   async book({ownerUid,studioId,startsAtMs,endsAtMs,createdAtMs}={}){
-   if(typeof ownerUid!=="string"||!ID.test(ownerUid)||!Number.isSafeInteger(createdAtMs))
+   if(typeof ownerUid!=="string"||!UID.test(ownerUid)||!Number.isSafeInteger(createdAtMs))
     denied("INVALID_OWNER",400);
    const slotIds=slotsFor(studioId,startsAtMs,endsAtMs);
    const studioRef=studios.doc(studioId),bookingRef=bookings.doc();
@@ -58,13 +59,13 @@ export function createFirestoreBookingStoreV529(db){
    return bookingOf(await bookings.doc(bookingId).get());
   },
   async list(ownerUid){
-   if(typeof ownerUid!=="string"||!ID.test(ownerUid))denied("INVALID_OWNER",400);
+   if(typeof ownerUid!=="string"||!UID.test(ownerUid))denied("INVALID_OWNER",400);
    const result=await bookings.where("ownerUid","==",ownerUid).limit(50).get();
    return result.docs.map(bookingOf).filter(Boolean);
   },
   async cancel({bookingId,ownerUid,nowMs}={}){
    if(typeof bookingId!=="string"||!ID.test(bookingId)||
-    typeof ownerUid!=="string"||!ID.test(ownerUid)||
+    typeof ownerUid!=="string"||!UID.test(ownerUid)||
     !Number.isSafeInteger(nowMs))denied("INVALID_CANCEL",400);
    const ref=bookings.doc(bookingId);
    return await db.runTransaction(async tx=>{
