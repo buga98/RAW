@@ -30,7 +30,7 @@ function fixture(){
     async execute(sql,args){
      if(sql.startsWith("SELECT bookable")){
       const available=db.studios.get(args[0]);
-      return [[...db.studios.has(args[0])?[{bookable:available?1:0}]:[]],[]];
+      return [db.studios.has(args[0]) ? [{bookable:available?1:0}] : [], []];
      }
      if(sql.startsWith("INSERT INTO raw_bookings")){
       const [id,uid,studio,from,to,created]=args;
