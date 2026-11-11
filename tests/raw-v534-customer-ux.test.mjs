@@ -24,7 +24,7 @@ test("V5.34: V5.25 downloaded WAV QA is hidden in normal UI, preserved for devel
  assert.match(dpm,/RAWDigitalExportVerifierV525\.verifyFiles/);
  assert.match(html,/id="rawQaToolsToggle"/);
  assert.match(html,/id="developerNav" hidden/);
- assert.match(html,/if\(screenId === "developer"/);
+ assert.match(html,/if \(screenId === "developer"/);
 });
 test("V5.34: unverified user cannot toggle QA, verified local owner can",()=>{
  const fn=html.match(/window\.toggleRawQaToolsV534 = function\(\) \{[\s\S]*?\n\};/)?.[0];
