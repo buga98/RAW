@@ -173,3 +173,27 @@ test("V5.33: a user cannot close/steal an active lease without matching epoch",a
  await assert.rejects(f.registry.request({...f.request,ownerUid:"bob"}),
   fails("BOOKING_NOT_AUTHORIZED"));
 });
+
+test("V5.33: missing heartbeat demands STOP and cannot silently unlock studio",async()=>{
+ const f=fixture(),lease=await f.registry.request(f.request);
+ await f.registry.applySignedProof(f.proof(lease,"started",1,1200));
+ f.clock(AT+16000);
+ const stale=await f.registry.suspendStale("studio_A");
+ assert.equal(stale.state,"stop_requested");
+ assert.equal(stale.stopRequired,true);
+ await assert.rejects(f.registry.request(f.request),fails("STUDIO_LEASE_LOCKED"));
+ f.clock(AT+17000);
+ const stop=await f.registry.applySignedProof(f.proof(lease,"stopped",2,1200));
+ assert.equal(stop.state,"stopped");
+ const newLease=await f.registry.request(f.request);
+ assert.equal(newLease.epoch,2);
+});
+test("V5.33: unacknowledged stale pending lease cannot start delayed billable run",async()=>{
+ const f=fixture(),lease=await f.registry.request(f.request);
+ f.clock(AT+31000);
+ await assert.rejects(f.registry.applySignedProof(f.proof(lease,"started",1,999)),
+  fails("PENDING_LEASE_EXPIRED"));
+ const stop=await f.registry.suspendStale("studio_A");
+ assert.equal(stop.stopRequired,true);
+ assert.equal((await f.registry.getState("studio_A")).canBill,false);
+});
