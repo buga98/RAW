@@ -13,6 +13,7 @@ function fixture(){
  const events=[];
  let enabled=true,proof=true,ack=true,watchdogEnabled=true;
  let meterFailure=false,stopResult={status:"finished",stopRequired:true};
+ let balanceMicros=200000;
  const agent={
   async describe(){events.push("describe");return watchdogEnabled?watchdog:{mode:"simulation"};},
   async start(x){events.push("physical-start");return{
@@ -31,9 +32,11 @@ function fixture(){
   async finish(){events.push("meter-finish");if(meterFailure)throw Error("DB_UNAVAILABLE");
    return {status:"finished"};}
  };
- return {events,supervisor:createRawStudioSupervisorV533({agent,meter}),
+ return {events,supervisor:createRawStudioSupervisorV533({agent,meter,
+  getFunding:async()=>({balanceMicros,rateCentsPerHour:5600})}),
   setEnabled:v=>{enabled=v;},setProof:v=>{proof=v;},setAck:v=>{ack=v;},
   setWatchdog:v=>{watchdogEnabled=v;},setMeterFailure:v=>{meterFailure=v;},
+  setBalance:v=>{balanceMicros=v;},
   setTick:x=>{stopResult=x;}};
 }
 test("V5.33: insufficient credits cannot arm 10-second device processing",()=>{
@@ -48,6 +51,12 @@ test("V5.33: insufficient credits cannot arm 10-second device processing",()=>{
  assert.equal(RAW_STUDIO_MAX_PROOF_GAP_MS_V533,10_000);
  assert.throws(()=>rawSafeProcessingAllowanceV533({
   balanceMicros:-1,rateCentsPerHour:5600}),{code:"INVALID_STUDIO_ALLOWANCE"});
+});
+test("V5.33: no physical START when next interval cannot be prepaid",async()=>{
+ const f=fixture();f.setBalance(1000);
+ await assert.rejects(f.supervisor.start(req),{code:"INSUFFICIENT_SAFE_RESERVE"});
+ assert.equal(f.events.includes("physical-start"),false);
+ assert.equal(f.events.includes("meter-start"),false);
 });
 test("V5.33: reject software simulators pretending to be physical watchdog",()=>{
  assert.throws(()=>requireIndependentHardwareWatchdogV533(

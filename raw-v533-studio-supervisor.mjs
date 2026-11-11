@@ -5,14 +5,15 @@
  * after an Internet cut or power loss.
  */
 import {RawAccessError} from "./raw-v529-identity.mjs";
-import {requireIndependentHardwareWatchdogV533} from "./raw-v533-safety-policy.mjs";
+import {requireIndependentHardwareWatchdogV533,rawSafeProcessingAllowanceV533} from "./raw-v533-safety-policy.mjs";
 const NAME=/^[A-Za-z0-9_-]{4,96}$/;
 const UID=/^[A-Za-z0-9_-]{1,128}$/;
 const valid=(x,re)=>typeof x==="string"&&re.test(x);
 const fail=(code,status=503)=>{throw new RawAccessError(code,status);};
-export function createRawStudioSupervisorV533({agent,meter}={}){
+export function createRawStudioSupervisorV533({agent,meter,getFunding}={}){
  if(!agent||!meter||
   ["describe","start","readback","stop"].some(x=>typeof agent[x]!=="function")||
+  typeof getFunding!=="function"||
   ["start","checkpoint","finish"].some(x=>typeof meter[x]!=="function"))
   fail("TRUSTED_STUDIO_AGENT_REQUIRED");
  async function stopVerified(request){
@@ -43,6 +44,12 @@ export function createRawStudioSupervisorV533({agent,meter}={}){
  return Object.freeze({
   async start(req){
    requestCheck(req,true);
+   // Funding and rates MUST come from trusted server data, never renderer-supplied.
+   const funding=await getFunding({
+    ownerUid:req.ownerUid,deviceIds:[...req.deviceIds],sessionId:req.sessionId
+   });
+   const allowance=rawSafeProcessingAllowanceV533(funding);
+   if(!allowance.allowed)fail("INSUFFICIENT_SAFE_RESERVE",409);
    requireIndependentHardwareWatchdogV533(await agent.describe(req));
    const ack=await agent.start(req);
    if(ack?.started!==true||ack?.acknowledged!==true||
