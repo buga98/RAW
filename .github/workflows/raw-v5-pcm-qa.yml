@@ -3,9 +3,11 @@ on:
   push:
     branches:
       - feature/studio-audio-worker-v5
+      - feature/raw-v529-trusted-sessions
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
+      - feature/raw-v528-integrated-local-acceptance
   workflow_dispatch:
 
 permissions:
@@ -28,5 +30,7 @@ jobs:
         run: npm ci --ignore-scripts
       - name: V5 and V5.1 offline audio regression
         run: npm run studio:audio:v5:check
+      - name: V5.29 trusted booking auth and tenant-isolation tests
+        run: npm run security:v529:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
