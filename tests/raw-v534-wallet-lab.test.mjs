@@ -7,6 +7,71 @@ function engine(){
  const vm={};runInNewContext(read("raw-wallet-lab-v534.js"),vm);
  return vm.RAWWalletLabV534;
 }
+test("V5.34 hotfix: fractional Electron performance.now milliseconds are supported",()=>{
+ let at=1000.875;
+ const m=engine().createModel({now:()=>at});
+ m.fund();
+ assert.equal(m.snapshot().balanceMicros,20_000_000);
+ m.start(["bettermaker","ngBusComp","ngTubeComp"]);
+ at=2001.125;
+ assert.equal(m.snapshot().spentMicros,15571); // 1001 integer milliseconds at 56 RAW/h
+ at=16000.875;
+ const end=m.pause();
+ assert.equal(end.spentMicros,233333);
+ assert.equal(end.balanceMicros,19_766_667);
+});
+test("V5.34 hotfix: browser UI with fractional performance clock can click Fund and START",()=>{
+ let at=4500.125,callback=null,intervals=0;
+ const context={
+  performance:{now:()=>at},
+  setInterval(fn){callback=fn;intervals++;return intervals;},
+  clearInterval(){callback=null;}
+ };
+ runInNewContext(read("raw-wallet-lab-v534.js"),context);
+ const buttons=new Map(),roles=new Map();
+ for(const action of ["fund","start","pause","reset"]){
+  const element={dataset:{},disabled:false,addEventListener(_type,fn){this.action=fn;},
+   click(){this.action({currentTarget:this});}};
+  buttons.set(action,element);
+ }
+ for(const role of ["balance","spent","time","rate","status","notice","history"]){
+  roles.set(role,{textContent:"",items:[],replaceChildren(){this.items=[];},
+   append(node){this.items.push(node);}});
+ }
+ const checks=[{value:"bettermaker",checked:true},{value:"ngBusComp",checked:true},
+  {value:"ngTubeComp",checked:true}];
+ const host={
+  innerHTML:"",hidden:true,
+  querySelector(q){
+   const match=/^\[data-(role|action)="([^"]+)"\]$/.exec(q);
+   return match?.[1]==="action"?buttons.get(match[2]):roles.get(match?.[2]);
+  },
+  querySelectorAll(q){assert.equal(q,'input[type="checkbox"]');return checks;}
+ };
+ const doc={
+  getElementById:id=>id==="rawWalletLabV534"?host:null,
+  createElement:()=>({textContent:""})
+ };
+ const app=context.RAWWalletLabV534.mount(doc,{testMode:true});
+ assert.equal(app.setAccess(true),true);
+ buttons.get("fund").click();
+ assert.equal(roles.get("balance").textContent,"20,000000 RAW");
+ buttons.get("start").click();
+ assert.equal(app.snapshot().running,true);
+ assert.equal(roles.get("notice").textContent.includes("INVALID_DEMO_CLOCK"),false);
+ at=15500.875;
+ callback();
+ assert.equal(app.snapshot().spentMicros,171111);
+ buttons.get("pause").click();
+ assert.equal(app.snapshot().running,false);
+ assert.equal(app.snapshot().status,"paused");
+ const spent=app.snapshot().spentMicros;
+ at=25000.5;
+ assert.equal(app.snapshot().spentMicros,spent);
+ app.dispose();
+ assert.equal(host.hidden,true);
+ assert.equal(app.snapshot().funded,false);
+});
 test("V5.34: 1 EUR is 1 RAW; 20 test RAW and idle state cost exactly zero",()=>{
  const lib=engine();let time=1000;
  const model=lib.createModel({now:()=>time});
