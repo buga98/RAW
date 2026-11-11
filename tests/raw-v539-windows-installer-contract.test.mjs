@@ -31,7 +31,7 @@ test("V5.39 installer configuration preserves private local-only packaging",()=>
  assert.equal(builder.build.publish,null);
  // v26 local-only workaround: no Windows resedit/code-sign toolchain extraction.
  assert.equal(builder.build.win.signAndEditExecutable,false);
- assert.equal(builder.build.win.signExecutable,false);
+ assert.equal(Object.hasOwn(builder.build.win,"signExecutable"),false); // unsupported by pinned 26.0.12
  assert.equal(builder.build.nsis.installerIcon,"build/icon.ico");
  assert.equal(builder.build.nsis.uninstallerIcon,"build/icon.ico");
  assert.equal(builder.build.win.target[0].target,"nsis");
