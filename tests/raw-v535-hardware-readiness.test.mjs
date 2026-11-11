@@ -137,3 +137,19 @@ test("V5.35: existing non-test Firebase user flow remains intact; Stripe not swi
  assert.match(html,/if\(!TEST_MODE\)\{\s*alert\("RAW produkcijski rad još nije uključen/);
  assert.match(html,/RAW LEGACY CLIENT CREDIT DEBIT DISABLED/);
 });
+
+test("V5.35: Firebase devices subscribe only after verified Auth and cleanup on logout",async()=>{
+ const {readFileSync}=await import("node:fs");
+ const html=readFileSync(new URL("../index.html",import.meta.url),"utf8");
+ assert.match(html,/function watchFirebaseDevicesV535\(user\)/);
+ assert.match(html,/if\(!user\?\.uid\|\|user\.emailVerified!==true\)return/);
+ assert.match(html,/firebaseDeviceUnsubscribeV535=onSnapshot\(collection\(db,"devices"\)/);
+ assert.match(html,/function stopFirebaseDevicesV535\(\)/);
+ assert.match(html,/stopFirebaseDevicesV535\(\);\s*stopRawWalletListenerV532\(\)/);
+ assert.match(html,/currentUser = user;\s*watchFirebaseDevicesV535\(user\)/);
+ assert.match(html,/if\(typeof stopFirebaseDevicesV535==="function"\)stopFirebaseDevicesV535\(\)/);
+ // Reuse the existing Firebase Auth, never activate Stripe or legacy client
+ // charging, and handle a failed profile read without granting authority.
+ assert.match(html,/RAW Firebase profile unavailable/);
+ assert.match(html,/RAW LEGACY CLIENT CREDIT DEBIT DISABLED/);
+});
