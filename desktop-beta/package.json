@@ -40,14 +40,18 @@
         }
       ],
       "icon": "build/icon.ico",
-      "artifactName": "RAW-Desktop-Beta-${version}-Windows-${arch}.${ext}"
+      "artifactName": "RAW-Desktop-Beta-${version}-Windows-${arch}.${ext}",
+      "signAndEditExecutable": false,
+      "signExecutable": false
     },
     "nsis": {
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
       "createDesktopShortcut": true,
-      "createStartMenuShortcut": true
+      "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     },
     "mac": {
       "target": [
