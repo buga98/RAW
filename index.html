@@ -305,6 +305,7 @@
    <script src="raw-digital-worker-client-v527.js"></script>
   <script src="raw-digital-premaster-ui-v59.js"></script>
   <script src="raw-auth-navigation-v515.js"></script>
+  <script src="raw-wallet-display-v532.js"></script>
   <script src="raw-logout-focus-v524.js"></script>
   <script src="raw-audio-dock-v516.js"></script>
   <script src="raw-chain-archive-v1.js"></script>
@@ -480,6 +481,8 @@ if (TEST_MODE) {
 
 let currentUser = null;
 let currentUserData = null;
+let currentRawWalletMicros=null;
+let rawWalletUnsubscribe=null;
 
 function getUserId() {
   return currentUser?.uid;
@@ -621,8 +624,7 @@ window.goTo = function(screenId) {
   window.RAWAuthNavigationV515?.apply?.(document,{
     authenticated:!!currentUser?.uid&&currentUser?.emailVerified===true,
     email:currentUser?.email||"",
-    creditsLabel:TEST_MODE?"TEST — bez naplate":
-      `${Number(currentUserData?.credits||0).toFixed(2)} €`,
+    creditsLabel:(window.RAWTokenDisplayV532?.label?.(currentRawWalletMicros,{testMode:TEST_MODE}) ?? (TEST_MODE?"TEST — bez naplate":"RAW saldo nije dostupan")),
     verifiedOwner:developerAllowed()
   });
 
@@ -803,6 +805,8 @@ window.logoutUser = async function() {
     stopBillingTimer();
     stopHeartbeat();
     window.RAWAutoSaveV55UI?.stop?.();
+    // Release read-only wallet listener, including under isolated logout test harnesses.
+    if(typeof stopRawWalletListenerV532==="function")stopRawWalletListenerV532();
     revokeDeveloperLabs();
     await signOut(auth);
     currentUser=null;
@@ -820,10 +824,33 @@ window.logoutUser = async function() {
     if(status){status.textContent=err?.message||"Greška kod odjave.";status.hidden=false;}
   }finally{rawLogoutInProgress=false;}
 };
+function stopRawWalletListenerV532(){
+  if(rawWalletUnsubscribe){rawWalletUnsubscribe();rawWalletUnsubscribe=null;}
+  currentRawWalletMicros=null;
+}
+function watchOwnRawWalletV532(user){
+  stopRawWalletListenerV532();
+  // Never access cloud wallets for local simulation or unverified accounts.
+  if(TEST_MODE||!user?.uid||user.emailVerified!==true)return;
+  rawWalletUnsubscribe=onSnapshot(doc(db,"rawWalletsV531",user.uid),
+    snap=>{
+      if(auth.currentUser?.uid!==user.uid)return;
+      const value=snap.exists()?snap.data()?.balanceMicros:null;
+      currentRawWalletMicros=window.RAWTokenDisplayV532.valid(value)?value:null;
+      updateUserPanel();
+    },
+    error=>{
+      if(auth.currentUser?.uid!==user.uid)return;
+      console.warn("RAW wallet read unavailable",error?.code||"unknown");
+      currentRawWalletMicros=null;
+      updateUserPanel();
+    });
+}
 onAuthStateChanged(auth, async (user) => {
   authReady = true;
 
   if (!user || !user.emailVerified) {
+    stopRawWalletListenerV532();
     window.RAWAutoSaveV55UI?.stop?.();
     revokeDeveloperLabs();
     currentUser = null;
@@ -835,6 +862,7 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   currentUser = user;
+  watchOwnRawWalletV532(user);
   await authorizeDeveloper(user);
   if(auth.currentUser?.uid!==user.uid)return;
 
@@ -1247,8 +1275,7 @@ function updateUserPanel() {
   window.RAWAuthNavigationV515?.apply?.(document,{
     authenticated:!!currentUser?.uid&&currentUser?.emailVerified===true,
     email:currentUser?.email||"",
-    creditsLabel:TEST_MODE?"TEST — bez naplate":
-      `${Number(currentUserData?.credits||0).toFixed(2)} €`,
+    creditsLabel:(window.RAWTokenDisplayV532?.label?.(currentRawWalletMicros,{testMode:TEST_MODE}) ?? (TEST_MODE?"TEST — bez naplate":"RAW saldo nije dostupan")),
     verifiedOwner:developerAllowed()
   });
   const panel = document.getElementById("userPanel");
@@ -1262,7 +1289,7 @@ function updateUserPanel() {
 
   panel.style.display = "grid";
   emailEl.textContent = currentUser.email || "-";
-  creditsEl.textContent = TEST_MODE ? "TEST — bez naplate" : `${Number(currentUserData?.credits || 0).toFixed(2)} €`;
+  creditsEl.textContent = (window.RAWTokenDisplayV532?.label?.(currentRawWalletMicros,{testMode:TEST_MODE}) ?? (TEST_MODE?"TEST — bez naplate":"RAW saldo nije dostupan"));
 }
 window.endChainSession = async function(options = {}) {
   const {

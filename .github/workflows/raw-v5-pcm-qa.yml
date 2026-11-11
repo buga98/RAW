@@ -5,11 +5,13 @@ on:
       - feature/studio-audio-worker-v5
       - feature/raw-v529-trusted-sessions
       - feature/raw-v531-firebase-wallet-stripe
+      - feature/raw-v532-firebase-stripe-staging
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
       - feature/raw-v528-integrated-local-acceptance
       - feature/raw-v529-trusted-sessions
+      - feature/raw-v531-firebase-wallet-stripe
   workflow_dispatch:
 
 permissions:
@@ -36,5 +38,11 @@ jobs:
         run: npm run security:v529:check
       - name: V5.31 signed Stripe wallet and trusted processing tests
         run: npm run security:v531:check
+      - name: V5.32 staging guard, wallet rules and checkout throttling
+        run: npm run security:v532:check
+      - name: Package audited Cloud Functions code and verify syntax
+        run: |
+          npm run studio:firebase:v532:package
+          node --check functions-v532/index.mjs
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke

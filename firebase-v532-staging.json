@@ -1,0 +1,18 @@
+{
+  "functions": {
+    "source": "functions-v532",
+    "codebase": "raw-v532-staging",
+    "ignore": [
+      "node_modules",
+      ".git",
+      "*.log",
+      ".env",
+      ".env.*",
+      "README.md"
+    ]
+  },
+  "firestore": {
+    "rules": "config/firestore-v532-STAGING.rules",
+    "indexes": "config/firestore-v532-STAGING.indexes.json"
+  }
+}
