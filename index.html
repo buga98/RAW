@@ -759,13 +759,9 @@ window.registerUser = async function() {
       email,
       ime: "",
       prezime: "",
-      credits: 0,
-      role: "user",
-      plan: "free",
+      // Monetary balance/role/billing privileges are server-owned.
+      // New wallet: rawWalletsV531; no credits created in the browser.
       lang: "hr",
-      activeSessionId: null,
-      totalSpent: 0,
-      billingEnabled: false,
       createdAt: serverTimestamp()
     });
 
@@ -952,6 +948,10 @@ function getChainTotalPrice() {
 }
 
 window.startChainSession = async function() {
+  if(!TEST_MODE){
+    alert("RAW produkcijski rad još nije uključen: stari obračun iz klijenta je blokiran do potvrde sigurnog servera.");
+    return;
+  }
   try {
     const devices = getChainDeviceObjects();
 
@@ -1134,6 +1134,9 @@ function renderDeviceCard(device) {
   deviceGrid.appendChild(card);
 }
 async function chargeSessionFor(sessionId) {
+  // V5.31: never debit money from Electron. Only trusted wallet
+  // transactions may debit credits after verified studio processing.
+  if (!TEST_MODE){console.warn("RAW LEGACY CLIENT CREDIT DEBIT DISABLED");return;}
   if (TEST_MODE) return;
   if (!currentUser || !sessionId) return;
   if (spentThisSession <= 0) return;
@@ -1178,6 +1181,10 @@ async function chargeSession() {
 
 
 async function startSession(device) {
+  if(!TEST_MODE){
+    alert("RAW produkcijski studio nije aktiviran. Nije dopušteno rezervirati uređaje starim klijentskim API-jem.");
+    return;
+  }
   if (TEST_MODE) {
     chainDevices = [device.id];
     return window.startChainSession();
@@ -3216,6 +3223,10 @@ function knobTemplateForDevice(c, deviceId) {
 }
 
 function startBillingTimer(pricePerHour) {
+  if(!TEST_MODE){
+    console.warn("RAW LEGACY CLIENT BILLING TIMER DISABLED — waiting for trusted studio meter");
+    return;
+  }
   if (TEST_MODE) return;
   if (isBillingRunning) return;
 
@@ -3829,6 +3840,11 @@ async function ensureDraftSession() {
 }
 
 async function simulateUpload() {
+  if(!TEST_MODE){
+    const status=document.getElementById("uploadStatus");
+    if(status)status.textContent="Studio upload privremeno nije aktivan do sigurnog autoriziranog Gatewaya.";
+    return;
+  }
   if (TEST_MODE) {
     const uploadStatus = document.getElementById("uploadStatus");
     if (uploadStatus) uploadStatus.textContent = uploadedFiles.length
