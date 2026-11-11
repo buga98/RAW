@@ -42,7 +42,7 @@ Tipična izlazna lokacija: `C:\remote-audio-workstation\desktop-beta\dist\RAW-De
 
 Prvi pokušaj korisnikova Windows builda uspješno je pakirao aplikaciju, ali je `electron-builder@26.0.12` odbio raspakirati `winCodeSign-2.6.0.7z`, jer za dva macOS `*.dylib` simbolička linka Windows nije dodijelio korisniku potrebnu privilegiju. Ovo nije audio-runtime bug.
 
-**Lokalni unsigned beta workaround:** `desktop-beta/package.json` eksplicitno postavlja `build.win.signAndEditExecutable=false` i `build.win.signExecutable=false`. Time v26 zaobilazi Windows `rcedit`/sign obradu koja zahtijeva sporni alat. NSIS installer koristi stvarni RAW `build/icon.ico` preko `nsis.installerIcon` i `nsis.uninstallerIcon`.
+**Lokalni unsigned beta workaround:** `desktop-beta/package.json` eksplicitno postavlja `build.win.signAndEditExecutable=false` (a ne noviji, nepodržani `signExecutable` flag). Time v26 zaobilazi Windows `rcedit`/sign obradu koja zahtijeva sporni alat. NSIS installer koristi stvarni RAW `build/icon.ico` preko `nsis.installerIcon` i `nsis.uninstallerIcon`.
 
 **Ograničenje:** Windows aplikacijski `.exe` nema tijekom ovog testa dodatno ugrađenu vlastitu ikonu, izvršne metapodatke ni Authenticode potpis. Instaler je i dalje nepotpisan. Ispravnu ugrađenu RAW ikonu, potpis i Windows metadata vratiti u budućoj release verziji kroz popravljeni/signing build lanac. Izvorna RAW UI grafika u paketu ostaje netaknuta.
 
