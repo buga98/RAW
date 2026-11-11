@@ -13,7 +13,7 @@ const COLLECTIONS=Object.freeze({
 const bookingOf=snap=>snap.exists?{id:snap.id,...snap.data()}:null;
 function slotsFor(studioId,startsAtMs,endsAtMs){
  const n=(endsAtMs-startsAtMs)/V529_SLOT_MS;
- if(!ID.test(studioId||"")||!Number.isSafeInteger(n)||
+ if(typeof studioId!=="string"||!ID.test(studioId)||!Number.isSafeInteger(n)||
   n<1||n>16||startsAtMs%V529_SLOT_MS!==0)
   denied("INVALID_SLOT_RANGE",400);
  const result=[];
@@ -31,7 +31,7 @@ export function createFirestoreBookingStoreV529(db){
  const slots=db.collection(COLLECTIONS.slots);
  return Object.freeze({
   async book({ownerUid,studioId,startsAtMs,endsAtMs,createdAtMs}={}){
-   if(!ID.test(ownerUid||"")||!Number.isSafeInteger(createdAtMs))
+   if(typeof ownerUid!=="string"||!ID.test(ownerUid)||!Number.isSafeInteger(createdAtMs))
     denied("INVALID_OWNER",400);
    const slotIds=slotsFor(studioId,startsAtMs,endsAtMs);
    const studioRef=studios.doc(studioId),bookingRef=bookings.doc();
@@ -54,16 +54,17 @@ export function createFirestoreBookingStoreV529(db){
    });
   },
   async get(bookingId){
-   if(!ID.test(bookingId||""))denied("INVALID_BOOKING_ID",400);
+   if(typeof bookingId!=="string"||!ID.test(bookingId))denied("INVALID_BOOKING_ID",400);
    return bookingOf(await bookings.doc(bookingId).get());
   },
   async list(ownerUid){
-   if(!ID.test(ownerUid||""))denied("INVALID_OWNER",400);
+   if(typeof ownerUid!=="string"||!ID.test(ownerUid))denied("INVALID_OWNER",400);
    const result=await bookings.where("ownerUid","==",ownerUid).limit(50).get();
    return result.docs.map(bookingOf).filter(Boolean);
   },
   async cancel({bookingId,ownerUid,nowMs}={}){
-   if(!ID.test(bookingId||"")||!ID.test(ownerUid||"")||
+   if(typeof bookingId!=="string"||!ID.test(bookingId)||
+    typeof ownerUid!=="string"||!ID.test(ownerUid)||
     !Number.isSafeInteger(nowMs))denied("INVALID_CANCEL",400);
    const ref=bookings.doc(bookingId);
    return await db.runTransaction(async tx=>{

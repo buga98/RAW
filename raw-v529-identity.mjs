@@ -32,7 +32,7 @@ export function createTrustedIdentityV529(firebaseAuth){
    }catch{
     throw new RawAccessError("AUTH_INVALID",401);
    }
-   if(!claims||!UID.test(claims.uid||""))
+   if(!claims||typeof claims.uid!=="string"||!UID.test(claims.uid))
     throw new RawAccessError("AUTH_INVALID",401);
    if(claims.email_verified!==true)
     throw new RawAccessError("EMAIL_NOT_VERIFIED",403);

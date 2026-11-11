@@ -18,7 +18,7 @@ export function validateBookingV529(input,nowMs){
   Object.keys(input).sort().join(",")!=="endsAtMs,startsAtMs,studioId")
   fail("INVALID_BOOKING");
  const {studioId,startsAtMs,endsAtMs}=input;
- if(!STUDIO.test(studioId||"")||
+ if(typeof studioId!=="string"||!STUDIO.test(studioId)||
   !Number.isSafeInteger(startsAtMs)||!Number.isSafeInteger(endsAtMs)||
   startsAtMs%V529_SLOT_MS!==0||endsAtMs%V529_SLOT_MS!==0||
   startsAtMs<nowMs+V529_SLOT_MS||startsAtMs>nowMs+MAX_ADVANCE_MS||
@@ -35,7 +35,7 @@ export function createTrustedBookingServiceV529({firebaseAuth,store,now=()=>Date
   return x;
  };
  const auth=authorization=>identity.verify(authorization);
- const checkedId=id=>{if(!BOOKING.test(id||""))fail("INVALID_BOOKING_ID");return id;};
+ const checkedId=id=>{if(typeof id!=="string"||!BOOKING.test(id))fail("INVALID_BOOKING_ID");return id;};
  return Object.freeze({
   async book({authorization,input}={}){
    const actor=await auth(authorization),time=checkNow();
