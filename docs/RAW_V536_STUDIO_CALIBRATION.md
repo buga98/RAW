@@ -47,3 +47,14 @@ Real hardware integration still requires documented/authorized vendor control pa
 Automated tests validate WAV generation/format, external-file sample readout, normal and swapped stereo, clipping, silence, unsupported-format rejection and no cross-process control. They do NOT establish physical connectivity.
 
 The earlier user-confirmed LOCAL TEST audio + token QA and the V5.35 OS inventory PASS remain recorded.
+
+
+## Additional V5.36 Windows studio interface survey
+
+To identify which professional ASIO drivers are installed (and which active audio endpoint names Windows sees), run:
+
+    npm run studio:interfaces:v536:scan
+
+This reads only ASIO registry key NAMES and the friendly names of Win32_SoundDevice entries. It does not open an ASIO driver, allocate audio streams, modify registry, collect device serial numbers or certify any physical cable routing. On a typical laptop it may find only the built-in Windows audio device or no ASIO drivers; that is NOT a RAW bug.
+
+For meaningful direct audio loopback, do the WAV test on the actual studio PC with an interface and supervised routing, not merely on a development laptop.
