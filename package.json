@@ -53,7 +53,10 @@
     "studio:handoff:v525:check": "node --test tests/raw-digital-export-verifier-v525.test.mjs tests/raw-digital-handoff-v521.test.mjs tests/raw-master-qc-v510.test.mjs tests/raw-export-disk-cli-v525.test.mjs",
     "security:legacy:v526:check": "node --test tests/raw-legacy-service-guard-v526.test.mjs tests/security.test.mjs",
     "studio:integration:v528:check": "node --test tests/raw-v528-integration-contract.test.mjs tests/raw-digital-premaster-ui-v59.test.mjs tests/raw-digital-export-verifier-v525.test.mjs tests/raw-export-disk-cli-v525.test.mjs tests/raw-digital-worker-v527.test.mjs tests/raw-legacy-service-guard-v526.test.mjs",
-    "security:v529:check": "node --test tests/raw-v529-security.test.mjs tests/raw-v529-api.test.mjs"
+    "security:v529:check": "node --test tests/raw-v529-security.test.mjs tests/raw-v529-api.test.mjs",
+    "security:v530:check": "node --test tests/raw-v530-local-auth.test.mjs tests/raw-v530-mysql-bookings.test.mjs tests/raw-v530-api.test.mjs",
+    "studio:selfhost:v530:local": "node scripts/raw-v530-local-api.mjs",
+    "studio:selfhost:v530:owner": "node scripts/raw-v530-create-owner.mjs"
   },
   "keywords": [],
   "author": "",
