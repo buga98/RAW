@@ -6,7 +6,7 @@ import {resolve,dirname,join} from "node:path";
 import {fileURLToPath} from "node:url";
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const out=resolve(root,"desktop-beta","app");
-const deny=/^(?:raw-v529-|raw-v531-|raw-v532-|raw-v533-|raw-v535-|raw-v536-|mac-client-main\.cjs$|studio-(?:gateway-outbound-agent|gateway-lab|host|lab-bridge|sim-agent)\.|daw-bridge\.mjs$|start-all\.mjs$|launch-local-demo\.mjs$|raw-developer-access-v1\.js$)/i;
+const deny=/^(?:raw-v529-|raw-v531-|raw-v532-|raw-v533-|raw-v535-|raw-v536-|mac-client-main\.cjs$|studio-(?:gateway-outbound-agent|gateway-lab|host|lab-bridge|sim-agent)\.|daw-bridge\.mjs$|start-all\.mjs$|launch-local-demo\.mjs$)/i;
 const ext=/\.(?:html|css|js|mjs|cjs|png|svg|webp|jpg|jpeg)$/i;
 const allowed=[];
 for(const name of readdirSync(root)){
