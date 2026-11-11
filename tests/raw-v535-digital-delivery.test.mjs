@@ -190,8 +190,6 @@ test("V5.35: malformed/truncated/unsupported WAVs fail without creating delivera
 });
 
 test("V5.35: staging Cloud Function authorizes digital downloads, all direct Storage and Firestore access denied",()=>{
- const fs=requireNothing=>requireNothing;
- void fs;
  const root=new URL("../",import.meta.url);
  const read=name=>readFileSync(new URL(name,root),"utf8");
  const f=read("functions-v532/index.mjs");
