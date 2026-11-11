@@ -13,6 +13,7 @@ import {createTrustedIdentityV529,RawAccessError} from "./core/raw-v529-identity
 import {createRawFirestoreWalletV531} from "./core/raw-v531-firestore-wallet.mjs";
 import {createRawStripeTopupsV531} from "./core/raw-v531-stripe-topups.mjs";
 import {createCheckoutThrottleV532} from "./core/raw-v532-checkout-throttle.mjs";
+import {createRawWalletHistoryV532} from "./core/raw-v532-wallet-history.mjs";
 import {assertRawStagingV532,assertRawStagingReadV532} from "./core/raw-v532-staging-guard.mjs";
 
 if(getApps().length===0)initializeApp();
@@ -64,6 +65,17 @@ export const rawV532WalletStatus=onRequest(base,async(req,res)=>{
   assertRawStagingReadV532(config());
   const owner=await identity().verify(req.headers.authorization);
   return res.status(200).json(await store().getWallet(owner.uid));
+ }catch(error){return abort(error,res);}
+});
+export const rawV532WalletHistory=onRequest(base,async(req,res)=>{
+ safeHeaders(res);
+ if(req.method!=="GET")return res.status(405).json({error:"METHOD_NOT_ALLOWED"});
+ try{
+  assertRawStagingReadV532(config());
+  const owner=await identity().verify(req.headers.authorization);
+  return res.status(200).json({
+   entries:await createRawWalletHistoryV532(getFirestore()).list(owner.uid)
+  });
  }catch(error){return abort(error,res);}
 });
 export const rawV532CreateCheckout=onRequest({

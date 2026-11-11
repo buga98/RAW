@@ -12,6 +12,7 @@
     ]
   },
   "firestore": {
-    "rules": "config/firestore-v532-STAGING.rules"
+    "rules": "config/firestore-v532-STAGING.rules",
+    "indexes": "config/firestore-v532-STAGING.indexes.json"
   }
 }

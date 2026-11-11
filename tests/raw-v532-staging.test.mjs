@@ -6,6 +6,7 @@ import {resolve,dirname} from "node:path";
 import {
  assertRawStagingV532,assertRawStagingReadV532
 } from "../raw-v532-staging-guard.mjs";
+import {createRawWalletHistoryV532} from "../raw-v532-wallet-history.mjs";
 import {
  createCheckoutThrottleV532,RAW_CHECKOUT_WINDOW_MS_V532
 } from "../raw-v532-checkout-throttle.mjs";
@@ -96,6 +97,7 @@ test("V5.32 Cloud Functions HTTP receives raw Stripe payload and has no live-mod
  const entry=file("functions-v532/index.mjs");
  assert.match(entry,/req\.rawBody/);
  assert.match(entry,/rawV532StripeWebhook/);
+ assert.match(entry,/rawV532WalletHistory/);
  assert.match(entry,/rawV532WalletStatus/);
  assert.match(entry,/rawV532CreateCheckout/);
  assert.match(entry,/assertRawStagingV532/);
@@ -110,7 +112,49 @@ test("V5.32 Cloud Functions HTTP receives raw Stripe payload and has no live-mod
  const deployment=JSON.parse(file("firebase-v532-staging.json"));
  assert.equal(deployment.functions.source,"functions-v532");
  assert.equal(deployment.firestore.rules,"config/firestore-v532-STAGING.rules");
+ assert.equal(deployment.firestore.indexes,"config/firestore-v532-STAGING.indexes.json");
  const builder=file("scripts/raw-v532-package-functions.mjs");
  assert.match(builder,/const approved=/);
  assert.doesNotMatch(builder,/copyFileSync\(.+index\.html/);
+});
+
+test("V5.32: owner-scoped ledger API never leaks another user's entries or sensitive Stripe identifiers",async()=>{
+ const rows=[
+  {id:"stripe_abc",data:()=>({
+   ownerUid:"alice",type:"STRIPE_TOPUP",amountMicros:20_000_000,
+   balanceAfterMicros:20_000_000,createdAtMs:1800000000000,
+   stripeEventId:"evt_private",checkoutSessionId:"cs_private"
+  })},
+  {id:"spend_abc",data:()=>({
+   ownerUid:"alice",type:"DEVICE_PROCESSING",amountMicros:-120000,
+   balanceAfterMicros:19_880_000,createdAtMs:1800000001000,
+   sessionId:"private_session"
+  })}
+ ];
+ let queriedOwner;
+ const db={collection:col=>{
+  assert.equal(col,"rawTokenLedgerV531");
+  return {where:(field,op,value)=>{
+   assert.equal(field,"ownerUid");assert.equal(op,"==");
+   queriedOwner=value;
+   return {orderBy:(field,direction)=>{
+    assert.equal(field,"createdAtMs");assert.equal(direction,"desc");
+    return {limit:n=>{
+     assert.equal(n,25);
+     return {get:async()=>({docs:rows})};
+    }};
+   }};
+  }};
+ }};
+ const history=createRawWalletHistoryV532(db);
+ const result=await history.list("alice");
+ assert.equal(queriedOwner,"alice");
+ assert.equal(result.length,2);
+ assert.equal(result[0].amountMicros,20_000_000);
+ assert.equal(result[1].amountMicros,-120000);
+ assert.equal("stripeEventId" in result[0],false);
+ assert.equal("sessionId" in result[1],false);
+ rows[0]={id:"bad",data:()=>({ownerUid:"bob",type:"STRIPE_TOPUP",
+  amountMicros:20_000_000,balanceAfterMicros:20_000_000,createdAtMs:1800000000000})};
+ await assert.rejects(history.list("alice"),rejects("LEDGER_INTEGRITY"));
 });

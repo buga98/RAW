@@ -14,7 +14,8 @@ const approved=[
  "raw-v531-firestore-wallet.mjs",
  "raw-v531-stripe-topups.mjs",
  "raw-v532-staging-guard.mjs",
- "raw-v532-checkout-throttle.mjs"
+ "raw-v532-checkout-throttle.mjs",
+ "raw-v532-wallet-history.mjs"
 ];
 const dest=resolve(root,"functions-v532","core");
 mkdirSync(dest,{recursive:true});
