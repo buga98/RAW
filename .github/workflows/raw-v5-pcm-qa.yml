@@ -10,6 +10,7 @@ on:
       - feature/raw-v534-token-wallet-lab
       - feature/raw-v535-hardware-readiness
       - feature/raw-v536-studio-calibration
+      - feature/raw-v537-site-desktop-distribution
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -56,5 +57,9 @@ jobs:
         run: npm run studio:hardware:v535:check
       - name: V5.36 imported real WAV calibration analysis tests
         run: npm run studio:calibration:v536:check
+      - name: V5.37 responsive website, locked downloads and beta installer safety
+        run: npm run site:v537:check
+      - name: Stage private Electron client with all local assets
+        run: npm run desktop:v537:package
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke

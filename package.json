@@ -64,7 +64,10 @@
     "studio:calibration:v536:prepare": "node scripts/raw-v536-calibration-cli.mjs prepare",
     "studio:calibration:v536:analyze": "node scripts/raw-v536-calibration-cli.mjs analyze",
     "studio:calibration:v536:check": "node --test tests/raw-v536-external-capture.test.mjs tests/raw-v536-audio-interface-scan.test.mjs",
-    "studio:interfaces:v536:scan": "node scripts/raw-v536-audio-interface-scan.mjs"
+    "studio:interfaces:v536:scan": "node scripts/raw-v536-audio-interface-scan.mjs",
+    "site:v537:preview": "node scripts/raw-v537-site-preview.mjs",
+    "site:v537:check": "node --test tests/raw-v537-website-installers.test.mjs",
+    "desktop:v537:package": "node scripts/raw-v537-package-desktop.mjs"
   },
   "keywords": [],
   "author": "",
