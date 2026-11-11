@@ -56,7 +56,8 @@
     "security:v529:check": "node --test tests/raw-v529-security.test.mjs tests/raw-v529-api.test.mjs",
     "security:v531:check": "node --test tests/raw-v531-wallet-stripe.test.mjs tests/raw-v531-wallet-api.test.mjs",
     "security:v532:check": "node --test tests/raw-v532-staging.test.mjs",
-    "studio:firebase:v532:package": "node scripts/raw-v532-package-functions.mjs"
+    "studio:firebase:v532:package": "node scripts/raw-v532-package-functions.mjs",
+    "security:v533:check": "node --test tests/raw-v533-studio-safety.test.mjs tests/raw-v533-wallet-audit.test.mjs tests/raw-v533-studio-lease.test.mjs tests/raw-v533-end-to-end.test.mjs"
   },
   "keywords": [],
   "author": "",
