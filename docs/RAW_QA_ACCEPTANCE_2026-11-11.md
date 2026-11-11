@@ -25,3 +25,9 @@ Ovo su prihvaćeni korisnički funkcionalni testovi na Windows računalu. Riječ
 **Nije testirano niti dokazano:** fizički Bettermaker/WesAudio readback, D/A→A/D analogni capture, stvarna prava udaljenih korisnika, cloud billing, autorizirana pohrana/master delivery, vanjski certificirani LUFS/true peak, dugotrajna obrada većih snimki, Windows HYPERVISOR_ERROR uzrok. QC JSON je nepotpisan. Ovi testovi se ne prenose automatski na V5.29; V5.29 zahtijeva novu sigurnosnu provjeru.
 
 **Razvojne grane:** V5.25/V5.26/V5.27 i V5.28 su zasebni PR-ovi; V5.28 je bio draft/ne-spojen prema osnovnoj radnoj V5 grani tijekom ovih testova. V5.29 nastaje kao zasebna nadogradnja temeljem V5.28.
+
+## V5.29 — korisnikov Windows sigurnosni test (11. 11. 2026.)
+
+**PASS — 10/10, 0 fail, 0 skipped:** korisnik je na svojem Windows računalu izvršio `npm run security:v529:check` na grani V5.29 i dostavio kompletan Node test ispis (`tests/raw-v529-security.test.mjs` i `tests/raw-v529-api.test.mjs`, ukupno 530,4793 ms). Potvrđeni su testni slučajevi: odbijanje anonimnog/krivotvorenog identiteta i tuđeg pristupa HTTP adapteru; neispravan/prevelik JSON; zabrana izravnog Firestore pristupa preko fragmenta pravila; provjera Firebase Admin tokena, revokacije i e-maila preko testnog adaptera; odbijanje proizvoljnih owner UID/role/credits; vlasnički pristup, transakcijsko preklapanje termina; otkazivanje/oslobađanje slotova; vremenska kvalifikacija termina bez fizičkog leasea; odbijanje isključenih i nepoznatih studija.
+
+**Granica dokaza:** navedeno je *lokalni automatizirani test s mock Firebase Admin/Firestore adapterima*. Nije izvršen stvarni Firebase Admin Auth protiv produkcijskih korisnika, Firestore emulator/staging s više klijenata, produkcijski HTTPS server, stvarna pravila/tenant izolacija u cloudu niti kontrola fizičkih uređaja. **Nije odobren produkcijski deploy.**
