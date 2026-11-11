@@ -60,7 +60,11 @@
     "security:v533:check": "node --test tests/raw-v533-studio-safety.test.mjs tests/raw-v533-wallet-audit.test.mjs tests/raw-v533-studio-lease.test.mjs tests/raw-v533-end-to-end.test.mjs",
     "studio:wallet:v534:check": "node --test tests/raw-v534-wallet-lab.test.mjs",
     "studio:hardware:v535:scan": "node scripts/raw-v535-hardware-scan.mjs",
-    "studio:hardware:v535:check": "node --test tests/raw-v535-hardware-readiness.test.mjs"
+    "studio:hardware:v535:check": "node --test tests/raw-v535-hardware-readiness.test.mjs",
+    "studio:calibration:v536:prepare": "node scripts/raw-v536-calibration-cli.mjs prepare",
+    "studio:calibration:v536:analyze": "node scripts/raw-v536-calibration-cli.mjs analyze",
+    "studio:calibration:v536:check": "node --test tests/raw-v536-external-capture.test.mjs tests/raw-v536-audio-interface-scan.test.mjs",
+    "studio:interfaces:v536:scan": "node scripts/raw-v536-audio-interface-scan.mjs"
   },
   "keywords": [],
   "author": "",
