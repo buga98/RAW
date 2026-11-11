@@ -117,6 +117,10 @@
 <button class="primary" onclick="registerUser()" style="margin-top:10px;background:rgba(255,255,255,.1);color:white;">
   Registriraj se
 </button>
+<div class="raw-auth-email-actions" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
+  <button type="button" class="ghost-btn" onclick="resendVerificationEmail()">Ponovno pošalji potvrdu e-maila</button>
+  <button type="button" class="ghost-btn" onclick="requestPasswordReset()">Zaboravljena lozinka?</button>
+</div>
         </div>
       </section>
 
@@ -349,6 +353,7 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   sendEmailVerification,
+  sendPasswordResetEmail,
   onAuthStateChanged,
   signOut,
   setPersistence,
@@ -371,6 +376,7 @@ const firebaseConfig = {
 const appFirebase = initializeApp(firebaseConfig);
 const db = getFirestore(appFirebase);
 const auth = getAuth(appFirebase);
+auth.languageCode = "hr"; // Prepare Firebase default noreply template in Croatian
 // The Electron main process passes testMode=1 only when RAW_TEST_MODE=1.
 // Local testing never writes sessions, uploads, hardware state, or credits.
 const TEST_MODE = (await window.RAWNative?.getRuntimeInfo?.())?.testMode === true;
@@ -700,7 +706,10 @@ await setPersistence(
     const cred = await signInWithEmailAndPassword(auth, email, password);
 
     if (!cred.user.emailVerified) {
-      alert("Prvo potvrdi email.");
+      await cred.user.reload(); // refresh stale email verification from Firebase Auth
+    }
+    if (!cred.user.emailVerified) {
+      alert("Prvo potvrdi e-mail klikom na poveznicu. Po potrebi zatraži novu poruku.");
       await signOut(auth);
       return;
     }
@@ -710,6 +719,32 @@ await setPersistence(
     console.error(err);
     alert("Pogrešan email ili lozinka.");
   }
+};
+
+window.resendVerificationEmail = async function(){
+  if(TEST_MODE){alert("Slanje poruka nije dostupno u LOCAL TEST načinu.");return;}
+  const email=document.getElementById("loginEmail").value.trim();
+  const password=document.getElementById("loginPassword").value;
+  if(!email||!password){alert("Za ponovno slanje unesi e-mail i lozinku.");return;}
+  try{
+    const cred=await signInWithEmailAndPassword(auth,email,password);
+    await cred.user.reload();
+    if(!cred.user.emailVerified)await sendEmailVerification(cred.user);
+    alert("Ako račun još nije potvrđen, na e-mail je poslana nova poveznica.");
+  }catch(error){
+    console.warn("RAW resend verification unavailable",error?.code||"unknown");
+    alert("Nije moguće ponovno poslati potvrdu. Provjeri podatke ili pokušaj kasnije.");
+  }finally{
+    try{await signOut(auth);}catch{}
+  }
+};
+window.requestPasswordReset = async function(){
+  if(TEST_MODE){alert("Slanje poruka nije dostupno u LOCAL TEST načinu.");return;}
+  const email=document.getElementById("loginEmail").value.trim();
+  if(!email){alert("Najprije upiši e-mail.");return;}
+  try{await sendPasswordResetEmail(auth,email);}
+  catch(error){console.warn("RAW password reset request",error?.code||"unknown");}
+  alert("Ako račun postoji, dobit ćeš upute za promjenu lozinke.");
 };
 
 window.registerUser = async function() {
