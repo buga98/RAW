@@ -8,6 +8,7 @@ on:
       - feature/raw-v532-firebase-stripe-staging
       - feature/raw-v533-billing-reliability
       - feature/raw-v534-token-wallet-lab
+      - feature/raw-v535-hardware-readiness
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -50,5 +51,7 @@ jobs:
         run: npm run security:v533:check
       - name: V5.34 in-memory RAW token countdown and owner-only LAB
         run: npm run studio:wallet:v534:check
+      - name: V5.35 read-only Windows hardware readiness contract
+        run: npm run studio:hardware:v535:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke

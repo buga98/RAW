@@ -489,6 +489,7 @@ let currentUser = null;
 let currentUserData = null;
 let currentRawWalletMicros=null;
 let rawWalletUnsubscribe=null;
+let firebaseDeviceUnsubscribeV535=null;
 
 function getUserId() {
   return currentUser?.uid;
@@ -813,6 +814,7 @@ window.logoutUser = async function() {
     window.RAWAutoSaveV55UI?.stop?.();
     // Release read-only wallet listener, including under isolated logout test harnesses.
     if(typeof stopRawWalletListenerV532==="function")stopRawWalletListenerV532();
+    if(typeof stopFirebaseDevicesV535==="function")stopFirebaseDevicesV535();
     revokeDeveloperLabs();
     await signOut(auth);
     currentUser=null;
@@ -856,6 +858,7 @@ onAuthStateChanged(auth, async (user) => {
   authReady = true;
 
   if (!user || !user.emailVerified) {
+    stopFirebaseDevicesV535();
     stopRawWalletListenerV532();
     window.RAWAutoSaveV55UI?.stop?.();
     revokeDeveloperLabs();
@@ -868,13 +871,22 @@ onAuthStateChanged(auth, async (user) => {
   }
 
   currentUser = user;
+  watchFirebaseDevicesV535(user);
   watchOwnRawWalletV532(user);
   await authorizeDeveloper(user);
   if(auth.currentUser?.uid!==user.uid)return;
 
-  const userSnap = await getDoc(doc(db, "users", user.uid));
-  if(auth.currentUser?.uid!==user.uid)return;
-  currentUserData = userSnap.exists() ? userSnap.data() : {};
+  // Existing Firebase user profile is retained. Profile read denial/network
+  // outage must not produce an unhandled rejection or grant device authority.
+  try{
+    const userSnap = await getDoc(doc(db, "users", user.uid));
+    if(auth.currentUser?.uid!==user.uid)return;
+    currentUserData = userSnap.exists() ? userSnap.data() : {};
+  }catch(err){
+    if(auth.currentUser?.uid!==user.uid)return;
+    currentUserData={};
+    console.warn("RAW Firebase profile unavailable",err?.code||"unknown");
+  }
 
   updateUserPanel();
   window.goTo("upload");
@@ -883,30 +895,42 @@ document.querySelectorAll(".tab").forEach(btn => {
   btn.onclick = () => window.goTo(btn.dataset.screen);
 });
 
-/* FIREBASE DEVICES */
-onSnapshot(
-  collection(db, "devices"),
-  (snapshot) => {
-    availableDevices = [];
-
-    snapshot.forEach((docSnap) => {
-      availableDevices.push({
-        id: docSnap.id,
-        ...docSnap.data()
-      });
-    });
-
-    if (!chainDevices.length) {
-      chainDevices = availableDevices.map(d => d.id);
-    }
-
-    renderPatchChain();
-  },
-  (error) => {
-    console.error("FIREBASE DEVICES ERROR:", error);
-    alert(error.message);
+/* FIREBASE DEVICES — listen ONLY after Firebase verified sign-in.
+ * The old listener was registered globally, including on the sign-in page.
+ * This does not authorize devices or physical control; Studio Gateway must
+ * enforce trusted server-side lease and hardware checks independently.
+ */
+function stopFirebaseDevicesV535(){
+  if(firebaseDeviceUnsubscribeV535){
+    firebaseDeviceUnsubscribeV535();
+    firebaseDeviceUnsubscribeV535=null;
   }
-);
+  availableDevices=[];
+  chainDevices=[];
+  renderPatchChain();
+}
+function watchFirebaseDevicesV535(user){
+  stopFirebaseDevicesV535();
+  if(!user?.uid||user.emailVerified!==true)return;
+  firebaseDeviceUnsubscribeV535=onSnapshot(collection(db,"devices"),
+    snapshot=>{
+      if(auth.currentUser?.uid!==user.uid)return;
+      availableDevices=[];
+      snapshot.forEach(docSnap=>{
+        availableDevices.push({id:docSnap.id,...docSnap.data()});
+      });
+      // Restrict current selections to devices returned by the verified
+      // account's rules-authorized query. No renderer role decisions here.
+      chainDevices=chainDevices.filter(id=>availableDevices.some(d=>d.id===id));
+      if(!chainDevices.length)chainDevices=availableDevices.map(d=>d.id);
+      renderPatchChain();
+    },
+    error=>{
+      if(auth.currentUser?.uid!==user.uid)return;
+      console.warn("RAW Firebase devices unavailable",error?.code||"unknown");
+      availableDevices=[];chainDevices=[];renderPatchChain();
+    });
+}
 function updateChain() {
   return;
 }

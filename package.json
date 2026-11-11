@@ -58,7 +58,9 @@
     "security:v532:check": "node --test tests/raw-v532-staging.test.mjs",
     "studio:firebase:v532:package": "node scripts/raw-v532-package-functions.mjs",
     "security:v533:check": "node --test tests/raw-v533-studio-safety.test.mjs tests/raw-v533-wallet-audit.test.mjs tests/raw-v533-studio-lease.test.mjs tests/raw-v533-end-to-end.test.mjs",
-    "studio:wallet:v534:check": "node --test tests/raw-v534-wallet-lab.test.mjs"
+    "studio:wallet:v534:check": "node --test tests/raw-v534-wallet-lab.test.mjs",
+    "studio:hardware:v535:scan": "node scripts/raw-v535-hardware-scan.mjs",
+    "studio:hardware:v535:check": "node --test tests/raw-v535-hardware-readiness.test.mjs"
   },
   "keywords": [],
   "author": "",
