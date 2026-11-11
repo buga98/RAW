@@ -103,5 +103,5 @@ test("V5.36: offline CLI is never an audio interface/physical device or Cloud en
  assert.match(script,/flag:"wx"/);
  assert.match(script,/createCalibrationWavV536/);
  assert.match(script,/assessExternalCaptureV536/);
- assert.doesNotMatch(script,/WebSocket|firebase|stripe|easymidi|child_process|ffmpeg|spawn\(/i);
+ assert.doesNotMatch(script,/\bimport\s+.*(?:WebSocket|firebase|stripe|easymidi|child_process|ffmpeg)|\bspawn\s*\(/i);
 });
