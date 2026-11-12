@@ -5,6 +5,7 @@
   let socket = null;
   let labActive = false;
   let labOwned = false;
+  let pilotProfile = null;
   let seq = 0;
   let lastSentAt = 0;
   let latestStatus = "OFFLINE";
@@ -29,6 +30,7 @@
     socket = null;
     labActive = false;
     labOwned = false;
+    pilotProfile = null;
     if (old) old.close();
     status("OFFLINE", "Bridge disconnected (RAW local test mode).");
   }
@@ -41,6 +43,7 @@
       socket = current;
       labActive = false;
       labOwned = false;
+      pilotProfile = null;
       current.onopen = () => {
         if (socket !== current) return;
         status("CONNECTED", "Čekam status DAW Bridge servera…");
@@ -51,9 +54,21 @@
           const msg = JSON.parse(event.data);
           if (msg.type === "bridge-status") {
             labActive = msg.lab === true;
+            const knownProfiles = {
+              bettermaker_eq:new Set(["eq1Gain","eq1Freq","eq1Q","level"]),
+              ngbuscomp:new Set(["L_threshold","L_mix","R_threshold","R_mix"]),
+              ngtubecomp:new Set(["L_input","L_thd","R_input","R_thd"])
+            };
+            const profileId=msg.pilotProfile?.deviceId;
+            pilotProfile=labActive&&Object.hasOwn(knownProfiles,profileId)?
+              {deviceId:profileId,label:String(msg.pilotProfile.label||profileId),
+               routes:knownProfiles[profileId]}:null;
             if (labActive) {
               current.send(JSON.stringify({type:"studio-claim"}));
-              status("CLAIMING", "Preuzimam slobodni studio (testni saldo, bez naplate)...");
+              status("CLAIMING", pilotProfile?
+                "OFFICIAL PLUGIN PILOT: "+pilotProfile.label+
+                " · fokusiraj ovaj službeni plugin u Cubaseu; čekam claim.":
+                "Preuzimam slobodni studio (testni saldo, bez naplate)...");
               return;
             }
             status(msg.mode === "midi" ? "MIDI OUT" : "DRY RUN",
@@ -63,8 +78,9 @@
           } else if (msg.type === "studio-state") {
             labOwned = msg.owner === true;
             if (labOwned) {
-              status("STUDIO YOURS", "EKSKLUZIVNO · TEST " +
-                (msg.balanceCents / 100).toFixed(2) + " EUR · " +
+              status(pilotProfile?"PLUGIN PILOT ARMED":"STUDIO YOURS",
+                (pilotProfile?pilotProfile.label+" · MIDI OUTPUT ≠ VST/HW READBACK · ":"EKSKLUZIVNO · ") +
+                "TEST " + (msg.balanceCents / 100).toFixed(2) + " EUR · " +
                 (msg.rateCentsPerMin / 100).toFixed(2) + " EUR/min · " +
                 msg.devices.join(", "));
             } else {
@@ -83,8 +99,10 @@
           } else if (msg.type === "parameter-ack") {
             const cc = msg.midi;
             status(msg.status === "midi-sent" ? "MIDI SENT" : "SIMULATED",
-              "EQ1 Gain " + cc.originalValue + " dB → MIDI CC" + cc.cc +
-              " vrijednost " + cc.value + " · " + msg.status);
+              cc.deviceId+" "+cc.parameter+" "+cc.originalValue+
+              " → MIDI CC"+cc.cc+" / QC"+(cc.focusedQC||1)+
+              " = "+cc.value+" · "+msg.status+
+              " · VST i hardware nisu potvrđeni");
           } else if (msg.type === "parameter-error") {
             status("REJECTED", msg.error || "Bridge rejected command");
           }
@@ -98,6 +116,7 @@
         socket = null;
         labActive = false;
         labOwned = false;
+        pilotProfile = null;
         const reason = event.reason ? " · " + event.reason : "";
         status("OFFLINE", "Bridge connection closed (WebSocket code " + event.code + ")" + reason +
           ". Provjeri DAW Bridge terminal. 1006 obično znači odbijenu vezu ili nedostupan server.");
@@ -106,9 +125,15 @@
   }
   function send(message) {
     if (new URLSearchParams(window.location.search).get("testMode") !== "1") return;
-    // First milestone deliberately sends only one knob, no hardware settings.
-    if (message?.type !== "parameter-change" ||
-        message.deviceId !== "bettermaker_eq" || message.parameter !== "eq1Gain") return;
+    // Legacy v1 only sends EQ1 gain. Official plug-in pilot is enabled ONLY
+    // by a local, explicitly armed Studio Host profile on a private tunnel.
+    if (message?.type !== "parameter-change") return;
+    if (pilotProfile) {
+      if (message.deviceId !== pilotProfile.deviceId ||
+          !pilotProfile.routes.has(message.parameter)) return;
+    } else if (message.deviceId !== "bettermaker_eq" || message.parameter !== "eq1Gain") {
+      return;
+    }
     if (labActive && !labOwned) return;
     if (!socket || socket.readyState !== WebSocket.OPEN) {
       // Demo EQ still operates locally, irrespective of bridge status.
@@ -129,5 +154,8 @@
     }));
   }
   window.RAWDawBridge = { connect, disconnect, send, refresh:ui,
-    isActive:()=>!!socket&&socket.readyState===WebSocket.OPEN };
+    isActive:()=>!!socket&&socket.readyState===WebSocket.OPEN,
+    isOfficialPluginPilot:()=>!!pilotProfile&&labOwned&&
+      !!socket&&socket.readyState===WebSocket.OPEN,
+    selectedPilotDevice:()=>pilotProfile?.deviceId||null };
 })();
