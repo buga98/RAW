@@ -69,7 +69,8 @@
     "site:v537:check": "node --test tests/raw-v537-website-installers.test.mjs",
     "desktop:v537:package": "node scripts/raw-v537-package-desktop.mjs",
     "desktop:v538:check": "node --test tests/raw-v538-desktop-beta-stability.test.mjs",
-    "desktop:v539:check": "node --test tests/raw-v539-windows-installer-contract.test.mjs"
+    "desktop:v539:check": "node --test tests/raw-v539-windows-installer-contract.test.mjs",
+    "desktop:v540:check": "node --test tests/raw-v540-unified-icons.test.mjs"
   },
   "keywords": [],
   "author": "",

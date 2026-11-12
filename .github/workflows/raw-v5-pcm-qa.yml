@@ -13,6 +13,7 @@ on:
       - feature/raw-v537-site-desktop-distribution
       - feature/raw-v538-desktop-beta-stability
       - feature/raw-v539-local-windows-installer
+      - feature/raw-v540-unified-windows-icons
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -67,10 +68,12 @@ jobs:
         run: npm run desktop:v538:check
       - name: V5.39 local Windows-only installer build policy
         run: npm run desktop:v539:check
+      - name: V5.40 unified Windows EXE/taskbar/installer icon contract
+        run: npm run desktop:v540:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
       - name: V5.39 Windows NSIS EXE build smoke (unsigned, never uploaded)
-        if: runner.os == 'Windows' && github.ref == 'refs/heads/feature/raw-v539-local-windows-installer'
+        if: runner.os == 'Windows' && (github.ref == 'refs/heads/feature/raw-v539-local-windows-installer' || github.ref == 'refs/heads/feature/raw-v540-unified-windows-icons')
         shell: pwsh
         run: |
           python -m pip install Pillow==11.3.0
@@ -87,6 +90,11 @@ jobs:
               Sort-Object LastWriteTimeUtc -Descending | Select-Object -First 1
             if ($null -eq $installer -or $installer.Length -lt 1000000) {
               throw "Expected private NSIS installer missing or too small"
+            }
+
+            if ("${{ github.ref }}" -eq 'refs/heads/feature/raw-v540-unified-windows-icons') {
+              & ../scripts/raw-v540-verify-windows-icon.ps1 -ExePath 'dist/win-unpacked/RAW Desktop Beta.exe' -IconPath 'build/icon.ico'
+              if (-not $?) { throw "RAW V5.40 Windows EXE icon verification failed" }
             }
             Write-Host ("Unsigned NSIS PASS (not uploaded): " + $installer.Name + ", " + $installer.Length + " bytes")
           } finally {

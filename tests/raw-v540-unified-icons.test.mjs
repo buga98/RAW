@@ -1,0 +1,71 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {readFileSync} from "node:fs";
+const read=path=>readFileSync(new URL("../"+path,import.meta.url),"utf8");
+
+test("v5.40 one canonical icon.png is used in runtime, Windows ICO, NSIS and EXE",()=>{
+ const runtime=read("index.js");
+ const icons=read("scripts/raw-v537-create-icons.py");
+ const builder=JSON.parse(read("desktop-beta/package.json"));
+ const after=read("desktop-beta/raw-v540-after-pack.cjs");
+ assert.match(runtime,/icon: path\.join\(__dirname, "icon\.png"\)/);
+ assert.match(icons,/src = root \/ "icon\.png"/);
+ assert.doesNotMatch(icons,/src = root \/ "raw-brand-icon\.png"/);
+ assert.match(icons,/ico_sizes = \[16, 24, 32, 48, 64, 128, 256\]/);
+ assert.equal(builder.build.win.icon,"build/icon.ico");
+ assert.equal(builder.build.nsis.installerIcon,"build/icon.ico");
+ assert.equal(builder.build.nsis.uninstallerIcon,"build/icon.ico");
+ assert.equal(builder.build.nsis.createDesktopShortcut,true);
+ assert.equal(builder.build.nsis.createStartMenuShortcut,true);
+ assert.equal(builder.build.win.signAndEditExecutable,false);
+ assert.equal(builder.build.afterPack,"./raw-v540-after-pack.cjs");
+ assert.equal(builder.devDependencies.rcedit,"5.0.2");
+ assert.match(after,/if\(context\?\.electronPlatformName!=="win32"\)return/);
+ assert.match(after,/await import\("rcedit"\)/);
+ assert.match(after,/const exe=join\(context\.appOutDir,"RAW Desktop Beta\.exe"\)/);
+ assert.match(after,/icon=join\(__dirname,"build","icon\.ico"\)/);
+ assert.match(after,/await rcedit\(exe,/);
+ assert.match(after,/raw-v540-pe-icon-audit\.py/);
+ assert.match(after,/--repair/);
+ assert.match(after,/RAW_V540_PE_ICON_RESOURCE_REPAIR_FAILED/);
+ assert.match(after,/"file-version":"0\.1\.0\.0"/);
+ assert.doesNotMatch(after,/winCodeSign.*getBin\(|https:\/\/|Set-ExecutionPolicy/);
+});
+
+test("v5.40 packaged AppUserModelID matches NSIS appId and retains LOCAL TEST",()=>{
+ const pkg=JSON.parse(read("desktop-beta/package.json"));
+ const main=read("desktop-beta/main.cjs");
+ const runtime=read("index.js");
+ assert.equal(pkg.build.appId,"com.raw.mastering.desktop.beta");
+ assert.match(main,/process\.env\.RAW_TEST_MODE="1"/);
+ assert.match(main,/process\.env\.RAW_DESKTOP_BETA="1"/);
+ assert.match(runtime,/process\.env\.RAW_DESKTOP_BETA==="1"/);
+ assert.ok(runtime.includes('"com.raw.mastering.desktop.beta"'));
+ assert.ok(runtime.includes('"com.raw.remote-studio"'));
+ assert.equal(pkg.build.publish,null);
+ assert.match(pkg.scripts["build:windows"],/--publish never/);
+});
+
+test("v5.40 Windows build fails closed if EXE icon does not match the taskbar artwork",()=>{
+ const script=read("scripts/raw-v540-build-windows.ps1");
+ const verify=read("scripts/raw-v540-verify-windows-icon.ps1");
+ assert.match(script,/feature\/raw-v540-unified-windows-icons/);
+ assert.match(script,/tests\/raw-v540-unified-icons\.test\.mjs/);
+ assert.match(script,/scripts\\raw-v540-verify-windows-icon\.ps1/);
+ assert.match(script,/Get-FileHash -LiteralPath \$Installer\.FullName -Algorithm SHA256/);
+ assert.match(verify,/FileVersionInfo/);
+ const pe=read("scripts/raw-v540-pe-icon-audit.py");
+ assert.match(verify,/raw-v540-pe-icon-audit\.py/);
+ assert.match(verify,/RAW_V540_PE_ICON_RESOURCE_CHECK_FAILED/);
+ assert.doesNotMatch(verify,/\.ToBitmap\(/);
+ assert.doesNotMatch(verify,/\.GetPixel\(/);
+ assert.match(pe,/ctypes\.WinDLL\("kernel32"/);
+ assert.match(pe,/EnumResourceNamesW/);
+ assert.match(pe,/FindResourceW/);
+ assert.match(pe,/parse_resource_group/);
+ assert.match(pe,/compare_frames/);
+ assert.match(pe,/RAW_V540_PE_ICON_MISMATCH/);
+ assert.match(pe,/item\["data"\]/);
+ assert.doesNotMatch(pe,/https:\/\/|winCodeSign.*getBin\(/);
+ assert.doesNotMatch(script,/git push|gh release|--publish always|Set-ExecutionPolicy|Start-Process.*\.exe/i);
+});
