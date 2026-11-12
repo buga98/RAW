@@ -25,6 +25,9 @@ test("v5.40 one canonical icon.png is used in runtime, Windows ICO, NSIS and EXE
  assert.match(after,/const exe=join\(context\.appOutDir,"RAW Desktop Beta\.exe"\)/);
  assert.match(after,/icon=join\(__dirname,"build","icon\.ico"\)/);
  assert.match(after,/await rcedit\(exe,/);
+ assert.match(after,/raw-v540-pe-icon-audit\.py/);
+ assert.match(after,/--repair/);
+ assert.match(after,/RAW_V540_PE_ICON_RESOURCE_REPAIR_FAILED/);
  assert.match(after,/"file-version":"0\.1\.0\.0"/);
  assert.doesNotMatch(after,/winCodeSign.*getBin\(|https:\/\/|Set-ExecutionPolicy/);
 });
