@@ -84,9 +84,9 @@ test("v5.42 builder pins real Electron version and isolates OS-specific output f
  assert.match(script,/config\.electronVersion=profile\.engine/);
  assert.match(script,/config\.mac=.*minimumSystemVersion:profile\.minimum/);
  assert.match(script,/config\.directories=.*output/);
- assert.match(script,/builder-effective-config\.yaml/);
+ assert.match(script,/const packagerLog=/);
+ assert.match(script,/expectedPlatform/);
  assert.match(script,/PACKAGED_ELECTRON_RUNTIME_NOT_VERIFIED/);
- assert.match(script,/packaging\\\\s\\+platform=/);
  assert.match(script,/--publish","never"/);
  assert.match(script,/CSC_IDENTITY_AUTO_DISCOVERY:"false"/);
  assert.match(script,/RAW_TEST_MODE:"1"/);
