@@ -53,9 +53,7 @@ Brza read-only provjera prethodno već izrađenog EXE-a nakon `git pull --ff-onl
 
 ```powershell
 cd C:\remote-audio-workstation
-.\scripts\raw-v540-verify-windows-icon.ps1 \
-  -ExePath '.\desktop-beta\dist\win-unpacked\RAW Desktop Beta.exe' \
-  -IconPath '.\desktop-beta\build\icon.ico'
+.\scripts\raw-v540-verify-windows-icon.ps1 -ExePath '.\desktop-beta\dist\win-unpacked\RAW Desktop Beta.exe' -IconPath '.\desktop-beta\build\icon.ico'
 ```
 
 Ako prođe, postojeći installer nije potrebno ponovno graditi samo radi provjere resursa. Ako padne, ne instalirati stari build: poslati puni zapis provjere.
