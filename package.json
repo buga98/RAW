@@ -69,6 +69,8 @@
     "site:v537:check": "node --test tests/raw-v537-website-installers.test.mjs",
     "site:v544:stage": "node scripts/raw-v544-stage-website.mjs",
     "site:v544:check": "node --test tests/raw-v537-website-installers.test.mjs tests/raw-v544-website-launch.test.mjs",
+    "site:v545:stage": "node scripts/raw-v544-stage-website.mjs",
+    "site:v545:check": "node --test tests/raw-v537-website-installers.test.mjs tests/raw-v544-website-launch.test.mjs tests/raw-v545-professional-website.test.mjs",
     "desktop:v537:package": "node scripts/raw-v537-package-desktop.mjs",
     "desktop:v538:check": "node --test tests/raw-v538-desktop-beta-stability.test.mjs",
     "desktop:v539:check": "node --test tests/raw-v539-windows-installer-contract.test.mjs",
