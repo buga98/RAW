@@ -4,7 +4,7 @@
   "screenshots": [
     {
       "id": "control-room",
-      "file": "assets/screenshots/raw-control-room.webp",
+      "file": "assets/screenshots/raw-control-room.png",
       "title": "Control Room & rack",
       "alt": "Stvarni screenshot RAW Control Rooma s modelima Bettermaker MEQ, WesAudio ngBusComp i ngTubeComp.",
       "tag": "RACK WORKSPACE",
@@ -12,7 +12,7 @@
     },
     {
       "id": "digital-premaster",
-      "file": "assets/screenshots/raw-digital-premaster.webp",
+      "file": "assets/screenshots/raw-digital-premaster.png",
       "title": "Digital Premaster",
       "alt": "Stvarni screenshot RAW Digital Premaster modula s digitalnim procesiranjem i postavkama WAV izvoza.",
       "tag": "DIGITAL AUDIO",
@@ -20,7 +20,7 @@
     },
     {
       "id": "project-recall",
-      "file": "assets/screenshots/raw-project-recall.webp",
+      "file": "assets/screenshots/raw-project-recall.png",
       "title": "Project Save & Recall",
       "alt": "Stvarni screenshot RAW prikaza spremanja i ponovnog učitavanja projekta i stanja virtualnog racka.",
       "tag": "PROJECT WORKFLOW",
@@ -28,7 +28,7 @@
     },
     {
       "id": "wav-qc",
-      "file": "assets/screenshots/raw-wav-qc.webp",
+      "file": "assets/screenshots/raw-wav-qc.png",
       "title": "WAV Export & QC",
       "alt": "Stvarni screenshot RAW prikaza WAV exporta, QC metrika i provjere integriteta datoteke.",
       "tag": "DELIVERY",
@@ -36,7 +36,7 @@
     },
     {
       "id": "login",
-      "file": "assets/screenshots/raw-login.webp",
+      "file": "assets/screenshots/raw-login.png",
       "title": "Desktop Login",
       "alt": "Stvarni screenshot RAW desktop prijave u aplikaciju.",
       "tag": "DESKTOP",
