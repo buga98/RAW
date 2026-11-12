@@ -58,7 +58,7 @@ Ako je repo privatan, koristiti postojeći GitHub deploy key ili SSH ključ, nik
 sudo find /home -maxdepth 5 -type d -path '*/web/raw.lineaplusdev.com/public_html' -print
 ```
 
-Odaberi samo PUTANJU koju ta naredba vrati i provjeri vlasništvo:
+Odaberi samo PUTANJU koju ta naredba vrati i provjeri vlasništvo. Ne prepisuj doslovno vrijednosti u kutnim zagradama; zamijeni ih stvarnim korisnikom:
 ```bash
 sudo ls -lah /home/<HESTIA_USER>/web/raw.lineaplusdev.com/public_html
 ```
@@ -68,13 +68,14 @@ sudo ls -lah /home/<HESTIA_USER>/web/raw.lineaplusdev.com/public_html
 
 Nakon što potvrdimo vlasnika i putanju:
 ```bash
-WEBROOT=/home/<HESTIA_USER>/web/raw.lineaplusdev.com/public_html
-STAGE=/home/luka/projects/raw-website/artifacts/raw-v544-site-staging
+HESTIA_USER=<POTVRĐENI_HESTIA_KORISNIK>
+WEBROOT="/home/$HESTIA_USER/web/raw.lineaplusdev.com/public_html"
+STAGE="/home/luka/projects/raw-website/artifacts/raw-v544-site-staging"
 
 # Prvo pregled što bi kopirali:
-sudo rsync -av --dry-run --exclude=SITE_STAGING_SHA256.json "$STAGE/" "$WEBROOT/"
-# Zatim stvarno kopiraj javne assete, pod točnim Hestia vlasnikom / uz sudo:
-sudo rsync -av --exclude=SITE_STAGING_SHA256.json "$STAGE/" "$WEBROOT/"
+sudo rsync -av --dry-run --chown="$HESTIA_USER:$HESTIA_USER" --exclude=SITE_STAGING_SHA256.json "$STAGE/" "$WEBROOT/"
+# Zatim stvarno kopiraj javne assete i zadrži vlasništvo Hestia korisnika:
+sudo rsync -av --chown="$HESTIA_USER:$HESTIA_USER" --exclude=SITE_STAGING_SHA256.json "$STAGE/" "$WEBROOT/"
 ```
 
 **Bez** `--delete`: time ne brišemo Hestijine datoteke niti druge korisničke podatke. Pregledati `index.php` ako Hestia placeholder preuzima prioritet pred `index.html`; tek nakon provjere premjestiti originalni placeholder na backup lokaciju izvan public_html. Ne mijenjati Nginx konfiguraciju naslijepo.
