@@ -38,7 +38,7 @@ Izlazna lokacija: `artifacts/raw-v544-site-staging/`. SHA-256 popis ne sadrži n
 Koristi postojeći SSH račun `luka`. **NIKADA nemoj kopirati cijeli repo u `public_html`.**
 
 ```bash
-ssh luka@<TVOJ_VPS_IP>
+ssh luka@IP_TVOG_VPS_A  # zamijeni stvarnom IP adresom VPS-a
 # Na VPS-u, kad potvrdimo da je Git dostupan:
 mkdir -p ~/projects
 cd ~/projects
@@ -68,7 +68,7 @@ sudo ls -lah /home/<HESTIA_USER>/web/raw.lineaplusdev.com/public_html
 
 Nakon što potvrdimo vlasnika i putanju:
 ```bash
-HESTIA_USER=<POTVRĐENI_HESTIA_KORISNIK>
+HESTIA_USER="stvarni-hestia-korisnik"  # zamijeni prema outputu prethodnog find/ls
 WEBROOT="/home/$HESTIA_USER/web/raw.lineaplusdev.com/public_html"
 STAGE="/home/luka/projects/raw-website/artifacts/raw-v544-site-staging"
 
