@@ -57,3 +57,15 @@ cd C:\remote-audio-workstation
 ```
 
 Ako prođe, postojeći installer nije potrebno ponovno graditi samo radi provjere resursa. Ako padne, ne instalirati stari build: poslati puni zapis provjere.
+
+## Dodatni hotfix: 256×256 RT_GROUP_ICON duljina
+
+GitHub test je detaljnom PE provjerom potvrdio da su **svih sedam slikovnih resursa točni**, ali u jednom `RT_GROUP_ICON` zapisu za 256×256 sliku stara Electron veličina ostaje **19.436 B**, dok novi, byte-for-byte provjereni RAW `RT_ICON` payload iznosi **84.972 B**. Ovo je stvaran nesklad u *metapodatku*, ne izmjena slike.
+
+`desktop-beta/raw-v540-after-pack.cjs` sada, odmah nakon samostalne `rcedit` ugradnje, pokreće `raw-v540-pe-icon-audit.py --repair`. Alat:
+- traži točno jedan primarni icon group;
+- prije ikakve izmjene uspoređuje **sve** slikovne bajtove ugrađenih resursa s točno istim izvornim ICO-om;
+- Windows `BeginUpdateResourceW/UpdateResourceW` API-jem mijenja **samo pogrešan `dwBytesInRes`** za 256×256 ulaz (na stvarnu duljinu);
+- ponovno učitava i provjerava skup ikona; bilo kakav drugi nesklad prekida izradu.
+
+Provjera nakon pakiranja (`raw-v540-verify-windows-icon.ps1`) ostaje isključivo read-only. Nikakva dodatna prava administratora ili gašenje Windows zaštita nisu potrebni. Već izgrađeni korisnički installer s neispravnim metapodatkom treba **ponovno izgraditi** nakon ovog hotfixa; sam `git pull` bez novog builda ne može ispraviti već postojeću EXE datoteku.
