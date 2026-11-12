@@ -137,9 +137,13 @@ def inspect_pe_icon_resources(exe: Path):
         for name in names:
             group = parse_resource_group(resource_bytes(14, name))
             for frame in group:
-                frame["data"] = resource_bytes(3, frame["id"])
-                if len(frame["data"]) != frame["size"]:
-                    raise IconAuditError("RAW_V540_PE_ICON_BYTE_COUNT_MISMATCH")
+                try:
+                    payload = resource_bytes(3, frame["id"])
+                    frame["actual_size"] = len(payload)
+                    frame["data"] = payload if len(payload) == frame["size"] else None
+                except IconAuditError:
+                    frame["actual_size"] = -1
+                    frame["data"] = None
             groups.append(group)
         return groups
     finally:
@@ -147,24 +151,29 @@ def inspect_pe_icon_resources(exe: Path):
 
 
 def compare_frames(expected, groups):
+    reports = []
     for number, group in enumerate(groups, 1):
-        if len(expected) != len(group):
-            continue
         consumed = set()
         matched = 0
         for item in expected:
             for i, actual in enumerate(group):
-                if i in consumed:
+                if i in consumed or actual["data"] is None:
                     continue
                 if (item["width"], item["height"], item["data"]) == (actual["width"], actual["height"], actual["data"]):
                     consumed.add(i)
                     matched += 1
                     break
-        if matched == len(expected):
+        invalid_count = sum(
+            frame["data"] is None for frame in group
+        )
+        reports.append(
+            f"group{number}={matched}/{len(expected)} exact, "
+            f"{len(group)} frames, {invalid_count} inconsistent IDs/sizes"
+        )
+        if matched == len(expected) and len(group) == len(expected):
             return number, matched
     raise IconAuditError(
-        "RAW_V540_PE_ICON_MISMATCH: expected exact RAW ICO frames "
-        + f"({len(expected)} frames); inspected {len(groups)} PE groups"
+        "RAW_V540_PE_ICON_MISMATCH: " + "; ".join(reports)
     )
 
 
