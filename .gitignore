@@ -20,3 +20,6 @@ desktop-beta/dist/
 desktop-beta/node_modules/
 desktop-beta/package-lock.json
 calibration-output-v536/
+
+# RAW V5.43 acceptance artifacts — may include private user WAV/project data
+artifacts/raw-v543-acceptance/
