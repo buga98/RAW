@@ -18,17 +18,31 @@ if(pilotArg&&!Object.hasOwn(OFFICIAL_PLUGIN_PROFILES,pilotDevice)){
 // The studio operator selects ONE original VST3 at a time.
 // It is impossible to prove the focused Cubase plug-in from MIDI OUT alone.
 const pilotProfile=pilotDevice?OFFICIAL_PLUGIN_PROFILES[pilotDevice]:null;
+// v5.47 uses its own virtual MIDI port and Cubase surface. Legacy v5.46
+// FQC 1..4 remains intact and mutually exclusive with full-surface mode.
+const fullArg=process.argv.find(x=>x.startsWith("--full-surface-pilot="));
+const fullDevice=fullArg?.slice("--full-surface-pilot=".length)||null;
+const FULL=require("./raw-v547-full-controls.js");
+if(fullArg&&!Object.hasOwn(FULL.profiles,fullDevice)){
+ console.error("Invalid full surface profile");process.exit(2);
+}
+if(fullArg&&pilotArg){
+ console.error("Cannot combine v5.46 FQC and v5.47 full surface modes");process.exit(2);
+}
+const fullProfile=fullDevice?FULL.profiles[fullDevice]:null;
+const midiPort=fullProfile?"RAW_ALL_TO_CUBASE":MIDI_PORT_NAME;
 let midiOutput = null;
 if (midiMode) {
   const easymidi = require("easymidi");
-  if (!easymidi.getOutputs().includes(MIDI_PORT_NAME)) {
-    console.error("RAW_TO_CUBASE missing. Start loopMIDI on the STUDIO computer.");
+  if (!easymidi.getOutputs().includes(midiPort)) {
+    console.error(midiPort+" missing. Start loopMIDI on the STUDIO computer.");
     process.exit(1);
   }
-  midiOutput = new easymidi.Output(MIDI_PORT_NAME);
+  midiOutput = new easymidi.Output(midiPort);
 }
 const lab = new StudioLab();
 if(pilotProfile)lab.enabledDevices=new Set([pilotDevice]);
+if(fullProfile)lab.enabledDevices=new Set([fullDevice]);
 const host = "127.0.0.1";
 const port = 7073;
 const sockets = new Set();
@@ -49,10 +63,13 @@ function broadcast() {
 }
 server.on("listening", () => {
   console.log("RAW Studio Lab LISTENING ws://127.0.0.1:7073 — " +
-    (pilotProfile?"OFFICIAL PLUGIN PILOT "+pilotProfile.label+" / ":"")+
+    (fullProfile?"FULL SURFACE PILOT "+fullProfile.label+" / ":pilotProfile?"OFFICIAL PLUGIN PILOT "+pilotProfile.label+" / ":"")+
     (midiMode ? "MIDI OUTPUT" : "DRY RUN"));
   console.log("EXCLUSIVE STUDIO · FAKE wallet 10.00 EUR · Bettermaker test 0.29 EUR/min.");
   console.log("For two-PC access use authenticated SSH tunnel over Tailscale. NEVER expose port 7073 publicly.");
+if(fullProfile)console.log("FULL SURFACE CONTROL ROUTES: "+
+  Object.keys(fullProfile.controls).length+
+  " · REQUIRED manual Cubase user-mapping · 14-bit knobs / 7-bit buttons.");
 });
 server.on("error", error => {
   console.error("Studio Lab server error:", error.message);
@@ -64,11 +81,17 @@ server.on("connection", socket => {
   let commandWindowAt = 0;
   let commandsInWindow = 0;
   send(socket, {type:"bridge-status", lab:true, mode:midiMode ? "midi" : "dry-run",
-    port:midiMode ? MIDI_PORT_NAME : null, mapping:pilotProfile?"ORIGINAL PLUGIN FQC1..4 — MANUALLY MAP IN CUBASE":
+    port:midiMode ? MIDI_PORT_NAME : null, mapping:fullProfile?"FULL SURFACE CC MAP — USER MAP ALL PARAMETERS IN CUBASE":
+      pilotProfile?"ORIGINAL PLUGIN FQC1..4 — MANUALLY MAP IN CUBASE":
       "bettermaker_eq:eq1Gain -> CC21 -> Cubase QC1",
     pilotProfile:pilotProfile?{
       deviceId:pilotDevice,label:pilotProfile.label,
       routes:Object.keys(pilotProfile.routes)
+    }:null,
+    fullSurfaceProfile:fullProfile?{
+      deviceId:fullDevice,label:fullProfile.label,
+      count:Object.keys(fullProfile.controls).length,
+      midiPort
     }:null,
     pluginVerified:false,hardwareVerified:false});
   send(socket, lab.snapshot(socket));
@@ -111,10 +134,20 @@ server.on("connection", socket => {
       const now = Date.now();
       if (now - commandWindowAt > 1000) { commandWindowAt = now; commandsInWindow = 0; }
       if (++commandsInWindow > 35) throw new Error("Rate limit exceeded");
-      const midi = pilotProfile?officialPluginRoute(pilotDevice,msg):midiRoute(msg);
-      // MIDI output success is NOT official VST3 state verification.
+      const midi = fullProfile?FULL.route(fullDevice,msg):
+        pilotProfile?officialPluginRoute(pilotDevice,msg):midiRoute(msg);
+      // MIDI output success is NOT original Cubase VST3 or hardware verification.
       if (midiOutput) {
-        midiOutput.send("cc", {controller:midi.cc,value:midi.value,channel:midi.channel});
+        if(fullProfile&&midi.bits===14){
+          midiOutput.send("cc",{controller:midi.cc,value:midi.msb,channel:midi.channel});
+          midiOutput.send("cc",{controller:midi.ccLsb,value:midi.lsb,channel:midi.channel});
+        }else{
+          midiOutput.send("cc",{controller:midi.cc,value:midi.value,channel:midi.channel});
+          // A momentary action ends with an explicit button release, never a
+          // second high-value press; mapped Cubase behavior still requires QA.
+          if(fullProfile&&midi.kind==="trigger")
+            midiOutput.send("cc",{controller:midi.cc,value:0,channel:midi.channel});
+        }
         console.log("STUDIO MIDI SENT", midi);
       } else {
         console.log("STUDIO DRY RUN", midi);
