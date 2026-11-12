@@ -17,11 +17,11 @@ export const PUBLIC_SITE_FILES=Object.freeze([
  "release-manifest.json","installer-profiles.json","screenshots.json","assets/raw-mark.svg"
 ]);
 export const OPTIONAL_SCREENSHOTS=Object.freeze([
- "assets/screenshots/raw-control-room.webp",
- "assets/screenshots/raw-digital-premaster.webp",
- "assets/screenshots/raw-project-recall.webp",
- "assets/screenshots/raw-wav-qc.webp",
- "assets/screenshots/raw-login.webp"
+ "assets/screenshots/raw-control-room.png",
+ "assets/screenshots/raw-digital-premaster.png",
+ "assets/screenshots/raw-project-recall.png",
+ "assets/screenshots/raw-wav-qc.png",
+ "assets/screenshots/raw-login.png"
 ]);
 function assert(condition,message){if(!condition)throw Error("RAW_V544_SITE_"+message);}
 function approvedAsset(url,sha,platform,filename){
