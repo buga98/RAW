@@ -72,7 +72,8 @@ try{
   abort("ORIGINAL_RAW_ICON_MISSING");
 
  console.log("[RAW V5.42] Install isolated desktop builder dependencies");
- call(process.platform==="win32"?"npm.cmd":"npm",["install","--no-audit","--no-fund"],beta);
+ if(process.platform==="win32")call("cmd.exe",["/d","/s","/c","npm install --no-audit --no-fund"],beta);
+ else call("npm",["install","--no-audit","--no-fund"],beta);
  rmSync(installerDir,{recursive:true,force:true});
  mkdirSync(installerDir,{recursive:true});
  writeFileSync(temporaryConfig,JSON.stringify(config,null,2)+"\n",{flag:"wx"});
