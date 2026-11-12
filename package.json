@@ -73,7 +73,9 @@
     "desktop:v540:check": "node --test tests/raw-v540-unified-icons.test.mjs",
     "desktop:v541:check": "node --test tests/raw-v541-macos-private-beta.test.mjs",
     "desktop:v542:check": "node --test tests/raw-v541-macos-private-beta.test.mjs tests/raw-v542-installer-matrix.test.mjs",
-    "desktop:v542:build": "node scripts/raw-v542-build-installer.mjs"
+    "desktop:v542:build": "node scripts/raw-v542-build-installer.mjs",
+    "studio:acceptance:v543": "node scripts/raw-v543-mastering-acceptance.mjs",
+    "studio:acceptance:v543:check": "node --test tests/raw-v543-mastering-acceptance.test.mjs"
   },
   "keywords": [],
   "author": "",

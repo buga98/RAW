@@ -16,6 +16,7 @@ on:
       - feature/raw-v540-unified-windows-icons
       - feature/raw-v541-macos-private-beta
       - feature/raw-v542-platform-installer-selector
+      - feature/raw-v543-mastering-acceptance
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -74,6 +75,8 @@ jobs:
         run: npm run desktop:v540:check
       - name: V5.41 Mac platform contract and v5.42 OS-version selector
         run: npm run desktop:v542:check
+      - name: V5.43 full mastering project save/reopen and WAV export acceptance
+        run: npm run studio:acceptance:v543:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
       - name: V5.39 Windows NSIS EXE build smoke (unsigned, never uploaded)
