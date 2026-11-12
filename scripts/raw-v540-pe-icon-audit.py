@@ -140,9 +140,11 @@ def inspect_pe_icon_resources(exe: Path):
                 try:
                     payload = resource_bytes(3, frame["id"])
                     frame["actual_size"] = len(payload)
+                    frame["raw_data"] = payload
                     frame["data"] = payload if len(payload) == frame["size"] else None
                 except IconAuditError:
                     frame["actual_size"] = -1
+                    frame["raw_data"] = None
                     frame["data"] = None
             groups.append(group)
         return groups
@@ -166,9 +168,27 @@ def compare_frames(expected, groups):
         invalid_count = sum(
             frame["data"] is None for frame in group
         )
+        broken = []
+        for frame in group:
+            if frame["data"] is not None:
+                continue
+            ref = next(
+                (x for x in expected
+                 if x["width"] == frame["width"] and x["height"] == frame["height"]),
+                None,
+            )
+            same_bytes = (ref is not None and
+                          frame.get("raw_data") == ref["data"])
+            broken.append(
+                f'{frame["width"]}x{frame["height"]}:id{frame["id"]}:'
+                f'declared={frame["size"]}:actual={frame["actual_size"]}:'
+                f'expected={len(ref["data"]) if ref else "n/a"}:'
+                f'payloadMatch={same_bytes}'
+            )
         reports.append(
             f"group{number}={matched}/{len(expected)} exact, "
-            f"{len(group)} frames, {invalid_count} inconsistent IDs/sizes"
+            f"{len(group)} frames, {invalid_count} inconsistent IDs/sizes: "
+            + ", ".join(broken[:8])
         )
         if matched == len(expected) and len(group) == len(expected):
             return number, matched
