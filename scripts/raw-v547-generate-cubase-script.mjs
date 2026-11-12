@@ -25,8 +25,8 @@ export function generate(){
   const entries=Object.entries(profile.controls);
   const title=JSON.stringify(profile.label+" — "+entries.length+" control surfaces");
   out.push("// "+deviceId+" — no automatic manufacturer VST ID binding");
-  const header="var header"+profile.channel;
-  out.push(header+" = driver.mSurface.makeLabelField(0, "+baseY+", 19, 0.8)");
+  const header="header"+profile.channel;
+  out.push("var "+header+" = driver.mSurface.makeLabelField(0, "+baseY+", 19, 0.8)");
   out.push("page.setLabelFieldText("+header+", "+title+")");
   for(let i=0;i<entries.length;i++){
    const [id,c]=entries[i];
