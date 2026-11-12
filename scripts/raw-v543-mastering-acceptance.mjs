@@ -75,7 +75,7 @@ const BASE_SETTINGS={
  limiterEnabled:true,limiterDriveDb:1.5,limiterLookaheadMs:3,
  limiterReleaseMs:110,ceilingDb:-1,bits:24,dither:true
 };
-async function perform({inputBytes,outputDir}={}){
+async function perform({inputBytes,outputDir,onStep=()=>{}}={}){
  const began=new Date().toISOString(),steps=[],exports={};
  let w=loadRuntime(),sourceBytes=inputBytes||generateFixture();
  let decoded=decodePcmWav(sourceBytes);
@@ -85,13 +85,20 @@ async function perform({inputBytes,outputDir}={}){
   const started=Date.now();
   try{
    const details=await fn();
-   steps.push({label,status:"PASS",durationMs:Date.now()-started,...(details?{details:safe(details)}:{})});
+   const recorded={label,status:"PASS",durationMs:Date.now()-started,
+    ...(details?{details:label==="THREE_LOCAL_DEVICE_SNAPSHOTS"
+      ? {devices:safe(details.devices),hardwareReadback:false}
+      :safe(details)}:{})};
+   steps.push(recorded);
+   onStep(recorded);
    console.log("[RAW V5.43] PASS "+label);
    return details;
   }catch(e){
-   steps.push({label,status:"FAIL",durationMs:Date.now()-started,
+   const recorded={label,status:"FAIL",durationMs:Date.now()-started,
     code:String(e.code||"ACCEPTANCE_FAILED").slice(0,70),
-    error:String(e.message||e).slice(0,240)});
+    error:String(e.message||e).slice(0,240)};
+   steps.push(recorded);
+   onStep(recorded);
    console.error("[RAW V5.43] FAIL "+label+": "+String(e.message||e));
    throw e;
   }
@@ -277,9 +284,7 @@ async function perform({inputBytes,outputDir}={}){
    status:"PASS",total:steps.length,passed:steps.length,
    source:{name:inputBytes?"USER_LOCAL_WAV":"SYNTHETIC_REAL_PCM_WAV",
     sha256:inputDigest,frames:decoded.frames,rate:decoded.sampleRate,bits:decoded.bits},
-   steps:steps.map(step=>step.label==="THREE_LOCAL_DEVICE_SNAPSHOTS"
-    ? {...step,details:{devices:step.details.devices,hardwareReadback:false}}
-    :step),
+   steps,
    outputs:exports,
    boundaries:{
     sourceDecodedBy:"NODE_ACCEPTANCE_PCM_DECODER_NOT_WEB_AUDIO",
@@ -297,9 +302,10 @@ async function perform({inputBytes,outputDir}={}){
 }
 export async function runAcceptance(opts={}){
  const outputDir=resolve(opts.outputDir||join(root,"artifacts","raw-v543-acceptance"));
- let began=new Date().toISOString();
+ const began=new Date().toISOString(),recordedSteps=[];
  try{
-  const result=await perform({...opts,outputDir});
+  const result=await perform({...opts,outputDir,
+   onStep:step=>recordedSteps.push(step)});
   mkdirSync(outputDir,{recursive:true});
   const reportPath=join(outputDir,"RAW_V543_ACCEPTANCE_REPORT.json");
   writeFileSync(reportPath,JSON.stringify(result.report,null,2)+"\n");
@@ -312,6 +318,8 @@ export async function runAcceptance(opts={}){
   const failedReport={
    suite:"RAW_MASTERING_ACCEPTANCE_V543",version:1,
    startedAt:began,completedAt:new Date().toISOString(),status:"FAIL",
+   total:recordedSteps.length,passed:recordedSteps.filter(x=>x.status==="PASS").length,
+   failed:recordedSteps.filter(x=>x.status==="FAIL").length,steps:recordedSteps,
    failure:{code:String(e.code||"ACCEPTANCE_FAILED").slice(0,70),
     message:String(e.message||e).slice(0,240)},
    boundaries:{hardwareConnected:false,analogCaptured:false,productionBillingTested:false}
