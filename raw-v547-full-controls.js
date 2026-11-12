@@ -229,7 +229,7 @@
         "kind": "enum",
         "values": [
           "EQ",
-          "FFT"
+          "RTA"
         ],
         "cc": 76
       },
