@@ -8,6 +8,11 @@ on:
 permissions:
   contents: read
 
+# Avoid queuing six heavy installers for every superseded development commit.
+concurrency:
+  group: raw-v542-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   os-profile-build:
     name: ${{ matrix.profile }}
