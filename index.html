@@ -583,10 +583,12 @@ function sendControlMessage(message) {
   // MIDI bridge traffic. Simulator UI observes safe whitelisted knobs itself.
   if (TEST_MODE && window.RAWStudioGatewayV1?.interceptsControls()) return;
   if (TEST_MODE && window.RAWStudioSim?.interceptsControls()) return;
-  // No approved GCon/hardware transport for either WesAudio device yet.
-  // Keep prototype changes LOCAL even if a studio socket is open.
+  // WesAudio controls remain local by default. In the explicitly armed V5.46
+  // official plug-in pilot only, send to Cubase Focused Quick Controls over
+  // the authenticated local Studio Lab tunnel. This is NOT GCon/hardware control.
   if (message?.type === "parameter-change" &&
-      (message.deviceId === "ngbuscomp" || message.deviceId === "ngtubecomp")) {
+      (message.deviceId === "ngbuscomp" || message.deviceId === "ngtubecomp") &&
+      !window.RAWDawBridge?.isOfficialPluginPilot?.()) {
     console.info("LOCAL-ONLY WesAudio preview; hardware command intentionally not sent:", message);
     return;
   }
@@ -1541,8 +1543,8 @@ function renderPlugin() {
 
       <div class="raw-daw-toolbar" aria-label="DAW Bridge local test">
         <div class="raw-daw-title">
-          <strong>DAW BRIDGE v1</strong>
-          <span>EQ1 GAIN → MIDI CC21 → CUBASE QUICK CONTROL 1</span>
+          <strong>RAW → CUBASE · OFFICIAL PLUGIN PILOT v5.46</strong>
+          <span>STUDIO-ARMED PROFILE · CC21–24 → FOCUSED QUICK CONTROLS 1–4 · PLUGIN/HARDWARE UNVERIFIED</span>
         </div>
         <div class="raw-daw-actions">
           <span id="rawBridgeStatus">OFFLINE</span>
