@@ -3,6 +3,10 @@
 // changes a control, sends MIDI, or contacts a public network address.
 // Same invocation works in PowerShell (Windows) and Terminal (macOS).
 import WebSocket from "ws";
+import {createRequire} from "node:module";
+const require=createRequire(import.meta.url);
+const FULL=require("../raw-v547-full-controls.js");
+function requireFullCount(device){return Object.keys(FULL.profiles[device]?.controls||{}).length;}
 
 const ADDRESS="ws://127.0.0.1:7073";
 const PROFILES=Object.freeze({
@@ -39,13 +43,17 @@ ws.on("message",data=>{
     finish(1,"RAW PILOT CLIENT REJECTED: invalid studio host response");return;
   }
   if(message?.type!=="bridge-status")return;
+  const full=message.fullSurfaceProfile;
+  const profile=full||message.pilotProfile;
   if(message.lab!==true||message.pluginVerified!==false||
-      message.hardwareVerified!==false||!message.pilotProfile||
-      !Object.hasOwn(PROFILES,message.pilotProfile.deviceId)||
-      message.pilotProfile.label!==PROFILES[message.pilotProfile.deviceId]){
-    finish(1,"RAW PILOT CLIENT REJECTED: not a supported v5.46 Studio Pilot response");return;
+      message.hardwareVerified!==false||!profile||
+      !Object.hasOwn(PROFILES,profile.deviceId)||
+      (full?full.midiPort!=="RAW_ALL_TO_CUBASE"||
+        full.count!==requireFullCount(profile.deviceId):
+        profile.label!==PROFILES[profile.deviceId])){
+    finish(1,"RAW PILOT CLIENT REJECTED: unsupported or mismatched Studio Pilot response");return;
   }
-  const device=message.pilotProfile.deviceId;
+  const device=profile.deviceId;
   if(expected&&device!==expected){
     finish(1,"RAW PILOT CLIENT WRONG_PROFILE: expected "+expected+" but host armed "+device);return;
   }
@@ -53,8 +61,8 @@ ws.on("message",data=>{
     finish(1,"RAW PILOT CLIENT DRY_RUN_ONLY: host does not have MIDI output enabled");return;
   }
   finish(0,"RAW PILOT CLIENT LINK PASS: "+process.platform.toUpperCase()+
-    " → private localhost tunnel → "+message.pilotProfile.label+
-    " · mode "+message.mode.toUpperCase()+
+    " → private localhost tunnel → "+profile.label+
+    " · mode "+message.mode.toUpperCase()+(full?" · FULL SURFACE "+full.count+" CONTROLS":"")+
     " · original VST NOT VERIFIED · hardware NOT VERIFIED");
 });
 ws.on("error",error=>finish(1,
