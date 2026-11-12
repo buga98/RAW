@@ -53,8 +53,17 @@ C:\remote-audio-workstation\artifacts\raw-v543-acceptance\
 Za dodatni test s vlastitom pjesmom, bez ikakvog uploadanja:
 
 ```powershell
-npm run studio:acceptance:v543 -- --input "C:\Audio\moja-pjesma.wav"
+# Zamijeni primjer stvarnom putanjom do svojeg WAV-a!
+Test-Path "C:\Audio\moja-pjesma.wav"
+
+# Preporučeni jednostavni npm poziv (jedan pozicijski argument):
+npm run studio:acceptance:v543 -- "C:\Audio\moja-pjesma.wav"
+
+# Ili direktno kroz Node, gdje --input uvijek ostaje eksplicitan:
+node scripts/raw-v543-mastering-acceptance.mjs --input "C:\Audio\moja-pjesma.wav"
 ```
+
+**v5.43 CLI hotfix:** u nekim Windows/npm kombinacijama `npm run studio:acceptance:v543 -- --input "PUTANJA"` šalje programu samo putanju, bez doslovnog `--input`. CLI zato sada prihvaća i izravnu putanju. `RAW_V543_USAGE` znači neispravan zapis argumenata, ne grešku u audio DSP-u. Ako `Test-Path` ispiše `False`, primjer datoteke ne postoji: u naredbi upotrijebi stvarnu WAV datoteku, npr. kopiranjem putanje iz Explorera. Ne treba slati privatni WAV na GitHub.
 
 Trenutačno su podržani *nekomprimirani stereo RIFF WAV PCM 16/24-bit, 8–192 kHz*, do 128 MiB i najviše 16 milijuna frameova. Ovo nije dekoder svih mogućih DAW WAV varijanti (npr. float32, RF64, komprimirani WAV), niti treba biti. Po potrebi izvezi standardni 24-bit stereo PCM. Svi izvorni podaci i rezultati ostaju lokalno u mapi `artifacts/raw-v543-acceptance/`, koja je namjerno ignorirana u Gitu. Nije preporučljivo dodavati stvarni privatni WAV u Git repozitorij.
 
