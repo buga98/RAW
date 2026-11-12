@@ -14,7 +14,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest]
+        os: [ubuntu-latest, windows-latest, macos-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 12
     steps:
@@ -29,6 +29,6 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
         env:
           ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
-      - name: Three isolated original-plugin CC profiles; server lease and WebSocket
+      - name: Three isolated original-plugin CC profiles, same remote-client check on all OS
         run: npm run studio:plugin:v546:check
-# Automated runs test a LOCAL MIDI mapping emulator, not Cubase or vendor devices.
+# Automated runs test LOCAL MIDI mapping and cross-platform localhost WebSocket clients, not Cubase or vendor devices.
