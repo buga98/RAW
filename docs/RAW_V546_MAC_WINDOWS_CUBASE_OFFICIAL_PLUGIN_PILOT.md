@@ -48,12 +48,13 @@ Ako lokalna grana već postoji: `git switch feature/raw-v546-official-plugin-pil
    u:
    `%USERPROFILE%\Documents\Steinberg\<naziv tvoje Cubase verzije>\MIDI Remote\Driver Scripts\Local\RAW\DAW_Bridge\RAW_DAW_Bridge.js`
    Folder otvara i sam Cubase preko MIDI Remote → Open MIDI Remote Driver Scripts Folder. Kopiraj u **Local**, ne Public. Ako je stari `RAW_DAW_Bridge.js` tamo, prvo napravi backup pa ga zamijeni novim. Nemoj imati DUPLICIRANE RAW MIDI Remote skripte s istim portom.
-4. Pokreni Cubase, otvori testni projekt (bez internetskog izlaganja) i `Studio → VST Plug-in Manager`. Potvrdi da su vidljivi *originalni* vendor plugini; ne koristi RAW vlastite emulacije.
-5. Na jednom stereo kanalu kao insert otvori **Bettermaker Mastering Equalizer**. Uključi njegov prozor i ostavi ga **fokusiranim**.
-6. U Cubase donjoj zoni → **MIDI Remote** treba pisati `RAW — DAW Bridge`. Ako nije vidljivo: MIDI Remote Script Console → Reload Scripts; provjeri ime virtualnog port-a, VST3 plugin i verziju Cubasea.
-7. **Fokus i mapiranje su obavezni.** Nisu automatski: RAW CC21 = Cubase *Focused Quick Control 1*, CC22 = FQC2 itd. U Cubaseu trebaš dodijeliti **parametre baš tog originalnog plugina** na Focus Quick Controls, putem desnog klika `Add ... to Focus Quick Controls Slot` (ako plugin podržava) ili MIDI Remote Mapping Assistant / Remote Control Editor. Za prvi test dovoljno je FQC1 = EQ1 Gain.
-8. Lokalno provjeri da pomicanje FQC1 miče originalni plugin EQ1 Gain. Ako ne miče **ručno**, udaljeni RAW to ne može popraviti. Neki plugini mogu biti neaktivni bez spojenog hardvera; zabilježi taj rezultat kao vendor-limitaciju, ne kao PASS.
-9. Windows Tailscale online + Windows OpenSSH Server omogućen, SSH ključ autoriziran i firewall ograničen na privatnu mrežu. Bez port-forwardinga 7073 na routeru i bez javnog servisa.
+4. Prije pokretanja Cubasea možeš napraviti **read-only** provjeru: `npm run studio:plugin:v546:scan`. To daje samo nazive pronađenih VST3 kandidata i status MIDI porta; nikad nije dokaz da plugin radi.
+5. Pokreni Cubase, otvori testni projekt (bez internetskog izlaganja) i `Studio → VST Plug-in Manager`. Potvrdi da su vidljivi *originalni* vendor plugini; ne koristi RAW vlastite emulacije.
+6. Na jednom stereo kanalu kao insert otvori **Bettermaker Mastering Equalizer**. Uključi njegov prozor i ostavi ga **fokusiranim**.
+7. U Cubase donjoj zoni → **MIDI Remote** treba pisati `RAW — DAW Bridge`. Ako nije vidljivo: MIDI Remote Script Console → Reload Scripts; provjeri ime virtualnog port-a, VST3 plugin i verziju Cubasea.
+8. **Fokus i mapiranje su obavezni.** Nisu automatski: RAW CC21 = Cubase *Focused Quick Control 1*, CC22 = FQC2 itd. U Cubaseu trebaš dodijeliti **parametre baš tog originalnog plugina** na Focus Quick Controls, putem desnog klika `Add ... to Focus Quick Controls Slot` (ako plugin podržava) ili MIDI Remote Mapping Assistant / Remote Control Editor. Za prvi test dovoljno je FQC1 = EQ1 Gain.
+9. Lokalno provjeri da pomicanje FQC1 miče originalni plugin EQ1 Gain. Ako ne miče **ručno**, udaljeni RAW to ne može popraviti. Neki plugini mogu biti neaktivni bez spojenog hardvera; zabilježi taj rezultat kao vendor-limitaciju, ne kao PASS.
+10. Windows Tailscale online + Windows OpenSSH Server omogućen, SSH ključ autoriziran i firewall ograničen na privatnu mrežu. Bez port-forwardinga 7073 na routeru i bez javnog servisa.
 
 Za BETTERMAKER pilot, u **posebnom Windows PowerShell terminalu**:
 ```powershell
