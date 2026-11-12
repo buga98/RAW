@@ -163,11 +163,11 @@
  const gallery=document.getElementById("raw-screen-gallery");
  const pending=document.getElementById("raw-screen-gallery-pending");
  const screenshotAllowlist=new Set([
-  "assets/screenshots/raw-control-room.webp",
-  "assets/screenshots/raw-digital-premaster.webp",
-  "assets/screenshots/raw-project-recall.webp",
-  "assets/screenshots/raw-wav-qc.webp",
-  "assets/screenshots/raw-login.webp"
+  "assets/screenshots/raw-control-room.png",
+  "assets/screenshots/raw-digital-premaster.png",
+  "assets/screenshots/raw-project-recall.png",
+  "assets/screenshots/raw-wav-qc.png",
+  "assets/screenshots/raw-login.png"
  ]);
  async function loadRealScreenshots(){
   if(!gallery)return;
