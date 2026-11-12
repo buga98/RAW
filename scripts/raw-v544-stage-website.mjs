@@ -11,7 +11,7 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const from=join(root,"site");
 const into=join(root,"artifacts","raw-v544-site-staging");
 export const PUBLIC_SITE_FILES=Object.freeze([
- "index.html","styles.css","site.js",
+ "index.html","styles.css","site.js","robots.txt","sitemap.xml",
  "release-manifest.json","installer-profiles.json","assets/raw-mark.svg"
 ]);
 function assert(condition,message){if(!condition)throw Error("RAW_V544_SITE_"+message);}
