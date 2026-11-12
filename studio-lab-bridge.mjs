@@ -113,6 +113,10 @@ server.on("connection", socket => {
         return;
       }
       if (msg.type === "studio-devices") {
+        const armedDevice=fullProfile?fullDevice:pilotProfile?pilotDevice:null;
+        if(armedDevice&&(!Array.isArray(msg.devices)||msg.devices.length!==1||
+             msg.devices[0]!==armedDevice))
+          throw new Error("Active plugin pilot has one locked studio device");
         lab.setEnabled(socket, msg.devices);
         broadcast();
         return;
