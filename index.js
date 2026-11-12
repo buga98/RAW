@@ -118,7 +118,11 @@ ipcMain.handle("raw-v5-worker-command",(event,action)=>{
 });
 app.on("before-quit",()=>{rawV5WorkerManager?.close();});
 app.whenReady().then(()=>{
-  if(process.platform==="win32")app.setAppUserModelId("com.raw.remote-studio");
+  if(process.platform==="win32")app.setAppUserModelId(
+    process.env.RAW_DESKTOP_BETA==="1"
+      ? "com.raw.mastering.desktop.beta"
+      : "com.raw.remote-studio"
+  );
   createWindow();
 });
 app.on("window-all-closed",()=>{if(process.platform!=="darwin")app.quit();});
