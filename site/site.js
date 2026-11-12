@@ -158,5 +158,60 @@
  }
  if(platformSelect&&versionSelect&&cpuSelect)loadProfiles();
 
+ // v5.45: authentic screenshot gallery. No placeholder or artificially
+ // recreated scene is ever labeled as a real application screenshot.
+ const gallery=document.getElementById("raw-screen-gallery");
+ const pending=document.getElementById("raw-screen-gallery-pending");
+ const screenshotAllowlist=new Set([
+  "assets/screenshots/raw-control-room.webp",
+  "assets/screenshots/raw-digital-premaster.webp",
+  "assets/screenshots/raw-project-recall.webp",
+  "assets/screenshots/raw-wav-qc.webp",
+  "assets/screenshots/raw-login.webp"
+ ]);
+ async function loadRealScreenshots(){
+  if(!gallery)return;
+  try{
+   const response=await fetch("./screenshots.json",{cache:"no-store"});
+   if(!response.ok)throw Error("SCREENSHOTS_UNAVAILABLE");
+   const data=await response.json();
+   if(data.schemaVersion!==1||!Array.isArray(data.screenshots))
+    throw Error("SCREENSHOTS_SCHEMA");
+   let count=0;
+   for(const shot of data.screenshots){
+    if(shot?.status!=="published"||!screenshotAllowlist.has(shot.file)||
+       typeof shot.title!=="string"||typeof shot.alt!=="string"||
+       typeof shot.tag!=="string")continue;
+    const figure=document.createElement("figure");
+    const card=document.createElement("article");
+    card.className="real-shot";
+    const link=document.createElement("a");
+    link.href="./"+shot.file;
+    link.target="_blank";link.rel="noopener noreferrer";
+    link.setAttribute("aria-label","Otvori stvarni RAW screenshot: "+shot.title);
+    const img=document.createElement("img");
+    img.src=link.href;img.alt=shot.alt;img.loading="lazy";
+    img.decoding="async";img.width=1280;img.height=800;
+    const caption=document.createElement("figcaption");
+    const tag=document.createElement("span");
+    tag.textContent=shot.tag;
+    const title=document.createElement("strong");
+    title.textContent=shot.title;
+    const note=document.createElement("small");
+    note.textContent="Stvarni RAW desktop · beta snimka zaslona";
+    caption.append(tag,title,note);link.append(img);figure.append(link,caption);card.append(figure);
+    img.addEventListener("error",()=>{
+     card.remove();
+     if(gallery.children.length===0){gallery.hidden=true;if(pending)pending.hidden=false;}
+    },{once:true});
+    gallery.append(card);count++;
+   }
+   if(count){gallery.hidden=false;if(pending)pending.hidden=true;}
+  }catch{
+   // Site remains complete and accurate when owner has not provided actual captures.
+  }
+ }
+ void loadRealScreenshots();
+
  refreshDownloads();
 })();
