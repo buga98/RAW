@@ -53,6 +53,25 @@ async function one(deviceId,profile){
   const status=await first.next(m=>m.type==="bridge-status");
   if(status.pilotProfile?.deviceId!==deviceId||status.hardwareVerified!==false)
    throw new Error("Invalid armed pilot profile");
+  // Exercise the exact read-only CLI used by BOTH Windows and Mac clients.
+  const preflight=await new Promise((resolve,reject)=>{
+   const inspector=spawn(process.execPath,[
+    "scripts/raw-v546-client-preflight.mjs",
+    "--allow-dry-run","--expect="+deviceId
+   ],{cwd:root,stdio:["ignore","pipe","pipe"]});
+   let out="",err="";
+   const deadline=setTimeout(()=>{inspector.kill();reject(new Error("Client preflight timed out"));},6500);
+   inspector.stdout.on("data",d=>{out+=String(d);});
+   inspector.stderr.on("data",d=>{err+=String(d);});
+   inspector.once("error",e=>{clearTimeout(deadline);reject(e);});
+   inspector.once("exit",code=>{
+    clearTimeout(deadline);
+    if(code!==0||!out.includes("RAW PILOT CLIENT LINK PASS"))
+     reject(new Error("Client preflight failed: "+code+" "+out+" "+err));
+    else resolve(out);
+   });
+  });
+  if(!preflight.includes("original VST NOT VERIFIED"))throw new Error("Incorrect client confidence level");
   const secondConn=await connect();second=secondConn;
   send(first.ws,{type:"studio-claim"});
   const owned=await first.next(m=>m.type==="studio-state"&&m.owner===true);
