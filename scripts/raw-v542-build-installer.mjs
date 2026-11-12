@@ -65,9 +65,20 @@ try{
   "tests/raw-v540-unified-icons.test.mjs",
   "tests/raw-v541-macos-private-beta.test.mjs",
   "tests/raw-v542-installer-matrix.test.mjs"]);
- const python=process.platform==="win32"?"py":"python3";
- const pythonArgs=process.platform==="win32"?["-3"]:[];
- call(python,[...pythonArgs,"scripts/raw-v537-create-icons.py"]);
+ // On hosted Windows, setup-python puts Python 3.12 (with Pillow) on PATH,
+ // while "py -3" may select an unrelated newer Python without Pillow.
+ // On the owner's machine the reverse can be true. Probe the actual module.
+ const candidates=process.platform==="win32"
+   ?[{bin:"python",prefix:[]},{bin:"py",prefix:["-3"]}]
+   :[{bin:"python3",prefix:[]}];
+ const selected=candidates.find(candidate=>{
+   const probe=spawnSync(candidate.bin,[...candidate.prefix,"-c","from PIL import Image"],{
+     cwd:root,encoding:"utf8",windowsHide:true,shell:false
+   });
+   return !probe.error&&probe.status===0;
+ });
+ if(!selected)abort("PYTHON_WITH_PILLOW_NOT_FOUND");
+ call(selected.bin,[...selected.prefix,"scripts/raw-v537-create-icons.py"]);
  if(!existsSync(join(beta,"build",profile.platform==="windows"?"icon.ico":"icon.icns")))
   abort("ORIGINAL_RAW_ICON_MISSING");
 
