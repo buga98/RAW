@@ -126,3 +126,9 @@ app.whenReady().then(()=>{
   createWindow();
 });
 app.on("window-all-closed",()=>{if(process.platform!=="darwin")app.quit();});
+ // macOS keeps the app in Dock after all windows close. Reopening from Dock
+ // must restore the LOCAL TEST interface without changing IPC trust boundaries.
+ app.on("activate",()=>{
+   if(process.platform==="darwin"&&BrowserWindow.getAllWindows().length===0)
+     createWindow();
+ });

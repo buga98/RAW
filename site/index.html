@@ -134,6 +134,40 @@
             <span class="download-placeholder" data-download-placeholder>Preuzimanje uskoro</span>
           </article>
         </div>
+        <section class="installer-picker" aria-labelledby="installer-picker-title">
+          <div class="installer-picker-head">
+            <div><p class="overline">ODABERI SVOJU VERZIJU</p><h3 id="installer-picker-title">RAW za tvoj operativni sustav.</h3></div>
+            <p>Odaberi Windows ili macOS, verziju sustava i procesor. Prikazat ćemo odgovarajuću instalaciju i njezin status.</p>
+          </div>
+          <div class="installer-picker-controls">
+            <label for="raw-installer-platform">Sustav
+              <select id="raw-installer-platform">
+                <option value="windows">Windows</option>
+                <option value="macos">macOS (Mac)</option>
+              </select>
+            </label>
+            <label for="raw-installer-version">Verzija sustava
+              <select id="raw-installer-version">
+                <option value="10">Windows 10</option>
+                <option value="11">Windows 11</option>
+              </select>
+            </label>
+            <label for="raw-installer-cpu">Procesor
+              <select id="raw-installer-cpu">
+                <option value="x64">Intel / AMD · 64-bit</option>
+              </select>
+            </label>
+          </div>
+          <div class="installer-result" aria-live="polite">
+            <div><span class="installer-result-kicker">ODABRANI PAKET</span>
+              <strong id="raw-installer-name">Odaberi verziju</strong>
+              <small id="raw-installer-engine">Prikaz odgovarajuće verzije RAW-a</small>
+              <p id="raw-installer-status">Privatno testiranje — javna preuzimanja nisu dostupna.</p>
+            </div>
+            <a id="raw-installer-download" class="btn btn-download" href="#" hidden aria-disabled="true">Preuzmi odabranu verziju ↘</a>
+          </div>
+          <p class="installer-note">Monterey znači macOS 12. Noviji Macovi koriste zasebnu verziju za macOS 13 i više. Za iPhone/iPad potreban je drugi tip aplikacije, ne Mac .dmg.</p>
+        </section>
         <p class="beta-note"><span class="shield" aria-hidden="true">✦</span> Privatna beta: dostupnost instalacija ne znači da je dovršena integracija fizičkog studija ni produkcijska naplata. Prije javne objave paketi moraju biti potpisani, testirani i odobreni.</p>
       </section>
 

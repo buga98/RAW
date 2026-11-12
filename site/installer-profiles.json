@@ -1,0 +1,92 @@
+{
+  "schemaVersion": 1,
+  "channel": "private-beta",
+  "releaseVersion": "0.1.0",
+  "notice": "Private unsigned test builds. Published downloads require review and signed/notarized release.",
+  "profiles": [
+    {
+      "id": "windows10-x64",
+      "platform": "windows",
+      "label": "Windows 10 (64-bit)",
+      "os": "Windows 10",
+      "cpu": "x64",
+      "engine": "42.11.18",
+      "minimum": "10",
+      "channel": "compat",
+      "file": "RAW-Desktop-Beta-0.1.0-Windows10-x64.exe",
+      "status": "unavailable",
+      "url": null,
+      "sha256": null
+    },
+    {
+      "id": "windows11-x64",
+      "platform": "windows",
+      "label": "Windows 11 (64-bit)",
+      "os": "Windows 11",
+      "cpu": "x64",
+      "engine": "45.3.1",
+      "minimum": "11",
+      "channel": "modern",
+      "file": "RAW-Desktop-Beta-0.1.0-Windows11-x64.exe",
+      "status": "unavailable",
+      "url": null,
+      "sha256": null
+    },
+    {
+      "id": "macos12-intel",
+      "platform": "macos",
+      "label": "Monterey 12 · Intel",
+      "os": "12",
+      "cpu": "x64",
+      "engine": "42.11.18",
+      "minimum": "12.0",
+      "channel": "compat",
+      "file": "RAW-Desktop-Beta-0.1.0-macOS12-Monterey-Intel.dmg",
+      "status": "unavailable",
+      "url": null,
+      "sha256": null
+    },
+    {
+      "id": "macos12-apple",
+      "platform": "macos",
+      "label": "Monterey 12 · Apple Silicon",
+      "os": "12",
+      "cpu": "arm64",
+      "engine": "42.11.18",
+      "minimum": "12.0",
+      "channel": "compat",
+      "file": "RAW-Desktop-Beta-0.1.0-macOS12-Monterey-AppleSilicon.dmg",
+      "status": "unavailable",
+      "url": null,
+      "sha256": null
+    },
+    {
+      "id": "macos13plus-intel",
+      "platform": "macos",
+      "label": "Ventura 13 / Sonoma 14 / Sequoia 15 / Tahoe 26 · Intel",
+      "os": "13+",
+      "cpu": "x64",
+      "engine": "45.3.1",
+      "minimum": "13.0",
+      "channel": "modern",
+      "file": "RAW-Desktop-Beta-0.1.0-macOS13plus-Intel.dmg",
+      "status": "unavailable",
+      "url": null,
+      "sha256": null
+    },
+    {
+      "id": "macos13plus-apple",
+      "platform": "macos",
+      "label": "Ventura 13 / Sonoma 14 / Sequoia 15 / Tahoe 26 · Apple Silicon",
+      "os": "13+",
+      "cpu": "arm64",
+      "engine": "45.3.1",
+      "minimum": "13.0",
+      "channel": "modern",
+      "file": "RAW-Desktop-Beta-0.1.0-macOS13plus-AppleSilicon.dmg",
+      "status": "unavailable",
+      "url": null,
+      "sha256": null
+    }
+  ]
+}

@@ -70,7 +70,10 @@
     "desktop:v537:package": "node scripts/raw-v537-package-desktop.mjs",
     "desktop:v538:check": "node --test tests/raw-v538-desktop-beta-stability.test.mjs",
     "desktop:v539:check": "node --test tests/raw-v539-windows-installer-contract.test.mjs",
-    "desktop:v540:check": "node --test tests/raw-v540-unified-icons.test.mjs"
+    "desktop:v540:check": "node --test tests/raw-v540-unified-icons.test.mjs",
+    "desktop:v541:check": "node --test tests/raw-v541-macos-private-beta.test.mjs",
+    "desktop:v542:check": "node --test tests/raw-v541-macos-private-beta.test.mjs tests/raw-v542-installer-matrix.test.mjs",
+    "desktop:v542:build": "node scripts/raw-v542-build-installer.mjs"
   },
   "keywords": [],
   "author": "",
