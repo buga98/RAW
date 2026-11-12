@@ -83,3 +83,96 @@ footer{display:flex;align-items:center;justify-content:space-between;gap:30px;bo
 .installer-result p{margin:9px 0 0;color:#d4c49a;font-size:12px}
 .installer-note{color:#91aeb1;font-size:12px;margin:16px 0 0;line-height:1.7}
 @media(max-width:750px){.installer-picker{padding:20px}.installer-picker-head{display:block}.installer-picker-controls{grid-template-columns:1fr}.installer-result{align-items:stretch;flex-direction:column}}
+
+
+/* RAW v5.45 — product-first presentation; all device facias are explicitly
+   illustrative. Real screenshots are separately reviewed before appearing. */
+.nav-bar{position:sticky;top:0;backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px)}
+.brand img,.workspace-sidebar img,.footer-brand img{object-fit:contain}
+.proof-bar{width:100%;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;max-width:1460px;margin:0 auto;padding:2px 5.5vw 46px}
+.proof-bar>div{padding:24px 17px;border-top:1px solid #31575a;border-bottom:1px solid #244248;background:linear-gradient(180deg,rgba(20,55,57,.48),rgba(10,28,38,.22))}
+.proof-bar>div:first-child{border-left:1px solid #244248;border-radius:12px 0 0 12px}
+.proof-bar>div:last-child{border-right:1px solid #244248;border-radius:0 12px 12px 0}
+.proof-bar strong{display:block;color:#e7fff5;font-size:22px;font-weight:800;letter-spacing:-.04em}
+.proof-bar span{display:block;color:#93b3b0;font-size:9px;letter-spacing:.12em;line-height:1.7;margin-top:8px;font-weight:800}
+.hardware{border-top:1px solid #1c343a;background:radial-gradient(ellipse at 60% 35%,rgba(62,137,119,.12),transparent 65%)}
+.hardware-grid{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:17px}
+.hardware-card{border:1px solid #31505a;border-radius:16px;background:linear-gradient(160deg,#132a35,#0b1821 70%);padding:28px;min-width:0;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 16px 40px #0002}
+.hardware-featured{border-color:#49756b;background:linear-gradient(160deg,#163b3a,#0b1d27 70%)}
+.hardware-top,.hardware-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.hardware-maker{font-size:10px;font-weight:900;letter-spacing:.19em;color:#b4e5d7}
+.hardware-type{font-size:8px;letter-spacing:.14em;color:#95aeb2;text-align:right}
+.hardware-card h3{font-size:clamp(22px,2.1vw,31px);line-height:1.24;letter-spacing:-.055em;margin:32px 0 13px}
+.hardware-card h3 span{color:var(--teal)}
+.hardware-card p{color:#a8bcc0;font-size:12px;line-height:1.9;min-height:88px}
+.hardware-face{position:relative;border:1px solid #345562;background:linear-gradient(145deg,#1e333c,#0a141a);box-shadow:inset 0 4px 18px #0007;border-radius:9px;margin:13px 0 22px;padding:19px;min-height:179px;display:flex;flex-direction:column;justify-content:center}
+.hardware-meq{background:linear-gradient(160deg,#193339,#0c1d23)}
+.hardware-screen{position:relative;height:118px;background:linear-gradient(#061821,#061e27);border:1px solid #45776f;border-radius:7px;overflow:hidden;padding:8px}
+.hardware-screen span{position:absolute;top:6px;left:9px;color:#6ca8a6;font-size:8px;letter-spacing:.11em}
+.hardware-screen svg{display:block;width:100%;height:100%}
+.hardware-knob-row{display:flex;justify-content:space-around;gap:9px;margin-top:14px}
+.hardware-knob-row i{width:31px;height:31px;display:block;flex:none;border-radius:50%;border:4px solid #536771;border-top-color:#9ee5cd;border-right-color:#b8dac3;background:radial-gradient(circle at 33% 30%,#38505a,#101e25 75%);box-shadow:0 3px 6px #0009}
+.hardware-face>span{display:block;font-size:8px;color:#7eaaa4;letter-spacing:.12em;text-align:center;margin-top:17px;white-space:normal}
+.hardware-meters{display:flex;gap:9px;justify-content:center}
+.hardware-meters i{height:12px;max-width:155px;flex:1;background:repeating-linear-gradient(90deg,#6dceae 0 7px,#152a32 7px 11px);border:1px solid #365b61;border-radius:3px}
+.hardware-meters i:last-child{background:repeating-linear-gradient(90deg,#8eae98 0 7px,#152a32 7px 11px)}
+.hardware-tube .tube-glow{width:62%;height:44px;margin:0 auto;border:1px solid #5b5545;border-radius:8px;background:radial-gradient(ellipse at center,rgba(216,145,72,.55),rgba(141,70,37,.15) 55%,transparent 85%);box-shadow:0 0 24px #b16e2c28}
+.hardware-tube .hardware-knob-row i{border-top-color:#eac390;border-right-color:#d4a76e}
+.hardware-foot{border-top:1px solid #294a50;margin-top:auto;padding-top:16px}
+.hardware-foot span{font-size:8px;font-weight:750;letter-spacing:.075em;line-height:1.5;color:#86ada7}
+.hardware-foot span:last-child{color:#d3b98c;text-align:right}
+.hardware-disclaimer{font-size:11px;line-height:1.9;color:#89a3a9;margin:22px 0 0;max-width:1050px}
+.real-screens{border-top:1px solid #213942;background:radial-gradient(ellipse at 25% 5%,rgba(70,152,133,.1),transparent 55%)}
+.screens-pending{display:grid;grid-template-columns:140px 1fr;align-items:center;gap:24px;padding:37px;border:1px dashed #426064;border-radius:16px;background:linear-gradient(100deg,#132a33,#0b1922)}
+.screens-pending-icon{display:flex;align-items:center;justify-content:center;padding:30px;border:1px solid #47655f;border-radius:18px;background:#1c333a;box-shadow:0 10px 24px #0003}
+.screens-pending-icon img{width:72px;height:72px;object-fit:contain}
+.screens-pending h3{font-size:22px;letter-spacing:-.045em;margin:10px 0}
+.screens-pending p{font-size:12px;line-height:1.85;color:#a9bec1;max-width:690px;margin:0}
+.screenshot-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.real-shot{background:#0b1a23;border:1px solid #344b53;border-radius:16px;overflow:hidden}
+.real-shot figure{margin:0}
+.real-shot img{display:block;width:100%;height:auto;aspect-ratio:16/10;object-fit:contain;background:#09141c;cursor:zoom-in}
+.real-shot figcaption{padding:18px 21px 21px;border-top:1px solid #274047}
+.real-shot figcaption span{color:#68d9c0;font-size:9px;letter-spacing:.15em;font-weight:800}
+.real-shot figcaption strong{display:block;margin:7px 0 0;font-size:17px}
+.real-shot figcaption small{display:block;margin-top:7px;color:#8aa9ad}
+.real-shot a:focus-visible img{outline:3px solid var(--teal)}
+.capabilities{border-top:1px solid #21363c}
+.capability-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:15px}
+.capability-grid article{border:1px solid #2d4a52;border-radius:14px;padding:27px;background:linear-gradient(135deg,#112832,#0b1a23)}
+.capability-grid article>span{font-size:9px;color:#6ee3c6;letter-spacing:.15em;font-weight:800}
+.capability-grid h3{font-size:19px;letter-spacing:-.04em;margin:30px 0 10px}
+.capability-grid p{color:#a2b7ba;font-size:12px;line-height:1.8}
+.raw-faq{border-top:1px solid #223e44}
+.faq-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px;align-items:start}
+.faq-grid details{background:#11232e;border:1px solid #304b53;border-radius:13px;padding:0 22px}
+.faq-grid details[open]{border-color:#527a70}
+.faq-grid summary{padding:24px 29px 24px 0;cursor:pointer;font-size:13px;line-height:1.6;font-weight:750;position:relative;list-style:none}
+.faq-grid summary::-webkit-details-marker{display:none}
+.faq-grid summary:after{content:'+';position:absolute;right:2px;top:18px;font-size:25px;font-weight:400;color:#70ddc3}
+.faq-grid details[open] summary:after{content:'–'}
+.faq-grid details p{color:#a3b9bb;font-size:12px;line-height:1.9;padding:0 0 22px;margin:0}
+@media(max-width:1180px){
+ .hardware-grid{grid-template-columns:1fr 1fr}
+ .hardware-featured{grid-column:span 2}
+ .capability-grid{grid-template-columns:1fr 1fr}
+}
+@media(max-width:750px){
+ .proof-bar{padding:10px 22px 35px;grid-template-columns:1fr 1fr}
+ .proof-bar>div,.proof-bar>div:first-child,.proof-bar>div:last-child{border:1px solid #28474b;border-radius:8px;padding:16px}
+ .proof-bar strong{font-size:19px}
+ .hardware-grid,.screenshot-gallery,.faq-grid{grid-template-columns:1fr}
+ .hardware-featured{grid-column:auto}
+ .hardware-card{padding:23px}
+ .screens-pending{grid-template-columns:1fr;gap:18px;padding:24px}
+ .screens-pending-icon{width:102px;height:102px;padding:14px}
+ .screens-pending-icon img{width:64px;height:64px}
+}
+@media(max-width:420px){
+ .proof-bar{gap:6px}
+ .proof-bar>div,.proof-bar>div:first-child,.proof-bar>div:last-child{padding:13px}
+ .proof-bar strong{font-size:16px}
+ .proof-bar span{font-size:8px}
+ .capability-grid{grid-template-columns:1fr}
+ .hardware-knob-row i{width:26px;height:26px}
+}
