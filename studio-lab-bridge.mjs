@@ -6,9 +6,18 @@ import { WebSocketServer } from "ws";
 import { createRequire } from "node:module";
 import { midiRoute, MIDI_PORT_NAME } from "./daw-midi-map.mjs";
 import { StudioLab } from "./studio-lab.mjs";
+import {OFFICIAL_PLUGIN_PROFILES,officialPluginRoute} from "./raw-v546-official-plugin-map.mjs";
 
 const require = createRequire(import.meta.url);
 const midiMode = process.argv.includes("--midi");
+const pilotArg=process.argv.find(x=>x.startsWith("--official-plugin-pilot="));
+const pilotDevice=pilotArg?.slice("--official-plugin-pilot=".length)||null;
+if(pilotArg&&!Object.hasOwn(OFFICIAL_PLUGIN_PROFILES,pilotDevice)){
+ console.error("Invalid official plugin pilot profile");process.exit(2);
+}
+// The studio operator selects ONE original VST3 at a time.
+// It is impossible to prove the focused Cubase plug-in from MIDI OUT alone.
+const pilotProfile=pilotDevice?OFFICIAL_PLUGIN_PROFILES[pilotDevice]:null;
 let midiOutput = null;
 if (midiMode) {
   const easymidi = require("easymidi");
@@ -19,6 +28,7 @@ if (midiMode) {
   midiOutput = new easymidi.Output(MIDI_PORT_NAME);
 }
 const lab = new StudioLab();
+if(pilotProfile)lab.enabledDevices=new Set([pilotDevice]);
 const host = "127.0.0.1";
 const port = 7073;
 const sockets = new Set();
@@ -39,7 +49,8 @@ function broadcast() {
 }
 server.on("listening", () => {
   console.log("RAW Studio Lab LISTENING ws://127.0.0.1:7073 — " +
-    (midiMode ? "MIDI CC21 TEST" : "DRY RUN"));
+    (pilotProfile?"OFFICIAL PLUGIN PILOT "+pilotProfile.label+" / ":"")+
+    (midiMode ? "MIDI OUTPUT" : "DRY RUN"));
   console.log("EXCLUSIVE STUDIO · FAKE wallet 10.00 EUR · Bettermaker test 0.29 EUR/min.");
   console.log("For two-PC access use authenticated SSH tunnel over Tailscale. NEVER expose port 7073 publicly.");
 });
@@ -53,7 +64,13 @@ server.on("connection", socket => {
   let commandWindowAt = 0;
   let commandsInWindow = 0;
   send(socket, {type:"bridge-status", lab:true, mode:midiMode ? "midi" : "dry-run",
-    port:midiMode ? MIDI_PORT_NAME : null, mapping:"bettermaker_eq:eq1Gain -> CC21 -> Cubase QC1"});
+    port:midiMode ? MIDI_PORT_NAME : null, mapping:pilotProfile?"ORIGINAL PLUGIN FQC1..4 — MANUALLY MAP IN CUBASE":
+      "bettermaker_eq:eq1Gain -> CC21 -> Cubase QC1",
+    pilotProfile:pilotProfile?{
+      deviceId:pilotDevice,label:pilotProfile.label,
+      routes:Object.keys(pilotProfile.routes)
+    }:null,
+    pluginVerified:false,hardwareVerified:false});
   send(socket, lab.snapshot(socket));
   socket.on("message", raw => {
     let requestId = null;
@@ -94,7 +111,8 @@ server.on("connection", socket => {
       const now = Date.now();
       if (now - commandWindowAt > 1000) { commandWindowAt = now; commandsInWindow = 0; }
       if (++commandsInWindow > 35) throw new Error("Rate limit exceeded");
-      const midi = midiRoute(msg); // Intentionally ONE mapped knob
+      const midi = pilotProfile?officialPluginRoute(pilotDevice,msg):midiRoute(msg);
+      // MIDI output success is NOT official VST3 state verification.
       if (midiOutput) {
         midiOutput.send("cc", {controller:midi.cc,value:midi.value,channel:midi.channel});
         console.log("STUDIO MIDI SENT", midi);
@@ -102,7 +120,8 @@ server.on("connection", socket => {
         console.log("STUDIO DRY RUN", midi);
       }
       send(socket, {type:"parameter-ack",requestId,mode:midiMode?"midi":"dry-run",
-        status:midiMode?"midi-sent":"simulated",midi});
+        status:midiMode?"midi-sent":"simulated",midi,
+        pluginVerified:false,hardwareVerified:false});
     } catch (error) {
       send(socket, {type:"parameter-error",requestId,error:error.message});
     }
