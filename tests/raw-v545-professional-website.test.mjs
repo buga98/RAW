@@ -36,7 +36,7 @@ test("v5.45: curated screenshots show as real only after owner reviews a matchin
  assert.equal(data.screenshots.length,5);
  for(const item of data.screenshots){
   assert.equal(item.status,"pending");
-  assert.match(item.file,/^assets\/screenshots\/raw-[a-z-]+\.webp$/);
+  assert.match(item.file,/^assets\/screenshots\/raw-[a-z-]+\.png$/);
   assert.ok(item.alt.length>20);
  }
  const js=src("site/site.js"),html=src("site/index.html");
