@@ -6,6 +6,7 @@ import {join} from "node:path";
 import {createHash} from "node:crypto";
 import {runAcceptance,parseArgs} from "../scripts/raw-v543-mastering-acceptance.mjs";
 import {spawnSync} from "node:child_process";
+import {fileURLToPath} from "node:url";
 import {decodePcmWav,generateFixture,MAX_FRAMES} from "../scripts/raw-v543-wav-io.mjs";
 
 const hash=b=>createHash("sha256").update(b).digest("hex");
@@ -138,10 +139,8 @@ test("V5.43: a positional WAV path with spaces really runs the complete CLI and 
  const input=join(dir,"Moja pjesma 24-bit.wav");
  const output=join(dir,"Results");
  writeFileSync(input,generateFixture({frames:6000,sampleRate:48000,bits:24}));
- const script=new URL("../scripts/raw-v543-mastering-acceptance.mjs",import.meta.url);
- const result=spawnSync(process.execPath,[script.pathname.startsWith("/")&&process.platform==="win32"
-    ?decodeURIComponent(script.pathname.slice(1)):decodeURIComponent(script.pathname),
-   input,"--output",output],{
+ const script=fileURLToPath(new URL("../scripts/raw-v543-mastering-acceptance.mjs",import.meta.url));
+ const result=spawnSync(process.execPath,[script,input,"--output",output],{
    encoding:"utf8",windowsHide:true,timeout:45000,maxBuffer:2*1024*1024
  });
  assert.equal(result.error,undefined);
