@@ -1,0 +1,35 @@
+name: RAW V5.45 Professional Website QA
+on:
+  push:
+    branches:
+      - feature/raw-v545-professional-website
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  website:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout RAW without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Verify professional website and approved screenshot catalog
+        run: npm run site:v545:check
+      - name: Stage exact RAW desktop icon and public static website
+        run: npm run site:v545:stage
+      - name: Validate secure staging contents
+        run: |
+          test -s artifacts/raw-v544-site-staging/assets/raw-app-icon.png
+          test -s artifacts/raw-v544-site-staging/screenshots.json
+          test -s artifacts/raw-v544-site-staging/index.html
+          test -s artifacts/raw-v544-site-staging/SITE_STAGING_SHA256.json
+          ! find artifacts/raw-v544-site-staging -type f \( -iname '*.exe' -o -iname '*.dmg' -o -iname '*.wav' -o -iname '*.rawproj' -o -iname '.env*' \) | grep -q .
+          echo "RAW V5.45 PRO WEBSITE STAGING PASS"
+# No deploy, binary upload or public release in this workflow.
