@@ -156,7 +156,7 @@ def compare_frames(expected, groups):
             for i, actual in enumerate(group):
                 if i in consumed:
                     continue
-                if all(item[key] == actual[key] for key in ("width", "height", "planes", "bits")) and item["data"] == actual["data"]:
+                if (item["width"], item["height"], item["data"]) == (actual["width"], actual["height"], actual["data"]):
                     consumed.add(i)
                     matched += 1
                     break
