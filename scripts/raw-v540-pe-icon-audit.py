@@ -197,14 +197,177 @@ def compare_frames(expected, groups):
     )
 
 
+
+def repair_group_size_metadata(exe: Path, expected):
+    """Repair ONLY stale byte-length metadata for an otherwise exact RAW icon.
+
+    rcedit may replace an old 256px PNG (19,436 B) with RAW's 84,972 B PNG
+    but leave the RT_GROUP_ICON dwBytesInRes size from the old icon.
+    This operation preserves every RT_ICON byte and updates the group entry
+    only after ALL icon payloads have matched our source ICO byte-for-byte.
+    """
+    groups = inspect_pe_icon_resources(exe)
+    if len(groups) != 1:
+        raise IconAuditError(
+            f"RAW_V540_REPAIR_REQUIRES_SINGLE_GROUP:{len(groups)}"
+        )
+    group = groups[0]
+    if len(group) != len(expected):
+        raise IconAuditError("RAW_V540_REPAIR_FRAME_COUNT_MISMATCH")
+    wanted = {(f["width"], f["height"]): f for f in expected}
+    if len(wanted) != len(expected):
+        raise IconAuditError("RAW_V540_REPAIR_DUPLICATE_ICON_SIZES")
+    fixes = []
+    for index, frame in enumerate(group):
+        ref = wanted.get((frame["width"], frame["height"]))
+        if ref is None or frame.get("raw_data") != ref["data"]:
+            raise IconAuditError(
+                f"RAW_V540_REPAIR_FRAME_BYTES_NOT_ORIGINAL:{frame['width']}x{frame['height']}"
+            )
+        if frame["size"] != len(ref["data"]):
+            fixes.append((index, frame["size"], len(ref["data"])))
+    if not fixes:
+        compare_frames(expected, groups)
+        print("[RAW V5.40] All PE group frame sizes already correct.")
+        return
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    pointer = ctypes.c_void_p
+    hmodule = wintypes.HMODULE
+    k32.LoadLibraryExW.argtypes = [wintypes.LPCWSTR, pointer, wintypes.DWORD]
+    k32.LoadLibraryExW.restype = hmodule
+    k32.FreeLibrary.argtypes = [hmodule]
+    k32.FreeLibrary.restype = wintypes.BOOL
+    callback_type = ctypes.WINFUNCTYPE(
+        wintypes.BOOL, hmodule, pointer, pointer, pointer
+    )
+    lang_callback_type = ctypes.WINFUNCTYPE(
+        wintypes.BOOL, hmodule, pointer, pointer, wintypes.WORD, pointer
+    )
+    k32.EnumResourceNamesW.argtypes = [hmodule, pointer, callback_type, pointer]
+    k32.EnumResourceNamesW.restype = wintypes.BOOL
+    k32.EnumResourceLanguagesW.argtypes = [
+        hmodule, pointer, pointer, lang_callback_type, pointer
+    ]
+    k32.EnumResourceLanguagesW.restype = wintypes.BOOL
+    k32.FindResourceExW.argtypes = [
+        hmodule, pointer, pointer, wintypes.WORD
+    ]
+    k32.FindResourceExW.restype = pointer
+    k32.SizeofResource.argtypes = [hmodule, pointer]
+    k32.SizeofResource.restype = wintypes.DWORD
+    k32.LoadResource.argtypes = [hmodule, pointer]
+    k32.LoadResource.restype = pointer
+    k32.LockResource.argtypes = [pointer]
+    k32.LockResource.restype = pointer
+
+    handle = k32.LoadLibraryExW(str(exe.resolve()), None, 0x00000002)
+    if not handle:
+        raise IconAuditError("RAW_V540_REPAIR_RESOURCE_OPEN_FAILED")
+    try:
+        names = []
+
+        @callback_type
+        def name_cb(_h, _type, name, _param):
+            names.append(name)
+            return True
+
+        if not k32.EnumResourceNamesW(handle, pointer(14), name_cb, None):
+            raise IconAuditError("RAW_V540_REPAIR_GROUP_NAME_MISSING")
+        if len(names) != 1 or names[0] is None or names[0] > 0xFFFF:
+            raise IconAuditError("RAW_V540_REPAIR_UNSUPPORTED_GROUP_NAME")
+        name_id = names[0]
+        languages = []
+
+        @lang_callback_type
+        def language_cb(_h, _type, _name, lang, _param):
+            languages.append(lang)
+            return True
+
+        if not k32.EnumResourceLanguagesW(
+            handle, pointer(14), pointer(name_id), language_cb, None
+        ):
+            raise IconAuditError("RAW_V540_REPAIR_GROUP_LANGUAGE_MISSING")
+        if len(languages) != 1:
+            raise IconAuditError(
+                f"RAW_V540_REPAIR_GROUP_LANGUAGE_AMBIGUOUS:{languages}"
+            )
+        language = languages[0]
+        res = k32.FindResourceExW(
+            handle, pointer(14), pointer(name_id), language
+        )
+        size = k32.SizeofResource(handle, res) if res else 0
+        loaded = k32.LoadResource(handle, res) if res else None
+        locked = k32.LockResource(loaded) if loaded else None
+        if not size or not locked:
+            raise IconAuditError("RAW_V540_REPAIR_GROUP_READ_FAILED")
+        original = ctypes.string_at(locked, size)
+    finally:
+        k32.FreeLibrary(handle)
+
+    # No image bytes modified: only the 32-bit dwBytesInRes fields.
+    updated = bytearray(original)
+    if len(updated) < 6 + len(group) * 14:
+        raise IconAuditError("RAW_V540_REPAIR_GROUP_TRUNCATED")
+    for index, prior_size, actual_size in fixes:
+        found = struct.unpack_from("<I", updated, 6 + index * 14 + 8)[0]
+        if found != prior_size:
+            raise IconAuditError("RAW_V540_REPAIR_STALE_GROUP_GUARD")
+        struct.pack_into("<I", updated, 6 + index * 14 + 8, actual_size)
+
+    k32.BeginUpdateResourceW.argtypes = [wintypes.LPCWSTR, wintypes.BOOL]
+    k32.BeginUpdateResourceW.restype = pointer
+    k32.UpdateResourceW.argtypes = [
+        pointer, pointer, pointer, wintypes.WORD, pointer, wintypes.DWORD
+    ]
+    k32.UpdateResourceW.restype = wintypes.BOOL
+    k32.EndUpdateResourceW.argtypes = [pointer, wintypes.BOOL]
+    k32.EndUpdateResourceW.restype = wintypes.BOOL
+
+    transaction = k32.BeginUpdateResourceW(str(exe.resolve()), False)
+    if not transaction:
+        raise IconAuditError(
+            f"RAW_V540_REPAIR_UPDATE_OPEN_FAILED:{ctypes.get_last_error()}"
+        )
+    committed = False
+    try:
+        buffer = ctypes.create_string_buffer(bytes(updated))
+        if not k32.UpdateResourceW(
+            transaction, pointer(14), pointer(name_id),
+            language, buffer, len(updated)
+        ):
+            raise IconAuditError(
+                f"RAW_V540_REPAIR_RESOURCE_WRITE_FAILED:{ctypes.get_last_error()}"
+            )
+        if not k32.EndUpdateResourceW(transaction, False):
+            raise IconAuditError(
+                f"RAW_V540_REPAIR_COMMIT_FAILED:{ctypes.get_last_error()}"
+            )
+        committed = True
+    finally:
+        if not committed:
+            k32.EndUpdateResourceW(transaction, True)
+
+    compare_frames(expected, inspect_pe_icon_resources(exe))
+    for index, before, after in fixes:
+        dimension = group[index]["width"]
+        print(
+            f"[RAW V5.40] Corrected RT_GROUP_ICON {dimension}px entry "
+            f"length: {before} -> {after} bytes; image data unchanged."
+        )
+
+
 def main():
     cli = argparse.ArgumentParser(description="Verify the RAW EXE icon resource.")
     cli.add_argument("--exe", required=True, type=Path)
     cli.add_argument("--ico", required=True, type=Path)
+    cli.add_argument("--repair", action="store_true", help="Fix exact-byte ICO size fields only")
     args = cli.parse_args()
     if not args.exe.is_file() or not args.ico.is_file():
         raise IconAuditError("RAW_V540_PE_INPUT_MISSING")
     expected = parse_icon_file(args.ico.read_bytes())
+    if args.repair:
+        repair_group_size_metadata(args.exe, expected)
     groups = inspect_pe_icon_resources(args.exe)
     group_id, matched = compare_frames(expected, groups)
     print(
