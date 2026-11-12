@@ -91,21 +91,31 @@ try{
  console.log("[RAW V5.42] Build "+profile.file+" — no release upload");
  const builderCli=join(beta,"node_modules","electron-builder","cli.js");
  if(!existsSync(builderCli))abort("ELECTRON_BUILDER_CLI_MISSING");
- call(process.execPath,[
+ // Capture the real packager log and require that it reports the requested
+ // Electron runtime while packaging for the correct platform and CPU. The
+ // CLI does not necessarily emit builder-effective-config.yaml for custom
+ // --config files, so that file is NOT proof of packaging runtime.
+ const result=spawnSync(process.execPath,[
   builderCli,
   ...(profile.platform==="windows"?["--win","nsis"]:["--mac","dmg"]),
   arch==="arm64"?"--arm64":"--x64",
   "--config",temporaryConfig,"--publish","never"
- ],beta);
-
+ ],{cwd:beta,encoding:"utf8",maxBuffer:64*1024*1024,windowsHide:true,shell:false,
+    env:{...process.env,RAW_TEST_MODE:"1",CSC_IDENTITY_AUTO_DISCOVERY:"false"}});
+ if(result.stdout)process.stdout.write(result.stdout);
+ if(result.stderr)process.stderr.write(result.stderr);
+ if(result.error||result.status!==0)
+  abort("ELECTRON_BUILDER_FAILED:"+String(result.error?.message||result.status));
+ const packagerLog=(result.stdout||"")+"\n"+(result.stderr||"");
+ const expectedPlatform=profile.platform==="windows"?"win32":"darwin";
+ const evidence=new RegExp(
+  "packaging\\s+platform="+expectedPlatform+"\\s+arch="+arch+
+  "\\s+electron="+profile.engine.replaceAll(".","\\.")+"(?:\\s|$)"
+ );
+ if(!evidence.test(packagerLog))
+   abort("PACKAGED_ELECTRON_RUNTIME_NOT_VERIFIED:"+profile.engine);
  if(!existsSync(artifactPath)||statSync(artifactPath).size<1_000_000)
   abort("INSTALLER_ARTIFACT_MISSING_OR_TOO_SMALL");
- // Verify packaging really used the requested Electron major: not just an
- // artifact renamed for a newer OS.
- const effectiveConfig=join(installerDir,"builder-effective-config.yaml");
- if(!existsSync(effectiveConfig)||
-    !readFileSync(effectiveConfig,"utf8").includes("electronVersion: "+profile.engine))
-   abort("ELECTRON_BUILD_VERSION_NOT_VERIFIED");
  if(profile.platform==="windows"){
   call("powershell.exe",["-NoProfile","-File",join(root,"scripts","raw-v540-verify-windows-icon.ps1"),
      "-ExePath",join(installerDir,"win-unpacked","RAW Desktop Beta.exe"),
