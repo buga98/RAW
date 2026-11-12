@@ -76,7 +76,7 @@ test("v5.47 profile mapping rejects malformed or cross-device commands fail clos
 
 test("v5.47 generated Cubase MIDI Remote surface exactly matches committed script",()=>{
  const committed=readFileSync(new URL("../cubase/Local/RAW/Full_Surface/RAW_Full_Surface.js",import.meta.url),"utf8");
- assert.equal(committed,generate());
+ assert.equal(committed.replace(/\r\n/g,"\n"),generate().replace(/\r\n/g,"\n"));
 });
 
 test("v5.47 Cubase ES5 script instantiates 113 distinct MIDI bindings with correct channels and labels",()=>{
