@@ -1,0 +1,38 @@
+name: RAW V5.44 Website Launch QA
+on:
+  push:
+    branches:
+      - feature/raw-v544-website-launch
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  public-website:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout RAW without persisted credentials
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+      - name: Validate site and locked installer manifests
+        run: npm run site:v544:check
+      - name: Stage only approved static public files
+        run: npm run site:v544:stage
+      - name: Verify staged output has no private resources
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f artifacts/raw-v544-site-staging/index.html
+          test -f artifacts/raw-v544-site-staging/SITE_STAGING_SHA256.json
+          if find artifacts/raw-v544-site-staging -type f \( -iname '*.exe' -o -iname '*.dmg' -o -iname '*.wav' -o -iname '.env*' \) | grep -q .; then
+            echo "Forbidden file in public staging" >&2
+            exit 1
+          fi
+          echo "SAFE PUBLIC WEBSITE STAGING PASS"
+# This job deliberately NEVER deploys and NEVER uploads desktop installers.
