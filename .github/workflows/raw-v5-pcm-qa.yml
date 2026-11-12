@@ -14,6 +14,8 @@ on:
       - feature/raw-v538-desktop-beta-stability
       - feature/raw-v539-local-windows-installer
       - feature/raw-v540-unified-windows-icons
+      - feature/raw-v541-macos-private-beta
+      - feature/raw-v542-platform-installer-selector
   pull_request:
     branches:
       - feature/studio-audio-worker-v5
@@ -70,6 +72,8 @@ jobs:
         run: npm run desktop:v539:check
       - name: V5.40 unified Windows EXE/taskbar/installer icon contract
         run: npm run desktop:v540:check
+      - name: V5.41 Mac platform contract and v5.42 OS-version selector
+        run: npm run desktop:v542:check
       - name: Full RAW unit and contract smoke suite
         run: npm run test:smoke
       - name: V5.39 Windows NSIS EXE build smoke (unsigned, never uploaded)
