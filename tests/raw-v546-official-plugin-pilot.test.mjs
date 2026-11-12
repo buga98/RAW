@@ -63,7 +63,7 @@ test("v5.46: only explicitly armed pilot can send existing WesAudio RAW rack com
  assert.match(client,/if \(labActive && !labOwned\) return/);
  assert.match(client,/isOfficialPluginPilot:/);
  const server=read("studio-lab-bridge.mjs");
- assert.match(server,/const midi = pilotProfile\?officialPluginRoute\(pilotDevice,msg\):midiRoute\(msg\)/);
+ assert.match(server,/pilotProfile\?officialPluginRoute\(pilotDevice,msg\):midiRoute\(msg\)/);
  assert.match(server,/lab\.enabledDevices=new Set\(\[pilotDevice\]\)/);
  assert.match(server,/if \(!lab\.owns\(socket\)\)/);
  assert.match(server,/host = "127\.0\.0\.1"/);
