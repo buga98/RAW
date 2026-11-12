@@ -39,4 +39,28 @@ module.exports=async function rawUnifiedIconAfterPack(context){
     "product-version":"0.1.0.0"
   });
   console.log("[RAW V5.40] Original taskbar artwork embedded into Windows application EXE.");
+
+  // rcedit@5 can leave the previous 256px PNG byte-length in RT_GROUP_ICON
+  // despite replacing RT_ICON with RAW's newer (larger) PNG. Normalize only
+  // metadata after proving every embedded image frame matches the source ICO.
+  // This prevents Windows from treating the original icon as truncated.
+  const {spawnSync}=require("node:child_process");
+  const fixer=join(__dirname,"..","scripts","raw-v540-pe-icon-audit.py");
+  if(!existsSync(fixer))throw Error("RAW_V540_PE_REPAIR_SCRIPT_MISSING");
+  const args=["--repair","--exe",exe,"--ico",icon];
+  let command="py",parameters=["-3",fixer,...args];
+  let outcome=spawnSync(command,parameters,{
+    encoding:"utf8",windowsHide:true,shell:false,timeout:30000
+  });
+  if(outcome.error?.code==="ENOENT"){
+    command="python";parameters=[fixer,...args];
+    outcome=spawnSync(command,parameters,{
+      encoding:"utf8",windowsHide:true,shell:false,timeout:30000
+    });
+  }
+  if(outcome.stdout)process.stdout.write(outcome.stdout);
+  if(outcome.stderr)process.stderr.write(outcome.stderr);
+  if(outcome.error||outcome.status!==0)
+    throw Error("RAW_V540_PE_ICON_RESOURCE_REPAIR_FAILED");
+
 };
