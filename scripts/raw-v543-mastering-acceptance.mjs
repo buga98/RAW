@@ -328,15 +328,26 @@ export async function runAcceptance(opts={}){
   throw e;
  }
 }
-function parseArgs(args){
- const out={};
+// npm versions differ in how they forward --input after the npm "--"
+// delimiter. Accept an explicit --input FILE, or a single positional FILE
+// when npm has stripped --input. Both forms remain strictly LOCAL FILE I/O.
+export function parseArgs(argv){
+ if(!Array.isArray(argv))throw Error("RAW_V543_USAGE");
+ const args=[...argv],out={};
  while(args.length){
   const arg=args.shift();
-  if(!["--input","--output"].includes(arg)||!args.length)throw Error("RAW_V543_USAGE");
-  const value=args.shift();
-  if(value.startsWith("--"))throw Error("RAW_V543_USAGE");
-  if(arg==="--input")out.inputPath=value;
-  if(arg==="--output")out.outputDir=value;
+  if(arg==="--input"||arg==="--output"){
+   if(!args.length)throw Error("RAW_V543_USAGE");
+   const value=args.shift();
+   if(typeof value!=="string"||!value.trim()||value.startsWith("--"))
+    throw Error("RAW_V543_USAGE");
+   const key=arg==="--input"?"inputPath":"outputDir";
+   if(Object.hasOwn(out,key))throw Error("RAW_V543_USAGE");
+   out[key]=value;
+  }else if(typeof arg==="string"&&arg.trim()&&!arg.startsWith("-")){
+   if(Object.hasOwn(out,"inputPath"))throw Error("RAW_V543_USAGE");
+   out.inputPath=arg;
+  }else throw Error("RAW_V543_USAGE");
  }
  return out;
 }
