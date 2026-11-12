@@ -4,6 +4,11 @@
 import {spawn} from "node:child_process";
 import WebSocket from "ws";
 import {OFFICIAL_PLUGIN_PROFILES} from "../raw-v546-official-plugin-map.mjs";
+import {createRequire} from "node:module";
+const require=createRequire(import.meta.url);
+const FULL=require("../raw-v547-full-controls.js");
+const full=process.argv.includes("--full-surface");
+const profiles=full?FULL.profiles:OFFICIAL_PLUGIN_PROFILES;
 
 const root=new URL("../",import.meta.url);
 const delay=ms=>new Promise(r=>setTimeout(r,ms));
@@ -45,13 +50,14 @@ async function connect(){
 function send(ws,obj){ws.send(JSON.stringify(obj));}
 async function one(deviceId,profile){
  const child=spawn(process.execPath,["studio-lab-bridge.mjs",
-  "--official-plugin-pilot="+deviceId],{cwd:root,stdio:["ignore","pipe","pipe"]});
+  (full?"--full-surface-pilot=":"--official-plugin-pilot=")+deviceId],{cwd:root,stdio:["ignore","pipe","pipe"]});
  let stderr="";child.stderr.on("data",chunk=>{stderr+=String(chunk);});
  let first,second;
  try{
   first=await connect();
   const status=await first.next(m=>m.type==="bridge-status");
-  if(status.pilotProfile?.deviceId!==deviceId||status.hardwareVerified!==false)
+  if((full?status.fullSurfaceProfile?.deviceId:status.pilotProfile?.deviceId)!==deviceId||
+    status.hardwareVerified!==false)
    throw new Error("Invalid armed pilot profile");
   // Exercise the exact read-only CLI used by BOTH Windows and Mac clients.
   const preflight=await new Promise((resolve,reject)=>{
@@ -79,21 +85,48 @@ async function one(deviceId,profile){
    throw new Error("Wrong armed devices");
   send(second.ws,{type:"studio-claim"});
   await second.next(m=>m.type==="studio-denied");
-  const [param,route]=Object.entries(profile.routes)[0];
+  const [param,route]=Object.entries(full?profile.controls:profile.routes)[0];
   const testMessage={type:"parameter-change",requestId:"valid",
     sessionId:"test-1793883600000",deviceId,parameter:param,value:route.max};
   send(first.ws,testMessage);
   const ok=await first.next(m=>m.type==="parameter-ack"&&m.requestId==="valid");
-  if(ok.status!=="simulated"||ok.midi.cc!==route.cc||ok.midi.value!==127||
+  if(ok.status!=="simulated"||ok.midi.cc!==route.cc||
+    ok.midi.value!==(full?16383:127)||
+    (full&&ok.midi.bits!==14)||
     ok.pluginVerified!==false||ok.hardwareVerified!==false)
    throw new Error("Incorrect test output: "+JSON.stringify(ok));
+  if(full){
+   // Actual WebSocket bridge acceptance for EVERY registered RAW control, not
+   // only a pure function. This is still DRY RUN; never vendor VST3/hardware QA.
+   let n=0;
+   for(const [parameter,def] of Object.entries(profile.controls)){
+    if(n>0&&n%24===0)await delay(1100); // enforce Studio Lab rate limit
+    const value=def.kind==="numeric"?def.max:
+      def.kind==="enum"?def.values[def.values.length-1]:
+      def.kind==="toggle"?true:true;
+    const requestId="full-"+(++n);
+    send(first.ws,{type:"parameter-change",requestId,
+      sessionId:"test-1793883600000",deviceId,parameter,value});
+    const result=await first.next(m=>m.requestId===requestId&&
+      (m.type==="parameter-ack"||m.type==="parameter-error"));
+    if(result.type!=="parameter-ack"||result.status!=="simulated"||
+       result.midi.parameter!==parameter||
+       result.midi.bits!==(def.kind==="numeric"?14:7)||
+       result.pluginVerified!==false||result.hardwareVerified!==false){
+      throw new Error("FULL SURFACE WS ROUTE FAILED "+deviceId+":"+parameter+
+        " -> "+JSON.stringify(result));
+    }
+   }
+   console.log("PASS "+deviceId+" full transport "+n+"/"+n+" commands → WS → dry-run MIDI");
+  }
   send(second.ws,{...testMessage,requestId:"unauthorized"});
   await second.next(m=>m.type==="parameter-error"&&m.requestId==="unauthorized");
-  const wrong=Object.keys(OFFICIAL_PLUGIN_PROFILES).find(id=>id!==deviceId);
+  const wrong=Object.keys(profiles).find(id=>id!==deviceId);
   send(first.ws,{...testMessage,deviceId:wrong,requestId:"wrong-profile"});
   await first.next(m=>m.type==="parameter-error"&&m.requestId==="wrong-profile");
-  console.log("PASS v5.46 "+deviceId+" -> dry-run CC"+route.cc+
-    " -> QC"+route.focusedQC+"; ownership + wrong-device rejection; VST/HW unverified");
+  console.log("PASS "+(full?"v5.47 FULL SURFACE ":"v5.46 ")+deviceId+
+    " -> dry-run CC"+route.cc+(full?"/LSB":" -> QC"+route.focusedQC)+
+    "; ownership + wrong-device rejection; VST/HW unverified");
  }catch(e){throw new Error(deviceId+": "+e.message+(stderr?"\n"+stderr:""));}
  finally{
   first?.ws.terminate();second?.ws.terminate();
@@ -104,6 +137,7 @@ async function one(deviceId,profile){
  }
 }
 try{
- for(const [id,profile] of Object.entries(OFFICIAL_PLUGIN_PROFILES))await one(id,profile);
- console.log("RAW V5.46 ALL 3 OFFICIAL PLUGIN PILOT LAB CHECKS PASS (NO VENDOR PLUGINS TESTED).");
+ for(const [id,profile] of Object.entries(profiles))await one(id,profile);
+ console.log("RAW "+(full?"V5.47 FULL SURFACE":"V5.46")+
+  " ALL 3 ORIGINAL PLUGIN LAB CHECKS PASS (NO VENDOR PLUGINS TESTED).");
 }catch(e){console.error(e.stack||String(e));process.exitCode=1;}

@@ -63,6 +63,20 @@
             pilotProfile=labActive&&Object.hasOwn(knownProfiles,profileId)?
               {deviceId:profileId,label:String(msg.pilotProfile.label||profileId),
                routes:knownProfiles[profileId]}:null;
+            const full=msg.fullSurfaceProfile;
+            const localFull=window.RAWFullV547?.profiles?.[full?.deviceId];
+            if(labActive&&full&&localFull&&
+               Number(full.count)===Object.keys(localFull.controls).length&&
+               String(full.midiPort)==="RAW_ALL_TO_CUBASE"){
+              pilotProfile={
+                deviceId:full.deviceId,label:localFull.label,
+                routes:new Set(Object.keys(localFull.controls)),fullSurface:true
+              };
+            }
+            if(labActive&&full&&!pilotProfile){
+              status("REJECTED","Studio full surface profile differs from local allowlist.");
+              current.close();return;
+            }
             if (labActive) {
               current.send(JSON.stringify({type:"studio-claim"}));
               status("CLAIMING", pilotProfile?
@@ -78,7 +92,7 @@
           } else if (msg.type === "studio-state") {
             labOwned = msg.owner === true;
             if (labOwned) {
-              status(pilotProfile?"PLUGIN PILOT ARMED":"STUDIO YOURS",
+              status(pilotProfile?.fullSurface?"FULL SURFACE ARMED":pilotProfile?"PLUGIN PILOT ARMED":"STUDIO YOURS",
                 (pilotProfile?pilotProfile.label+" · MIDI OUTPUT ≠ VST/HW READBACK · ":"EKSKLUZIVNO · ") +
                 "TEST " + (msg.balanceCents / 100).toFixed(2) + " EUR · " +
                 (msg.rateCentsPerMin / 100).toFixed(2) + " EUR/min · " +
@@ -100,9 +114,10 @@
             const cc = msg.midi;
             status(msg.status === "midi-sent" ? "MIDI SENT" : "SIMULATED",
               cc.deviceId+" "+cc.parameter+" "+cc.originalValue+
-              " → MIDI CC"+cc.cc+" / QC"+(cc.focusedQC||1)+
+              " → MIDI "+(cc.bits===14?"14-bit CC"+cc.cc+"/"+cc.ccLsb:
+                "CC"+cc.cc)+(cc.focusedQC?"/QC"+cc.focusedQC:"")+
               " = "+cc.value+" · "+msg.status+
-              " · VST i hardware nisu potvrđeni");
+              " · originalni VST i hardware nisu potvrđeni");
           } else if (msg.type === "parameter-error") {
             status("REJECTED", msg.error || "Bridge rejected command");
           }
@@ -157,5 +172,7 @@
     isActive:()=>!!socket&&socket.readyState===WebSocket.OPEN,
     isOfficialPluginPilot:()=>!!pilotProfile&&labOwned&&
       !!socket&&socket.readyState===WebSocket.OPEN,
-    selectedPilotDevice:()=>pilotProfile?.deviceId||null };
+    selectedPilotDevice:()=>pilotProfile?.deviceId||null,
+    isFullSurfacePilot:()=>!!pilotProfile?.fullSurface&&labOwned&&
+      !!socket&&socket.readyState===WebSocket.OPEN };
 })();

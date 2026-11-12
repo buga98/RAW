@@ -57,6 +57,6 @@ test("Live bridge checks lease owner server-side before mapping or sending MIDI"
   const {readFileSync} = await import("node:fs");
   const bridge = readFileSync(new URL("../studio-lab-bridge.mjs",import.meta.url),"utf8");
   assert.match(bridge,/if \(!lab\.owns\(socket\)\) throw new Error\("Studio occupied, not claimed, or test credits exhausted"\)/);
-  assert.ok(bridge.indexOf("if (!lab.owns(socket))") < bridge.indexOf("const midi = pilotProfile?officialPluginRoute(pilotDevice,msg):midiRoute(msg)"),
+  assert.ok(bridge.indexOf("if (!lab.owns(socket))") < bridge.indexOf("const midi = fullProfile?FULL.route(fullDevice,msg):"),
     "Authorization must happen before MIDI mapping and send");
 });
