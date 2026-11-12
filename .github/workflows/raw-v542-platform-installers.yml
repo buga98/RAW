@@ -1,0 +1,43 @@
+name: RAW V5.42 OS Version Installer Matrix (PRIVATE / NO UPLOAD)
+on:
+  push:
+    branches:
+      - feature/raw-v542-platform-installer-selector
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  os-profile-build:
+    name: ${{ matrix.profile }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - profile: windows10-x64
+            runner: windows-latest
+          - profile: windows11-x64
+            runner: windows-latest
+          - profile: macos12-intel
+            runner: macos-15-intel
+          - profile: macos12-apple
+            runner: macos-15
+          - profile: macos13plus-intel
+            runner: macos-15-intel
+          - profile: macos13plus-apple
+            runner: macos-15
+    runs-on: ${{ matrix.runner }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install RAW original icon rasterizer
+        run: python -m pip install --disable-pip-version-check Pillow==11.3.0
+      - name: Build + verify one specific private OS/CPU variant (no artifact upload)
+        run: node scripts/raw-v542-build-installer.mjs ${{ matrix.profile }}
