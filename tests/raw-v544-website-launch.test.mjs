@@ -23,7 +23,7 @@ test("v5.44: stage only an allowlisted public landing, never desktop binaries or
   }
  }
  walk(result.directory);
- assert.deepEqual(paths.sort(),[...PUBLIC_SITE_FILES,"SITE_STAGING_SHA256.json"].sort());
+ assert.deepEqual(paths.sort(),[...PUBLIC_SITE_FILES,"assets/raw-app-icon.png","SITE_STAGING_SHA256.json"].sort());
  const receipt=JSON.parse(readFileSync(join(result.directory,"SITE_STAGING_SHA256.json"),"utf8"));
  assert.equal(receipt.kind,"RAW_PUBLIC_SITE_ONLY");
  for(const name of PUBLIC_SITE_FILES){
@@ -31,6 +31,10 @@ test("v5.44: stage only an allowlisted public landing, never desktop binaries or
   assert.equal(readFileSync(join(result.directory,name)).compare(read("site/"+name)),0,name);
   assert.equal(receipt.files[name],createHash("sha256").update(read("site/"+name)).digest("hex"));
  }
+ const icon=read("icon.png");
+ assert.ok(icon.length>100000);
+ assert.equal(readFileSync(join(result.directory,"assets/raw-app-icon.png")).compare(icon),0);
+ assert.equal(receipt.files["assets/raw-app-icon.png"],createHash("sha256").update(icon).digest("hex"));
  assert.equal(paths.some(p=>/\.exe$|\.dmg$|\.env|firebase|\.rawproj$|\.wav$/i.test(p)),false);
 });
 test("v5.44: Vercel landing uses no server functions and has hardened static download manifests",()=>{
