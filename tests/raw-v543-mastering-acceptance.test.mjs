@@ -1,10 +1,11 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {mkdtempSync,readFileSync,rmSync,existsSync} from "node:fs";
+import {mkdtempSync,readFileSync,writeFileSync,rmSync,existsSync} from "node:fs";
 import {tmpdir} from "node:os";
 import {join} from "node:path";
 import {createHash} from "node:crypto";
-import {runAcceptance} from "../scripts/raw-v543-mastering-acceptance.mjs";
+import {runAcceptance,parseArgs} from "../scripts/raw-v543-mastering-acceptance.mjs";
+import {spawnSync} from "node:child_process";
 import {decodePcmWav,generateFixture,MAX_FRAMES} from "../scripts/raw-v543-wav-io.mjs";
 
 const hash=b=>createHash("sha256").update(b).digest("hex");
@@ -110,6 +111,46 @@ test("V5.43: corrupted input fails and writes an honest JSON FAIL report without
  assert.deepEqual(report.steps,[]);
  assert.equal(report.failure.code,"RAW_V543_WAV_FILE_SIZE");
  assert.equal(report.boundaries.hardwareConnected,false);
+});
+
+test("V5.43: npm-stripped --input and explicit --input both select the WAV; reject duplicates and unknown flags",()=>{
+ const wav="C:\\\\Audio Files\\\\Master Session.wav";
+ assert.deepEqual(parseArgs([wav]),{inputPath:wav});
+ assert.deepEqual(parseArgs(["--input",wav]),{inputPath:wav});
+ assert.deepEqual(parseArgs(["--input",wav,"--output","D:\\\\QC Files"]),{
+  inputPath:wav,outputDir:"D:\\\\QC Files"
+ });
+ assert.deepEqual(parseArgs(["--output","D:\\\\QC Files",wav]),{
+  outputDir:"D:\\\\QC Files",inputPath:wav
+ });
+ for(const args of [["--input"],["--input","--output"],[wav,"other.wav"],
+    ["--input",wav,wav],["--input",wav,"--input",wav],
+    ["--bad","any"],["--output","x","--output","y"],[""]]){
+  assert.throws(()=>parseArgs(args),/RAW_V543_USAGE/,JSON.stringify(args));
+ }
+});
+
+test("V5.43: a positional WAV path with spaces really runs the complete CLI and writes a PASS report",{
+ timeout:60000
+},t=>{
+ const dir=mkdtempSync(join(tmpdir(),"RAW v543 positional input "));
+ t.after(()=>rmSync(dir,{recursive:true,force:true}));
+ const input=join(dir,"Moja pjesma 24-bit.wav");
+ const output=join(dir,"Results");
+ writeFileSync(input,generateFixture({frames:6000,sampleRate:48000,bits:24}));
+ const script=new URL("../scripts/raw-v543-mastering-acceptance.mjs",import.meta.url);
+ const result=spawnSync(process.execPath,[script.pathname.startsWith("/")&&process.platform==="win32"
+    ?decodeURIComponent(script.pathname.slice(1)):decodeURIComponent(script.pathname),
+   input,"--output",output],{
+   encoding:"utf8",windowsHide:true,timeout:45000,maxBuffer:2*1024*1024
+ });
+ assert.equal(result.error,undefined);
+ assert.equal(result.status,0,result.stdout+"\\n"+result.stderr);
+ const report=JSON.parse(readFileSync(join(output,"RAW_V543_ACCEPTANCE_REPORT.json"),"utf8"));
+ assert.equal(report.status,"PASS");
+ assert.equal(report.total,9);
+ assert.equal(report.source.name,"USER_LOCAL_WAV");
+ assert.ok(existsSync(join(output,"RAW_Acceptance_24bit.wav")));
 });
 
 test("V5.43: no private recordings, studio/physical hardware, production billing or network access in acceptance runner",()=>{
