@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Generate PRIVATE beta Windows/Mac icons from the original RAW PNG logo.
+"""Generate desktop installer icons from EXACTLY the RAW Electron taskbar image.
 
-The checked-in RAW brand PNG is 256x256. This is sufficient for Windows ICO.
-macOS additionally needs 512/1024px iconset images, so those are resized with
-LANCZOS for private test installers. Replace with vector-rendered originals
-before any signed commercial release.
+index.js uses the checked-in icon.png for the running window and taskbar.
+The Windows EXE, NSIS installer, Start shortcut and desktop shortcut must use
+the same artwork. Do not substitute the unrelated site brand mark PNG.
 """
 from pathlib import Path
 from PIL import Image
@@ -12,14 +11,14 @@ import subprocess
 import sys
 
 root = Path(__file__).resolve().parent.parent
-src = root / "raw-brand-icon.png"
+src = root / "icon.png"
 if not src.is_file():
-    raise SystemExit("RAW_BETA_ICON_NOT_FOUND")
+    raise SystemExit("RAW_TASKBAR_ICON_NOT_FOUND")
 with Image.open(src) as original:
     img = original.convert("RGBA")
 
 if img.width != img.height or img.width < 256:
-    raise SystemExit("RAW_BETA_ICON_INVALID_SIZE")
+    raise SystemExit("RAW_TASKBAR_ICON_INVALID_SIZE")
 
 build = root / "desktop-beta" / "build"
 build.mkdir(parents=True, exist_ok=True)
@@ -42,4 +41,4 @@ if sys.platform == "darwin":
         ["iconutil", "-c", "icns", str(iconset), "-o", str(build / "icon.icns")],
         check=True,
     )
-print(f"RAW original brand: {img.width}x{img.height}; private beta icons created.")
+print(f"RAW Electron/taskbar icon -> Windows NSIS/EXE + macOS: {img.width}x{img.height}; generated.")
