@@ -12,7 +12,7 @@ U postojećem RAW Electron main procesu `index.js` Taskbar/Window uzima `icon.pn
 2. `desktop-beta/package.json` usmjerava `win.icon`, `nsis.installerIcon` i `nsis.uninstallerIcon` na isti `icon.ico`, a `nsis.createDesktopShortcut` i `nsis.createStartMenuShortcut` ostaju aktivni.
 3. `desktop-beta/raw-v540-after-pack.cjs` koristi samostalni Electron `rcedit@5.0.2` da ubaci točno isti `icon.ico` u `dist/win-unpacked/RAW Desktop Beta.exe` prije izrade NSIS instalera. Ostaje `win.signAndEditExecutable=false`, **bez raspakiravanja problematičnog winCodeSign .7z paketa s macOS symlinkovima**, bez administratorskih prava i bez aktiviranja stvarnog studija. Ako ikona ili EXE nisu dostupni, build staje.
 4. `desktop-beta/main.cjs` postavlja lokalni `RAW_DESKTOP_BETA=1`; `index.js` za instaliranu beta aplikaciju koristi isti Windows `AppUserModelID` kao `electron-builder.build.appId`. To pomaže Windowsu pravilno grupirati taskbar i prečace. Izvorni razvojni Electron zadržava prethodni AppUserModelID.
-5. `scripts/raw-v540-verify-windows-icon.ps1` provjerava RAW verzijske resurse i uspoređuje stvarni 32×32 ikonografski sadržaj instaliranog EXE-a s generiranim `.ico` prije prihvaćanja builda.
+5. `scripts/raw-v540-verify-windows-icon.ps1` provjerava verzijske resurse te koristi `scripts/raw-v540-pe-icon-audit.py` za čitanje stvarnih Windows PE `RT_GROUP_ICON`/`RT_ICON` resursa i **byte-for-byte provjeru svih ugrađenih veličina ikone** u odnosu na `icon.ico` (bez GDI+ prikaza koji ovisi o Windows verziji ili DPI postavci).
 6. Windows GitHub CI izradi pravi nepotpisani NSIS EXE i provjerava ikonu, **bez objavljivanja ili pohrane artefakta**.
 
 ## Windows lokalne naredbe
@@ -42,3 +42,20 @@ Ako postoje lokalne izmjene, prvo ih sačuvati. Potrebni su isti Node.js, Git, P
 Kada Windows vizualni test bude potvrđen, prelazimo na **Mac Intel i Apple Silicon privatne buildove**. Stvarna fizička Bettermaker/WesAudio integracija, produkcijski certifikati i web s pet jezika ostaju zasebne kasnije faze.
 
 Napomena: zasebni `rcedit` je razvojna ovisnost potrebna pri izradi i ne ulazi u aplikacijski `app.asar` koji se distribuira krajnjem korisniku.
+
+## Hotfix provjere ikona nakon lokalnog testa
+
+Na Windows 11 računalu korisnika v5.40 NSIS/EXE build i umetanje ikone završili su bez greške, no prvotna provjera preko `System.Drawing.Icon.ExtractAssociatedIcon(...).ToBitmap()` javila je `RAW_V540_ICON_ART_MISMATCH: 1/226`; GitHub Windows runner istodobno je javio `1024/1024` za isti tip provjere. Iz toga ne smijemo zaključiti da je EXE sigurno pravilno brandiran niti da je pogrešan: razlika upućuje na nepouzdanu usporedbu renderiranih GDI+ ikona na različitim Windows okruženjima.
+
+**Nova provjera:** koristi Windows API za čitanje stvarnih `RT_GROUP_ICON`/`RT_ICON` datoteka ugrađenih u `.exe`. Svaki ugrađeni okvir (npr. 16×16, 32×32, 256×256) mora imati iste dimenzije i **identične bajtove** kao okvir u generiranom izvornom `icon.ico`. Ako se resursi ne podudaraju, builder prekida posao; ne proglašava instalaciju uspješnom na temelju Windows ikonskog cachea.
+
+Brza read-only provjera prethodno već izrađenog EXE-a nakon `git pull --ff-only`:
+
+```powershell
+cd C:\remote-audio-workstation
+.\scripts\raw-v540-verify-windows-icon.ps1 \
+  -ExePath '.\desktop-beta\dist\win-unpacked\RAW Desktop Beta.exe' \
+  -IconPath '.\desktop-beta\build\icon.ico'
+```
+
+Ako prođe, postojeći installer nije potrebno ponovno graditi samo radi provjere resursa. Ako padne, ne instalirati stari build: poslati puni zapis provjere.
