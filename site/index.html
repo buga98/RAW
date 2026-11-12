@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="RAW — Remote Audio Workstation. Profesionalni audio workflow, digitalni mastering laboratorij i razvoj udaljenog pristupa stvarnoj studijskoj opremi.">
   <meta name="theme-color" content="#08121a">
+  <meta name="color-scheme" content="dark">
+  <meta property="og:image" content="https://raw.lineaplusdev.com/assets/raw-app-icon.png">
   <meta property="og:type" content="website">
   <link rel="canonical" href="https://raw.lineaplusdev.com/">
   <meta property="og:url" content="https://raw.lineaplusdev.com/">
@@ -12,7 +14,8 @@
   <meta property="og:title" content="RAW — Tvoj studio. Bez granica.">
   <meta property="og:description" content="Otkrij RAW Remote Audio Workstation — moderna platforma za audio rad i budući udaljeni pristup studiju.">
   <title>RAW — Remote Audio Workstation</title>
-  <link rel="icon" href="./assets/raw-mark.svg" type="image/svg+xml">
+  <link rel="icon" href="./assets/raw-app-icon.png" type="image/png">
+  <link rel="apple-touch-icon" href="./assets/raw-app-icon.png">
   <link rel="stylesheet" href="./styles.css">
   <script src="./site.js" defer></script>
 </head>
@@ -21,7 +24,7 @@
   <div class="site-shell">
     <header class="nav-bar">
       <a class="brand" href="#top" aria-label="RAW — početna stranica">
-        <img src="./assets/raw-mark.svg" width="40" height="40" alt="">
+        <img src="./assets/raw-app-icon.png" width="40" height="40" alt="">
         <span class="brand-word">RAW<span class="brand-dot">.</span><small>REMOTE AUDIO WORKSTATION</small></span>
       </a>
       <button class="nav-toggle" type="button" aria-expanded="false" aria-controls="main-navigation" aria-label="Otvori izbornik">
@@ -29,6 +32,8 @@
       </button>
       <nav id="main-navigation" aria-label="Glavna navigacija">
         <a href="#platforma">Platforma</a>
+        <a href="#uredaji">Uređaji</a>
+        <a href="#screenshots">Aplikacija</a>
         <a href="#proces">Kako radi</a>
         <a href="#preuzimanje">Preuzimanje</a>
         <a class="nav-cta" href="#preuzimanje">Pristup beta verziji <span aria-hidden="true">↗</span></a>
@@ -58,7 +63,7 @@
             <div class="workspace-head"><div class="window-dots"><i></i><i></i><i></i></div><span>RAW / MASTERING WORKSPACE</span><span class="window-end">● SIGNAL ONLINE <span class="test-tag">DEMO</span></span></div>
             <div class="workspace-body">
               <div class="workspace-sidebar">
-                <img src="./assets/raw-mark.svg" width="32" height="32" alt="">
+                <img src="./assets/raw-app-icon.png" width="32" height="32" alt="">
                 <span class="sidebar-selected" aria-hidden="true">▥</span><span aria-hidden="true">◫</span><span aria-hidden="true">◷</span><span aria-hidden="true">◉</span>
               </div>
               <div class="workspace-content">
@@ -88,6 +93,13 @@
         </div>
       </section>
 
+      <section class="proof-bar" aria-label="Provjerene mogućnosti RAW beta verzije">
+        <div><strong>24 / 16-bit</strong><span>STEREO PCM WAV</span></div>
+        <div><strong>.rawproj</strong><span>SPREMANJE I PONOVNO OTVARANJE</span></div>
+        <div><strong>SHA-256</strong><span>PROVJERA INTEGRITETA IZVOZA</span></div>
+        <div><strong>LOCAL TEST</strong><span>AKTIVNA BETA · STUDIO U RAZVOJU</span></div>
+      </section>
+
       <section class="strip" aria-label="Ključne značajke">
         <span>CREATIVE FREEDOM</span><span class="strip-sep"></span><span>PRECISION AUDIO</span><span class="strip-sep"></span><span>ONE WORKSPACE</span><span class="strip-sep"></span><span>BUILT FOR ENGINEERS</span>
       </section>
@@ -105,6 +117,72 @@
           </article>
           <article class="feature"><div class="feature-icon" aria-hidden="true">◇</div><span class="feature-led">REMOTE STUDIO</span><h3>Studio na daljinu.</h3><p>Razvijamo siguran pristup terminima, projektima i profesionalnim analognim uređajima iz vlastitog radnog prostora.</p><span class="feature-status">Fizička integracija u razvoju</span></article>
           <article class="feature"><div class="feature-icon" aria-hidden="true">◎</div><span class="feature-led">SESSION CONTROL</span><h3>Jednostavan tijek rada.</h3><p>Jasan pregled projekta, racka, postavki uređaja, snimljenih verzija i pripreme za sljedeću sesiju.</p><span class="feature-status">Razvoj i testiranje</span></article>
+        </div>
+      </section>
+
+      <section class="hardware section-pad" id="uredaji" aria-labelledby="hardware-title">
+        <div class="section-heading hardware-heading">
+          <div>
+            <p class="overline">THE RACK / HARDWARE ROADMAP</p>
+            <h2 id="hardware-title">Tri uređaja.<br><em>Jedan radni prostor.</em></h2>
+          </div>
+          <p>RAW okuplja lokalne kontrolne modele profesionalnih rack uređaja u preglednom sučelju. Sljedeći korak je provjera naredbi i readbacka na stvarnoj studijskoj opremi.</p>
+        </div>
+        <div class="hardware-grid">
+          <article class="hardware-card hardware-featured">
+            <div class="hardware-top"><span class="hardware-maker">BETTERMAKER</span><span class="hardware-type">MASTERING EQ</span></div>
+            <h3>Mastering Equalizer <span>MEQ</span></h3>
+            <p>Kontrolni model mastering ekvilizatora s prikazom frekvencijskih postavki i lokalnim spremanjem stanja.</p>
+            <div class="hardware-face hardware-meq" aria-hidden="true">
+              <div class="hardware-screen"><span>MEQ / LOCAL MODEL</span>
+                <svg viewBox="0 0 400 120" preserveAspectRatio="none">
+                  <path d="M0 92H400M0 60H400M0 28H400" stroke="#33555e" stroke-width="1" stroke-dasharray="4 6"/>
+                  <path d="M0 82C40 82 55 70 73 55S104 37 135 62S200 100 230 76S280 30 321 46S360 76 400 68" fill="none" stroke="#61e2cd" stroke-width="3"/>
+                  <path d="M0 82C40 82 55 70 73 55S104 37 135 62S200 100 230 76S280 30 321 46S360 76 400 68V120H0Z" fill="rgba(82,218,190,.08)"/>
+                </svg>
+              </div><div class="hardware-knob-row"><i></i><i></i><i></i><i></i></div>
+            </div>
+            <div class="hardware-foot"><span>LOCAL CONTROL MODEL</span><span>PHYSICAL READBACK PENDING</span></div>
+          </article>
+          <article class="hardware-card">
+            <div class="hardware-top"><span class="hardware-maker">WESAUDIO</span><span class="hardware-type">BUS COMPRESSION</span></div>
+            <h3>ngBusComp</h3>
+            <p>Upravljački prikaz stereo i dual-mono parametara kompresora te mogućnost usporedbe lokalno spremljenih stanja.</p>
+            <div class="hardware-face hardware-bus" aria-hidden="true"><div class="hardware-meters"><i></i><i></i></div><div class="hardware-knob-row"><i></i><i></i><i></i><i></i><i></i></div><span>RATIO &nbsp; / &nbsp; ATTACK &nbsp; / &nbsp; RELEASE</span></div>
+            <div class="hardware-foot"><span>LOCAL CONTROL MODEL</span><span>PHYSICAL READBACK PENDING</span></div>
+          </article>
+          <article class="hardware-card">
+            <div class="hardware-top"><span class="hardware-maker">WESAUDIO</span><span class="hardware-type">TUBE COMPRESSION</span></div>
+            <h3>ngTubeComp</h3>
+            <p>Lokalni model kontrola kompresije i THD parametara za planirani rad sa stvarnim cijevnim uređajem.</p>
+            <div class="hardware-face hardware-tube" aria-hidden="true"><div class="tube-glow"></div><div class="hardware-knob-row"><i></i><i></i><i></i><i></i></div><span>THD &nbsp; / &nbsp; DYNAMICS &nbsp; / &nbsp; RECALL</span></div>
+            <div class="hardware-foot"><span>LOCAL CONTROL MODEL</span><span>PHYSICAL READBACK PENDING</span></div>
+          </article>
+        </div>
+        <p class="hardware-disclaimer">Prikazi na karticama su ilustracije lokalnih kontrola, ne fotografije fizičkih uređaja. Bettermaker i WesAudio zaštitni su znakovi svojih vlasnika; RAW nije službeni proizvod niti certificirana integracija tih proizvođača.</p>
+      </section>
+
+      <section class="real-screens section-pad" id="screenshots" aria-labelledby="screenshots-title">
+        <div class="section-heading">
+          <div><p class="overline">INSIDE RAW / ACTUAL APPLICATION</p><h2 id="screenshots-title">Upoznaj aplikaciju.<br><em>Bez lažnih prikaza.</em></h2></div>
+          <p>Galerija prikazuje samo izvorne, pregledane screenshotove instaliranog RAW desktop klijenta. Konceptualna ilustracija na vrhu nije screenshot aplikacije.</p>
+        </div>
+        <div id="raw-screen-gallery" class="screenshot-gallery" hidden aria-live="polite"></div>
+        <div id="raw-screen-gallery-pending" class="screens-pending">
+          <div class="screens-pending-icon"><img src="./assets/raw-app-icon.png" width="64" height="64" alt=""></div>
+          <div><span class="feature-led">ACTUAL UI / CAPTURE REVIEW</span><h3>Stvarni prikazi desktop aplikacije</h3>
+            <p>Pripremamo provjerene screenshotove Control Rooma, Digital Premastera, projekata i WAV/QC izvoza. Ne koristimo izmišljene prikaze kao dokaz funkcionalnosti.</p></div>
+        </div>
+      </section>
+
+      <section class="capabilities section-pad" aria-labelledby="capabilities-title">
+        <div class="section-heading"><div><p class="overline">ENGINEERED WORKFLOW</p><h2 id="capabilities-title">Ne samo izgled.<br><em>Stvarne funkcije.</em></h2></div>
+        <p>Svaki korak digitalnog procesa ima svoju svrhu: od učitavanja do kontroliranog, provjerljivog izvoza. Fizički studio ostaje zasebna razvojna faza.</p></div>
+        <div class="capability-grid">
+          <article><span>01 / INPUT</span><h3>MP3 / WAV / AIFF</h3><p>Odabir lokalne audio datoteke i dekodiranje za digitalni workflow.</p></article>
+          <article><span>02 / PROCESS</span><h3>Digital Premaster</h3><p>Digitalni EQ, dinamika i opcionalni limiter u zasebnom DSP putu.</p></article>
+          <article><span>03 / RECALL</span><h3>Portable Projects</h3><p>Spremanje i ponovno otvaranje projekta, kontrola promjena i lokalni rack snapshoti.</p></article>
+          <article><span>04 / DELIVERY</span><h3>WAV + QC</h3><p>16/24-bitni PCM WAV, QC JSON i SHA-256 provjera integriteta izvoza.</p></article>
         </div>
       </section>
 
@@ -174,6 +252,19 @@
         <p class="beta-note"><span class="shield" aria-hidden="true">✦</span> Privatna beta: dostupnost instalacija ne znači da je dovršena integracija fizičkog studija ni produkcijska naplata. Prije javne objave paketi moraju biti potpisani, testirani i odobreni.</p>
       </section>
 
+      <section class="raw-faq section-pad" id="faq" aria-labelledby="faq-title">
+        <div class="section-heading">
+          <div><p class="overline">GOOD TO KNOW</p><h2 id="faq-title">RAW, bez<br><em>sitnih slova.</em></h2></div>
+          <p>Jasno razlikujemo ono što danas radi u lokalnoj beti od mogućnosti koje će tek proći testiranje sa stvarnim studijskim uređajima.</p>
+        </div>
+        <div class="faq-grid">
+          <details><summary>Je li RAW već potpuno produkcijski spreman?</summary><p>Ne. Digitalni workflow i određeni Windows scenariji su testirani. Dugotrajna stabilnost, macOS instalacija, stvarni studio i fizički hardver zahtijevaju dodatnu validaciju.</p></details>
+          <details><summary>Je li digitalna obrada isto što i analogni mastering?</summary><p>Ne. RAW Digital Premaster lokalno obrađuje PCM audio. Virtualni prikazi Bettermaker i WesAudio uređaja sami po sebi ne znače da je zvuk prošao fizičke uređaje.</p></details>
+          <details><summary>Kako RAW provjerava WAV izvoz?</summary><p>Podržava izvoz 16/24-bitnog PCM WAV-a i QC JSON sa SHA-256 zapisom za provjeru integriteta datoteke. QC JSON nije digitalni potpis ni potvrda zvučne kvalitete.</p></details>
+          <details><summary>Kad će biti dostupne instalacije?</summary><p>Windows i macOS profili već su pripremljeni za privatno testiranje. Javni download će biti dostupan tek nakon odobrenja, odgovarajućih sigurnosnih provjera i objave provjerenih paketa.</p></details>
+        </div>
+      </section>
+
       <section class="end-cta section-pad" aria-labelledby="end-title">
         <p class="overline">MORE THAN A WORKSTATION</p>
         <h2 id="end-title">Budućnost studija<br><em>zvuči drugačije.</em></h2>
@@ -183,7 +274,7 @@
     </main>
 
     <footer>
-      <a class="brand footer-brand" href="#top"><img src="./assets/raw-mark.svg" alt="" width="31" height="31"><span class="brand-word">RAW<span class="brand-dot">.</span><small>REMOTE AUDIO WORKSTATION</small></span></a>
+      <a class="brand footer-brand" href="#top"><img src="./assets/raw-app-icon.png" alt="" width="31" height="31"><span class="brand-word">RAW<span class="brand-dot">.</span><small>REMOTE AUDIO WORKSTATION</small></span></a>
       <span>© <span id="current-year">2026</span> RAW · U razvoju</span>
       <span>Built for music. Designed for precision.</span>
     </footer>
