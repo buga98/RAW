@@ -24,6 +24,8 @@ Staging namjerno ne koristi `cp -r .` ni `rsync` cijelog repozitorija. Kopira sa
 index.html
 styles.css
 site.js
+robots.txt
+sitemap.xml
 release-manifest.json
 installer-profiles.json
 assets/raw-mark.svg
