@@ -96,6 +96,22 @@ test("V5.43: PCM WAV parser handles real RIFF padding and rejects malformed, com
  assert.throws(()=>generateFixture({frames:MAX_FRAMES+1}),e=>e.code==="RAW_V543_BAD_FIXTURE_OPTIONS");
 });
 
+test("V5.43: corrupted input fails and writes an honest JSON FAIL report without a fake PASS",async t=>{
+ const output=mkdtempSync(join(tmpdir(),"raw-v543-invalid-"));
+ t.after(()=>rmSync(output,{recursive:true,force:true}));
+ await assert.rejects(()=>runAcceptance({
+  inputBytes:Uint8Array.from([0,1,2,3,4,5]),outputDir:output
+ }),e=>e.code==="RAW_V543_WAV_FILE_SIZE");
+ const report=JSON.parse(readFileSync(join(output,"RAW_V543_ACCEPTANCE_REPORT.json"),"utf8"));
+ assert.equal(report.status,"FAIL");
+ assert.equal(report.passed,0);
+ assert.equal(report.failed,0);
+ assert.equal(report.total,0);
+ assert.deepEqual(report.steps,[]);
+ assert.equal(report.failure.code,"RAW_V543_WAV_FILE_SIZE");
+ assert.equal(report.boundaries.hardwareConnected,false);
+});
+
 test("V5.43: no private recordings, studio/physical hardware, production billing or network access in acceptance runner",()=>{
  const runner=readFileSync(new URL("../scripts/raw-v543-mastering-acceptance.mjs",import.meta.url),"utf8");
  const decoder=readFileSync(new URL("../scripts/raw-v543-wav-io.mjs",import.meta.url),"utf8");
