@@ -44,7 +44,7 @@
 | `mode` | enum | stereo / ms / dualMono | 1 | 7-bit 73 | — | PENDING |
 | `abState` | enum | A / B | 1 | 7-bit 74 | — | PENDING |
 | `meterMode` | enum | peak / rms | 1 | 7-bit 75 | — | PENDING |
-| `displayMode` | enum | EQ / FFT | 1 | 7-bit 76 | — | PENDING |
+| `displayMode` | enum | EQ / RTA | 1 | 7-bit 76 | — | PENDING |
 | `copyAtoB` | trigger | TRIGGER | 1 | 7-bit 77 | — | PENDING |
 | `resetAll` | trigger | TRIGGER | 1 | 7-bit 78 | — | PENDING |
 | `outputGainSelect` | trigger | TRIGGER | 1 | 7-bit 79 | — | PENDING |
