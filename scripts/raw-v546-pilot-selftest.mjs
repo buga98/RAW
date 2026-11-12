@@ -95,6 +95,30 @@ async function one(deviceId,profile){
     (full&&ok.midi.bits!==14)||
     ok.pluginVerified!==false||ok.hardwareVerified!==false)
    throw new Error("Incorrect test output: "+JSON.stringify(ok));
+  if(full){
+   // Actual WebSocket bridge acceptance for EVERY registered RAW control, not
+   // only a pure function. This is still DRY RUN; never vendor VST3/hardware QA.
+   let n=0;
+   for(const [parameter,def] of Object.entries(profile.controls)){
+    if(n>0&&n%24===0)await delay(1100); // enforce Studio Lab rate limit
+    const value=def.kind==="numeric"?def.max:
+      def.kind==="enum"?def.values[def.values.length-1]:
+      def.kind==="toggle"?true:true;
+    const requestId="full-"+(++n);
+    send(first.ws,{type:"parameter-change",requestId,
+      sessionId:"test-1793883600000",deviceId,parameter,value});
+    const result=await first.next(m=>m.requestId===requestId&&
+      (m.type==="parameter-ack"||m.type==="parameter-error"));
+    if(result.type!=="parameter-ack"||result.status!=="simulated"||
+       result.midi.parameter!==parameter||
+       result.midi.bits!==(def.kind==="numeric"?14:7)||
+       result.pluginVerified!==false||result.hardwareVerified!==false){
+      throw new Error("FULL SURFACE WS ROUTE FAILED "+deviceId+":"+parameter+
+        " -> "+JSON.stringify(result));
+    }
+   }
+   console.log("PASS "+deviceId+" full transport "+n+"/"+n+" commands → WS → dry-run MIDI");
+  }
   send(second.ws,{...testMessage,requestId:"unauthorized"});
   await second.next(m=>m.type==="parameter-error"&&m.requestId==="unauthorized");
   const wrong=Object.keys(profiles).find(id=>id!==deviceId);
