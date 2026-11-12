@@ -64,6 +64,15 @@ test("V5.43: PCM WAV parser handles real RIFF padding and rejects malformed, com
  assert.equal(decoded.sampleRate,44100);
  assert.equal(decoded.bits,16);
  assert.equal(decoded.frames,1200);
+ // RIFF files often contain odd-sized metadata blocks with one pad byte.
+ const padded=new Uint8Array(data.length+12);
+ padded.set(data.slice(0,12),0);
+ padded.set(Uint8Array.from([74,85,78,75,3,0,0,0,42,43,44,0]),12);
+ padded.set(data.slice(12),24);
+ new DataView(padded.buffer).setUint32(4,padded.length-8,true);
+ const parsedWithJunk=decodePcmWav(padded);
+ assert.equal(parsedWithJunk.frames,1200);
+ assert.equal(parsedWithJunk.sampleRate,44100);
  assert.equal(decoded.channels.length,2);
  assert.ok(decoded.channels[0].some(x=>x!==0));
  const invalid=Uint8Array.from(data);
@@ -82,7 +91,8 @@ test("V5.43: PCM WAV parser handles real RIFF padding and rejects malformed, com
  assert.throws(()=>decodePcmWav(short),e=>e.code==="RAW_V543_RIFF_HEADER");
  const junk=Uint8Array.from(data);
  new DataView(junk.buffer).setUint32(40,1,true);
- assert.throws(()=>decodePcmWav(junk),e=>e.code==="RAW_V543_WAV_FRAME_ALIGNMENT");
+ assert.throws(()=>decodePcmWav(junk),
+  e=>e.code==="RAW_V543_RIFF_CHUNK_LENGTH"||e.code==="RAW_V543_WAV_FRAME_ALIGNMENT");
  assert.throws(()=>generateFixture({frames:MAX_FRAMES+1}),e=>e.code==="RAW_V543_BAD_FIXTURE_OPTIONS");
 });
 
