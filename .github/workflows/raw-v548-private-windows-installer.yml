@@ -3,6 +3,9 @@ on:
   push:
     branches:
       - feature/raw-v548-internet-gateway-pilot
+  pull_request:
+    branches:
+      - feature/raw-v547-full-control-surface
   workflow_dispatch:
 permissions:
   contents: read
@@ -36,6 +39,14 @@ jobs:
         run: |
           python -m pip install --disable-pip-version-check Pillow==11.3.0
           python scripts/raw-v537-create-icons.py
+      - name: Give private pilot a distinguishable version and installer filename
+        shell: pwsh
+        run: |
+          $path='desktop-beta/package.json'
+          $p=Get-Content $path -Raw | ConvertFrom-Json
+          $p.version='0.548.0'
+          $p.build.win.artifactName='RAW-V548-PRIVATE-PILOT-Windows-x64.${ext}'
+          $p | ConvertTo-Json -Depth 20 | Set-Content $path -Encoding utf8
       - name: Build unsigned x64 Windows NSIS installer
         working-directory: desktop-beta
         env:
