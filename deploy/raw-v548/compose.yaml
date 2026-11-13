@@ -1,0 +1,17 @@
+# Run from repository root: docker compose -f deploy/raw-v548/compose.yaml up -d --build
+services:
+  raw-v548-gateway:
+    build:
+      context: ../..
+      dockerfile: deploy/raw-v548/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      RAW_V548_BIND: "0.0.0.0"
+      RAW_V548_PORT: "7788"
+    ports:
+      - "127.0.0.1:7788:7788"
+    read_only: true
+    security_opt:
+      - no-new-privileges:true
