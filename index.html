@@ -1544,14 +1544,22 @@ function renderPlugin() {
 
       <div class="raw-daw-toolbar" aria-label="DAW Bridge local test">
         <div class="raw-daw-title">
-          <strong>RAW → CUBASE · OFFICIAL PLUGIN PILOT v5.46</strong>
-          <span>STUDIO-ARMED PROFILE · CC21–24 → FOCUSED QUICK CONTROLS 1–4 · PLUGIN/HARDWARE UNVERIFIED</span>
+          <strong>RAW → CUBASE · FULL SURFACE / WSS PILOT v5.48</strong>
+          <span>Private pilot · 113 kontrola · Cubase MIDI Remote · bez potvrde fizickog hardvera</span>
         </div>
         <div class="raw-daw-actions">
           <span id="rawBridgeStatus">OFFLINE</span>
           <button type="button" class="ghost-btn" id="rawBridgeConnect" onclick="RAWDawBridge.connect()">CONNECT</button>
         </div>
-        <small id="rawBridgeDetails">Start: npm run bridge:dry; zatim klikni CONNECT.</small>
+        <div class="raw-v548-gateway-config" style="display:flex;flex-wrap:wrap;gap:8px;margin:10px 0 6px">
+          <label style="flex:2;min-width:220px;font-size:12px">Gateway URL (prazno = lokalni test)
+            <input id="rawBridgeGatewayUrl" type="url" autocomplete="off" spellcheck="false" placeholder="wss://gateway.tvoja-domena.hr" style="display:block;width:100%;box-sizing:border-box;padding:8px;margin-top:4px;background:#0b1927;color:#eef;border:1px solid #345;border-radius:6px">
+          </label>
+          <label style="flex:2;min-width:220px;font-size:12px">Privatni pristupni token
+            <input id="rawBridgeGatewayToken" type="password" autocomplete="off" placeholder="Upiši samo za ovaj test" style="display:block;width:100%;box-sizing:border-box;padding:8px;margin-top:4px;background:#0b1927;color:#eef;border:1px solid #345;border-radius:6px">
+          </label>
+        </div>
+        <small id="rawBridgeDetails">Lokalno: ostavi URL prazan. Preko interneta: upiši WSS adresu i testni pristupni token.</small>
       </div>
       <div class="rack-size-toolbar" aria-label="Velicina prikaza studijskih uređaja">
         <div class="rack-size-caption">
