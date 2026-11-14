@@ -1,0 +1,25 @@
+name: RAW V5.51 Bettermaker Audit QA
+on:
+  push:
+    branches: [feature/raw-v551-bettermaker-complete-audit]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+      - run: node --test tests/raw-v551-bettermaker-audit.test.mjs tests/raw-v550-eq1-calibration.test.mjs tests/raw-v549-eq1-calibration.test.mjs tests/raw-v547-full-surface.test.mjs
+      - run: node scripts/raw-v551-bettermaker-audit.mjs
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: RAW-V551-Bettermaker-43-Route-Audit
+          path: bettermaker-audit-output/*
+          retention-days: 7
