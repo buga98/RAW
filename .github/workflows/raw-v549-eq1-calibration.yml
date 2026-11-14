@@ -1,0 +1,26 @@
+name: RAW V5.49 EQ1 Frequency Calibration Tests
+on:
+  push:
+    branches:
+      - feature/raw-v549-eq1-frequency-calibration
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  calibration:
+    name: 10-point calibration and original V5.47 regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - name: Assert measured inverses, 14-bit routing, and untouched controls
+        run: node --test tests/raw-v549-eq1-calibration.test.mjs tests/raw-v547-full-surface.test.mjs tests/raw-v546-official-plugin-pilot.test.mjs
