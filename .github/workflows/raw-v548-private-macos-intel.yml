@@ -1,0 +1,63 @@
+name: RAW V5.48 Private macOS Intel Controller (LAN / WSS pilot)
+on:
+  push:
+    branches:
+      - feature/raw-v548-internet-gateway-pilot
+  pull_request:
+    branches:
+      - feature/raw-v547-full-control-surface
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: raw-v548-macos-intel-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  macos-intel-dmg:
+    runs-on: macos-15-intel
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies without native MIDI addon
+        run: npm ci --ignore-scripts --no-audit --no-fund
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: "1"
+      - name: Verify Gateway relay and Cubase Full Surface contracts
+        run: |
+          npm run studio:gateway:v548:check
+          npm run studio:plugin:v547:check
+      - name: Stage private RAW Electron UI
+        run: node scripts/raw-v537-package-desktop.mjs
+      - name: Generate original RAW app icon
+        run: |
+          python -m pip install --disable-pip-version-check Pillow==11.3.0
+          python scripts/raw-v537-create-icons.py
+      - name: Label Mac pilot installer
+        run: |
+          node -e "const fs=require('node:fs');const p='desktop-beta/package.json';const j=JSON.parse(fs.readFileSync(p));j.version='0.548.0';j.build.mac.artifactName='RAW-V548-PRIVATE-PILOT-macOS12plus-Intel.dmg';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
+      - name: Install isolated Electron builder
+        working-directory: desktop-beta
+        run: npm install --no-audit --no-fund
+      - name: Package private unsigned Intel macOS DMG
+        working-directory: desktop-beta
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: "false"
+        run: npm run build:mac-intel
+      - name: Verify installer file
+        run: |
+          find desktop-beta/dist -maxdepth 1 -name 'RAW-V548-PRIVATE-PILOT-macOS12plus-Intel.dmg' -type f -size +1M | grep .
+          shasum -a 256 desktop-beta/dist/RAW-V548-PRIVATE-PILOT-macOS12plus-Intel.dmg
+      - uses: actions/upload-artifact@v4
+        with:
+          name: RAW-V548-PRIVATE-macOS-Intel-DMG
+          path: desktop-beta/dist/RAW-V548-PRIVATE-PILOT-macOS12plus-Intel.dmg
+          retention-days: 7
+          if-no-files-found: error

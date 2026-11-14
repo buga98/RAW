@@ -37,21 +37,50 @@
   function connect() {
     if (new URLSearchParams(window.location.search).get("testMode") !== "1") return;
     if (socket && socket.readyState <= 1) return disconnect();
-    status("CONNECTING", WS_URL);
+    const rawUrl=document.getElementById("rawBridgeGatewayUrl")?.value?.trim()||"";
+    const token=document.getElementById("rawBridgeGatewayToken")?.value||"";
+    const remote=rawUrl.length>0;
+    // Never send a private pilot credential to plaintext networks, userinfo or URL query.
+    if(remote){
+      let u=null;try{u=new URL(rawUrl);}catch{}
+      const localhostLab=u?.protocol==="ws:"&&u.hostname==="127.0.0.1";
+      if(!u||(!localhostLab&&u.protocol!=="wss:")||
+        u.username||u.password||u.search||u.hash||token.length<32){
+        status("REJECTED","Private pilot requires wss:// gateway URL and a 32+ character access token.");return;
+      }
+    }
+    status("CONNECTING",remote?"PRIVATE WSS GATEWAY":WS_URL);
     try {
-      const current = new WebSocket(WS_URL);
+      const current = new WebSocket(remote?rawUrl:WS_URL);
       socket = current;
       labActive = false;
       labOwned = false;
       pilotProfile = null;
       current.onopen = () => {
         if (socket !== current) return;
-        status("CONNECTED", "Čekam status DAW Bridge servera…");
+        if(remote){
+          current.send(JSON.stringify({type:"raw-v548-auth",role:"client",token}));
+          status("AUTHENTICATING","PRIVATE Gateway V5.48 · autentikacija…");
+        }else{
+          status("CONNECTED", "Čekam status DAW Bridge servera…");
+        }
       };
       current.onmessage = event => {
         if (socket !== current) return;
         try {
           const msg = JSON.parse(event.data);
+          if(msg.type==="raw-v548-auth-ok"){
+            status("GATEWAY AUTH OK","Gateway prihvatio privatni testni pristup; čekam Cubase Bridge.");
+            return;
+          }
+          if(msg.type==="raw-v548-link"){
+            status(msg.status==="connected"?"GATEWAY CONNECTED":"STUDIO OFFLINE",
+              "RAW V5.48 Internet Pilot · "+msg.status+" · fizički plugin još nije potvrđen.");
+            return;
+          }
+          if(msg.type==="raw-v548-error"){
+            status("GATEWAY ERROR","RAW Gateway: "+String(msg.code||"UNKNOWN"));return;
+          }
           if (msg.type === "bridge-status") {
             labActive = msg.lab === true;
             const knownProfiles = {
@@ -124,7 +153,7 @@
         } catch (error) { status("ERROR", error.message); }
       };
       current.onerror = () => {
-        if (socket === current) status("ERROR", "Bridge nije dostupan: pokreni npm run bridge:dry.");
+        if (socket === current) status("ERROR", remote?"Gateway WSS nedostupan ili prijava odbijena.":"Bridge nije dostupan: pokreni Studio Bridge.");
       };
       current.onclose = event => {
         if (socket !== current) return;
