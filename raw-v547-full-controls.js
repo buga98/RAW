@@ -37,7 +37,7 @@
       "eq1Freq": {
         "kind": "numeric",
         "min": 22,
-        "max": 470,
+        "max": 475,
         "step": 1,
         "cc": 4
       },
@@ -784,7 +784,11 @@
    if(typeof message.value!=="number"||!Number.isFinite(message.value)||
       message.value<def.min||message.value>def.max)
     throw new Error("Numeric value outside RAW control range");
-   fraction=(message.value-def.min)/(def.max-def.min);
+   // Keep historical full-range MIDI CC normalization anchored at 470 Hz.
+   // The new 475-Hz UI ceiling must not shift previously calibrated MIDI outputs.
+   const transportMax=profileId==="bettermaker_eq"&&message.parameter==="eq1Freq"
+      ?470:def.max;
+   fraction=Math.min(1,(message.value-def.min)/(transportMax-def.min));
   }else if(def.kind==="enum"){
    const idx=def.values.findIndex(item=>item===message.value);
    if(idx<0)throw new Error("Unexpected enum value");
