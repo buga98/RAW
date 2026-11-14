@@ -42,7 +42,7 @@ jobs:
           python scripts/raw-v537-create-icons.py
       - name: Label Mac pilot installer
         run: |
-          node -e "const fs=require('node:fs');const p='desktop-beta/package.json';const j=JSON.parse(fs.readFileSync(p));j.version='0.548.0';j.build.mac.artifactName='RAW-V548-PRIVATE-PILOT-macOS12plus-Intel.${ext}';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
+          node -e "const fs=require('node:fs');const p='desktop-beta/package.json';const j=JSON.parse(fs.readFileSync(p));j.version='0.548.0';j.build.mac.artifactName='RAW-V548-PRIVATE-PILOT-macOS12plus-Intel.dmg';fs.writeFileSync(p,JSON.stringify(j,null,2)+'\n')"
       - name: Install isolated Electron builder
         working-directory: desktop-beta
         run: npm install --no-audit --no-fund
