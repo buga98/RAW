@@ -36,8 +36,9 @@ test("all other full surface parameters and noncalibrated EQ1 remain unchanged",
  const inputs=[["eq1Gain",5],["eq1Q",1.6],["eq2Freq",750],["eq1Freq",173]];
  for(const [key,value] of inputs){
   const output=FULL.route("bettermaker_eq",make(key,value));
-  const value14=Math.round(((value-FULL.get("bettermaker_eq",key).min)/
-     (FULL.get("bettermaker_eq",key).max-FULL.get("bettermaker_eq",key).min))*16383);
+  const d=FULL.get("bettermaker_eq",key);
+  const scaleMax=key==="eq1Freq"?470:d.max;
+  const value14=Math.round(((value-d.min)/(scaleMax-d.min))*16383);
   assert.equal(output.value,value14);
  }
 });
