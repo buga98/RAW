@@ -7,7 +7,7 @@ import {fileURLToPath} from "node:url";
 import {mkdirSync,writeFileSync} from "node:fs";
 import {dirname,resolve} from "node:path";
 export const V551_MIDI_PORT="RAW_BM_V551_TO_CUBASE";
-export const V551_OUTPUT=new URL("../cubase/Local/RAW/Bettermaker_86/RAW_BM_86.js",import.meta.url);
+export const V551_OUTPUT=new URL("../cubase/Local/RAW/Bettermaker_86/RAW_Bettermaker_86.js",import.meta.url);
 export const V551_BINDINGS=Object.freeze(BM_VST_SCHEMA.map((item,i)=>Object.freeze({
   ...item,index:i,
   midiChannel:3+Math.floor(i/31),
