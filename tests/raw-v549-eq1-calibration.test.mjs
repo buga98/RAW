@@ -44,7 +44,8 @@ test("all other full surface parameters and noncalibrated EQ1 remain unchanged",
 });
 test("experimental studio-only opt-in and protected binding",()=>{
  const source=readFileSync(new URL("../studio-lab-bridge.mjs",import.meta.url),"utf8");
- assert.match(source,/RAW_EQ1_FREQ_CALIBRATION==="1"/);
+ assert.match(source,/const mode=process\.env\.RAW_EQ1_FREQ_CALIBRATION/);
+ assert.match(source,/else if\(mode==="1"\) msg\.value=inverseEq1Frequency\(msg\.value\)/);
  assert.match(source,/inverseEq1Frequency\(msg.value\)/);
  assert.match(source,/host = "127\.0\.0\.1"/);
 });
