@@ -47,7 +47,7 @@ export function generateV552() {
   }
   lines.push("// Auto bank bindings generated: "+V552_COUNT+"; effective VST identities UNVERIFIED.");
   lines.push("// Snapshot, EQ MODE, ENGAGE and other switches must NOT be probed blindly.");
-  return lines.join("\\n")+"\\n";
+  return lines.join("\n")+"\n";
 }
 if(process.argv[1] && resolve(process.argv[1])===fileURLToPath(import.meta.url)){
   mkdirSync(dirname(fileURLToPath(V552_OUTPUT)),{recursive:true});
