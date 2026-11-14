@@ -1,0 +1,24 @@
+name: RAW V5.50 Bettermaker EQ1 Full Range QA
+on:
+  push:
+    branches:
+      - feature/raw-v550-eq1-full-range-calibration
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+        env:
+          ELECTRON_SKIP_BINARY_DOWNLOAD: '1'
+      - run: node --test tests/raw-v550-eq1-calibration.test.mjs tests/raw-v549-eq1-calibration.test.mjs tests/raw-v547-full-surface.test.mjs tests/raw-v546-official-plugin-pilot.test.mjs
