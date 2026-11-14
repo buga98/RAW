@@ -6,6 +6,7 @@ import { WebSocketServer } from "ws";
 import { createRequire } from "node:module";
 import { midiRoute, MIDI_PORT_NAME } from "./daw-midi-map.mjs";
 import { StudioLab } from "./studio-lab.mjs";
+import { inverseEq1Frequency } from "./raw-v549-eq1-calibration.mjs";
 import {OFFICIAL_PLUGIN_PROFILES,officialPluginRoute} from "./raw-v546-official-plugin-map.mjs";
 
 const require = createRequire(import.meta.url);
@@ -138,6 +139,13 @@ server.on("connection", socket => {
       const now = Date.now();
       if (now - commandWindowAt > 1000) { commandWindowAt = now; commandsInWindow = 0; }
       if (++commandsInWindow > 35) throw new Error("Rate limit exceeded");
+      // Opt-in measured inverse mapping; original RAW client display is unchanged.
+      // Only EQ1 Frequency is calibrated, and only in its measured range.
+      if(fullProfile&&fullDevice==="bettermaker_eq"&&
+         process.env.RAW_EQ1_FREQ_CALIBRATION==="1"&&
+         msg.parameter==="eq1Freq"){
+        msg.value=inverseEq1Frequency(msg.value);
+      }
       const midi = fullProfile?FULL.route(fullDevice,msg):
         pilotProfile?officialPluginRoute(pilotDevice,msg):midiRoute(msg);
       // MIDI output success is NOT original Cubase VST3 or hardware verification.
