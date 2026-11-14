@@ -4,7 +4,7 @@ import {runInNewContext} from "node:vm";
 import {V551_BINDINGS,V551_MIDI_PORT,generateV551,encodeNormalized} from "../scripts/raw-v551-generate-bettermaker-vst-surface.mjs";
 test("86 rows get unique 14-bit MIDI routes and no collision inside dedicated port",()=>{
  assert.equal(V551_BINDINGS.length,86);
- assert.equal(new Set(V551_BINDINGS.map(x=>x.channel+":"+x.cc)).size,86);
+ assert.equal(new Set(V551_BINDINGS.map(x=>x.midiChannel+":"+x.cc)).size,86);
  for(const b of V551_BINDINGS){
   assert.equal(b.ccLsb,b.cc+32);
   assert.ok([3,4,5].includes(b.midiChannel));
