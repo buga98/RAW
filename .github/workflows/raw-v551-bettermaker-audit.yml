@@ -16,8 +16,10 @@ jobs:
       - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
         with:
           node-version: '22'
-      - run: node --test tests/raw-v551-bettermaker-audit.test.mjs tests/raw-v550-eq1-calibration.test.mjs tests/raw-v549-eq1-calibration.test.mjs tests/raw-v547-full-surface.test.mjs
+      - run: node --test tests/raw-v551-bettermaker-audit.test.mjs tests/raw-v551-bettermaker-vst-schema.test.mjs tests/raw-v551-bettermaker-midi-surface.test.mjs tests/raw-v551-bettermaker-midi-probe.test.mjs tests/raw-v550-eq1-calibration.test.mjs tests/raw-v549-eq1-calibration.test.mjs tests/raw-v547-full-surface.test.mjs
       - run: node scripts/raw-v551-bettermaker-audit.mjs
+      - run: node scripts/raw-v551-generate-bettermaker-vst-surface.mjs
+      - run: node scripts/raw-v551-bettermaker-midi-probe.mjs --label "EQ1 L frequency" --value 0.5
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: RAW-V551-Bettermaker-43-Route-Audit
