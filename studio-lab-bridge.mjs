@@ -7,6 +7,7 @@ import { createRequire } from "node:module";
 import { midiRoute, MIDI_PORT_NAME } from "./daw-midi-map.mjs";
 import { StudioLab } from "./studio-lab.mjs";
 import { inverseEq1Frequency } from "./raw-v549-eq1-calibration.mjs";
+import { inverseEq1FrequencyV550 } from "./raw-v550-eq1-calibration.mjs";
 import {OFFICIAL_PLUGIN_PROFILES,officialPluginRoute} from "./raw-v546-official-plugin-map.mjs";
 
 const require = createRequire(import.meta.url);
@@ -141,10 +142,10 @@ server.on("connection", socket => {
       if (++commandsInWindow > 35) throw new Error("Rate limit exceeded");
       // Opt-in measured inverse mapping; original RAW client display is unchanged.
       // Only EQ1 Frequency is calibrated, and only in its measured range.
-      if(fullProfile&&fullDevice==="bettermaker_eq"&&
-         process.env.RAW_EQ1_FREQ_CALIBRATION==="1"&&
-         msg.parameter==="eq1Freq"){
-        msg.value=inverseEq1Frequency(msg.value);
+      if(fullProfile&&fullDevice==="bettermaker_eq"&&msg.parameter==="eq1Freq"){
+        const mode=process.env.RAW_EQ1_FREQ_CALIBRATION;
+        if(mode==="2") msg.value=inverseEq1FrequencyV550(msg.value);
+        else if(mode==="1") msg.value=inverseEq1Frequency(msg.value);
       }
       const midi = fullProfile?FULL.route(fullDevice,msg):
         pilotProfile?officialPluginRoute(pilotDevice,msg):midiRoute(msg);
