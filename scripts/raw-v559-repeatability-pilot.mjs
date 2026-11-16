@@ -5,7 +5,8 @@ import {resolve} from "node:path";
 import {createRequire} from "node:module";
 import {V551_MIDI_PORT} from "./raw-v551-generate-bettermaker-vst-surface.mjs";
 import {V556_READBACK_PORT} from "./raw-v556-generate-bettermaker-live-readback.mjs";
-import {planSequence,makeSequenceVerifier,V559_DEFAULT_DISPLAYS} from "./raw-v559-sequence-core.mjs";
+import {planSequence,makeSequenceVerifier} from "./raw-v559-sequence-core.mjs";
+import {chooseObservedRoundtrip} from "./raw-v559-observed-targets.mjs";
 const require=createRequire(import.meta.url);
 const argv=process.argv.slice(2);
 const val=k=>{const x=argv.indexOf(k);return x<0?null:argv[x+1]};
@@ -15,10 +16,11 @@ const reportFile=resolve(val("--out")||"raw-v559-repeatability-results.jsonl");
 
 async function main(){
  const capPath=val("--capture"),calPath=val("--calibration"),label=val("--label")||"EQ2 L bandwidth";
- const displays=val("--displays")?val("--displays").split(";").map(x=>x.trim()):V559_DEFAULT_DISPLAYS;
  if(!capPath||!calPath)throw Error("Usage: --capture <V553.json> --calibration <V557.json> [--label 'EQ2 L bandwidth'] [--displays 'Q = 3.6;Q = 4.8;SHARP;Q = 3.6'] [--midi --confirm-test-project]");
  const capture=JSON.parse(readFileSync(resolve(capPath),"utf8"));
  const calibration=JSON.parse(readFileSync(resolve(calPath),"utf8"));
+ const displays=val("--displays")?val("--displays").split(";").map(x=>x.trim()):chooseObservedRoundtrip(calibration,label);
+ console.log("V559 TARGET SOURCE:",val("--displays")?"EXPLICIT":"AUTO_SELECTED_FROM_OBSERVED_V557");
  const plans=planSequence(capture,calibration,label,displays);
  console.log("V559 TARGETS:",plans.map(p=>p.display+" [pos "+p.expectedPosition+"]").join(" -> "));
  console.log("V559 DRY PLAN:",plans.map(p=>({display:p.display,hostSlot:p.hostSlot,channel:p.midi.channel,cc:p.midi.cc,ccLsb:p.midi.ccLsb,msb:p.midi.msb,lsb:p.midi.lsb})));
