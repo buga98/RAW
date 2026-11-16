@@ -46,7 +46,8 @@ export async function runLab({database,token,port=PORT,makeMidi=null}={}){
  const input=new midi.Input(V556_READBACK_PORT),output=new midi.Output(V551_MIDI_PORT);
  const expectedHash=createHash("sha256").update(token).digest();
  const clients=new Set();
- let owner=null,active=null,lastTitle=new Map();
+ let owner=null,active=null;
+ const seenRequests=new Set();
  const server=new WebSocketServer({host:HOST,port,maxPayload:2048,perMessageDeflate:false,
   verifyClient:(info,done)=>done(safeOrigin(info.origin),403,"Local file only")});
  const send=(ws,msg)=>{if(ws.readyState===1)ws.send(JSON.stringify({...msg,labOnly:true,hardwareVerified:false}));};
@@ -60,7 +61,6 @@ export async function runLab({database,token,port=PORT,makeMidi=null}={}){
   const msg=parseV556Sysex(evt);
   if(!msg)return;
   if(msg.kind==="title"){
-   lastTitle.set(msg.slot,{title:msg.first,label:msg.second,at:Date.now()});
    if(active?.row.hostSlot===msg.slot&&msg.first==="Mastering Equalizer"&&msg.second===active.row.label){
     active.authorized=true;
     if(!active.sent){
@@ -111,6 +111,9 @@ export async function runLab({database,token,port=PORT,makeMidi=null}={}){
    try{row=checkRequest(database,msg)}catch(e){
     send(ws,{type:"error",requestId:msg?.requestId||null,code:e.message});return;
    }
+   if(seenRequests.has(msg.requestId)){send(ws,{type:"error",requestId:msg.requestId,code:"DUPLICATE_REQUEST_ID"});return}
+   seenRequests.add(msg.requestId);
+   if(seenRequests.size>256)seenRequests.delete(seenRequests.values().next().value);
    active={ws,id:msg.requestId,row,authorized:false,sent:false,
     reading:{title:"Mastering Equalizer",label:row.label,normalized:null,display:null,seenP:false,seenD:false},
     gate:makeStableGate(),timeout:null,interval:null};
