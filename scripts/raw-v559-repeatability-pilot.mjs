@@ -73,7 +73,7 @@ async function main(){
    console.log("V559 STABILITY:",settled);
    const checked=v.closeStep();
    console.log("V559 STEP:",JSON.stringify(checked));
-   if(checked.status!=="MATCH"){console.log("V559 STOP: step did not verify; later settings NOT sent");break}
+   if(checked.status!=="MATCH"||!settled?.ready){console.log("V559 STOP: step not stably verified; later settings NOT sent");break}
    await sleep(300);
   }
   result=v.summary();
