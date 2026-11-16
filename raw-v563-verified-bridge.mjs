@@ -39,7 +39,7 @@ export function validateLocalConfig(db,token){
 }
 export async function runLab({database,token,port=PORT,makeMidi=null}={}){
  validateLocalConfig(database,token);
- if(!Number.isInteger(port)||port<1024||port>65535)throw Error("INVALID_LOCAL_PORT");
+ if(!Number.isInteger(port)||port>65535||(port<1024&&!(port===0&&makeMidi)))throw Error("INVALID_LOCAL_PORT");
  const midi=makeMidi?makeMidi():require("easymidi");
  if(!midi.getInputs().includes(V556_READBACK_PORT)||!midi.getOutputs().includes(V551_MIDI_PORT))
   throw Error("RAW_V563_V556_MIDI_PORTS_MISSING");
