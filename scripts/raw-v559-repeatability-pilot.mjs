@@ -55,7 +55,7 @@ async function main(){
    for(let t=0;t<80;t++){
     await sleep(100);
     got=v.inspect();
-    if(got.status==="MATCH"||got.status==="MISMATCH"){await sleep(250);got=v.inspect();break}
+    if(got.status==="MATCH"){await sleep(250);got=v.inspect();if(got.status==="MATCH")break}
    }
    const checked=v.closeStep();
    console.log("V559 STEP:",JSON.stringify(checked));
