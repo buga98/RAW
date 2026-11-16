@@ -14,6 +14,7 @@ const step=(position,display)=>({status:"MATCH",samePosition:true,sameDisplay:tr
  expected:{position,display},actual:{position,display}});
 const report={timestamp:"2026-11-16T15:30:00.000Z",version:"V5.59",label,
  testProjectConfirmed:true,hardwareVerified:false,status:"FULL_MATCH",total:3,completed:3,matches:3,
+ stabilityChecks:Array.from({length:3},()=>({ready:true,status:"MATCH",quietForMs:1350,elapsedMs:1450})),
  steps:[step(27,"Q = 3.6"),step(0,"WIDE"),step(27,"Q = 3.6")]};
 test("V560 always lists exactly 24 original EQ parameters, no unsafe controls",()=>{
  assert.equal(V555_SAFE_LABELS.length,24);
@@ -37,6 +38,8 @@ test("V560 rejects false success with wrong label/display/position and incomplet
   {...report,label:"SNAPSHOT"},
   {...report,hardwareVerified:true},
   {...report,completed:2},
+  {...report,stabilityChecks:undefined},
+  {...report,stabilityChecks:[{ready:true,status:"MATCH",quietForMs:10,elapsedMs:1406},...report.stabilityChecks.slice(1)]},
   {...report,steps:[step(27,"Q = 3.6"),step(31,"SHARP"),step(27,"Q = 3.6")]},
   {...report,steps:[step(27,"Q = 3.6"),{...step(0,"WIDE"),sameDisplay:false},step(27,"Q = 3.6")]},
   {...report,status:"INCOMPLETE_OR_MISMATCH"}
