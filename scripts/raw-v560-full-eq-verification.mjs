@@ -22,6 +22,7 @@ function main(){
  const reportFile=val("--results")||"raw-v560-stable-cycles.jsonl";
  let reports=loadReports(reportFile);
  const label=val("--test-label");
+ let liveExit=null;
  if((yes("--midi")||yes("--confirm-test-project"))&&!label)throw Error("V560_MIDI_FLAGS_REQUIRE_EXPLICIT_TEST_LABEL");
  if(label){
   if(!V555_SAFE_LABELS.includes(label))throw Error("V560_ONLY_24_EQ_CONTROLS");
@@ -38,6 +39,7 @@ function main(){
       "--out",resolve(reportFile),"--midi","--confirm-test-project"],
     {stdio:"inherit",windowsHide:false});
    if(result.error)throw result.error;
+   liveExit=result.status;
    reports=loadReports(reportFile);
    console.log("V560 LIVE EXIT:",result.status);
   }
@@ -53,6 +55,6 @@ function main(){
   row.label.padEnd(20),"host",String(row.hostSlot).padStart(2),
   "points",String(row.measuredPositions).padStart(3),"conflicts",row.conflictPositions);
  console.log("V560 REPORT:",out);
- if(label&&yes("--midi")&&audit.controls.find(c=>c.label===label)?.roundtrip.status!=="STABLE_CYCLE_VERIFIED")process.exitCode=2;
+ if(label&&yes("--midi")&&(liveExit!==0||audit.controls.find(c=>c.label===label)?.roundtrip.status!=="STABLE_CYCLE_VERIFIED"))process.exitCode=2;
 }
 try{main()}catch(e){console.error("V560 STOP:",e.message);process.exitCode=1}
