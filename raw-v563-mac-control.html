@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="hr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>RAW V5.63 — Verified Cubase Bridge Lab</title>
+<style>
+:root{color-scheme:dark;font:16px system-ui,sans-serif}body{margin:0;background:#0a101d;color:#f2f5ff;min-height:100vh;display:grid;place-items:center}
+main{max-width:680px;width:calc(100% - 34px);border:1px solid #2d3b53;border-radius:20px;background:#121c2d;padding:24px;box-sizing:border-box}
+h1{margin:0 0 8px;font-size:24px}p{line-height:1.5;color:#b8c5d8}label{display:block;margin:18px 0 6px;font-size:13px;color:#b8c5d8}
+input,select,button{font:inherit;border-radius:10px;padding:12px;box-sizing:border-box}
+input,select{width:100%;border:1px solid #40536f;background:#0b1423;color:#fff}button{border:0;background:#3d78ed;color:white;cursor:pointer;margin:14px 8px 0 0}button:disabled{opacity:.35;cursor:not-allowed}
+.status{padding:14px;margin-top:14px;border:1px solid #40536f;border-radius:12px;background:#0b1423;white-space:pre-wrap;min-height:60px}
+small{color:#b8c5d8}.warn{color:#ffce85}strong{color:#8be5bb}
+</style></head>
+<body><main>
+<h1>RAW — Original Bettermaker VST</h1>
+<p>V5.63 verified lab · Mac → SSH tunnel → Windows → Cubase → verified readback.</p>
+<p class="warn">Samo testni projekt. Ovaj panel nije produkcijski RAW niti potvrda fizičkog Bettermaker hardvera.</p>
+<label for="token">Lokalni testni token (nikad se ne sprema)</label><input id="token" type="password" autocomplete="off" placeholder="Unesi isti RAW_V563_LOCAL_TOKEN kao na Windowsu">
+<button id="connect">Spoji na studio (localhost:7088)</button><button id="disconnect" disabled>Prekini</button>
+<label for="target">Verificirano stanje iz V5.62</label>
+<select id="target"><option value="EQ1 L frequency|300 Hz">EQ1 LEFT — 300 Hz</option>
+<option value="EQ2 L bandwidth|SHARP">EQ2 LEFT — SHARP</option></select>
+<button id="apply" disabled>Postavi i potvrdi u Cubaseu</button>
+<div class="status" role="status" id="status">Nije spojeno.</div>
+<p><small>Za svaku naredbu fokusiraj originalni VST na Windowsu kad se pojavi FOCUS REQUIRED. Nema automatskih ponovnih slanja. Svi rezultati dolaze s Cubase V556 povratnog porta.</small></p>
+</main>
+<script type="module">
+const $=id=>document.getElementById(id),connect=$("connect"),disconnect=$("disconnect"),apply=$("apply"),status=$("status");
+let socket=null,authed=false,pending=false;
+const show=(s)=>status.textContent=s;
+const update=()=>{const open=socket?.readyState===WebSocket.OPEN;connect.disabled=!!open;disconnect.disabled=!open;apply.disabled=!authed||pending};
+connect.onclick=()=>{
+ if(socket&&socket.readyState===WebSocket.OPEN)return;
+ const token=$("token").value;
+ if(token.length<32){show("Token mora imati najmanje 32 znaka.");return}
+ const ws=new WebSocket("ws://127.0.0.1:7088");socket=ws;authed=false;pending=false;
+ ws.onopen=()=>{ws.send(JSON.stringify({type:"auth",token}));$("token").value="";show("Autentikacija...");update()};
+ ws.onmessage=ev=>{
+  let m;try{m=JSON.parse(ev.data)}catch{return}
+  if(m.type==="auth-ok"){authed=true;show("Spojeno na Windows studio. Izaberi provjereno stanje.");}
+  else if(m.type==="focus-required"){show("FOCUS REQUIRED: Na Windowsu fokusiraj originalni Mastering Equalizer na Audio 01 i reselect V556 MIDI Remote.\nParametar: "+m.label);}
+  else if(m.type==="exact-sent"){show("MIDI14 poslan: "+m.raw14+"\nČekam stvarnu stabilnu potvrdu iz Cubasea...");}
+  else if(m.type==="exact-result"){
+   pending=false;
+   if(m.status==="VERIFIED")show("VERIFIED ✓\n"+m.expected.label+" = "+m.expected.display+"\nRAW14: "+m.expected.raw14+"\nCubase readback: "+m.actual?.display+"\nStabilnost: "+m.stability?.elapsedMs+" ms");
+   else show("NEPOTVRĐENO ✕\n"+m.status+"\nTraženo: "+m.expected?.display+"\nOčitano: "+(m.actual?.display??"nema podataka"));
+  }else if(m.type==="error"){pending=false;show("ODB I J E N O: "+m.code);}
+  update();
+ };
+ ws.onerror=()=>show("Veza nije dostupna. Provjeri SSH tunel, bridge i token.");
+ ws.onclose=()=>{authed=false;pending=false;show("Veza zatvorena. Nema automatskog ponovnog slanja.");update()};
+ update();
+};
+disconnect.onclick=()=>socket?.close();
+apply.onclick=()=>{
+ if(!authed||pending||socket?.readyState!==WebSocket.OPEN)return;
+ const [label,display]=$("target").value.split("|");
+ const requestId="raw_"+Date.now()+"_"+Math.floor(Math.random()*100000);
+ pending=true;update();show("Zahtjev poslan. Čekam potvrdu identiteta plugina.");
+ socket.send(JSON.stringify({type:"set-exact",requestId,label,display}));
+};
+</script></body></html>
