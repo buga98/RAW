@@ -3,7 +3,7 @@
 import {makeV558Plan} from "./raw-v558-closed-loop-core.mjs";
 export function buildExactMidi14(capture,calibration,evidence){
  if(!Array.isArray(evidence))throw Error("V562_EVIDENCE_ARRAY_REQUIRED");
- const entries=new Map(),rejected=[];
+ const entries=new Map(),rejected=[],conflicted=new Set();
  for(let i=0;i<evidence.length;i++){
   const e=evidence[i],id=i+1;
   try{
@@ -28,7 +28,8 @@ export function buildExactMidi14(capture,calibration,evidence){
     throw Error("MISSING_ORIGINAL_CALLBACK_TIMELINE");
    const key=e.label+"\u0000"+e.display;
    const existing=entries.get(key);
-   if(existing&&existing.raw14!==e.raw14){entries.delete(key);throw Error("CONFLICTING_EXACT_RAW14_EVIDENCE");}
+   if(conflicted.has(key))throw Error("CONFLICTING_EXACT_RAW14_EVIDENCE");
+   if(existing&&existing.raw14!==e.raw14){entries.delete(key);conflicted.add(key);throw Error("CONFLICTING_EXACT_RAW14_EVIDENCE");}
    const row=existing||{label:e.label,display:e.display,hostSlot:p.hostSlot,position:e.position,
     normalizedGrid:p.expectedNormalized,baseRaw:p.midi.raw,raw14:e.raw14,
     midiChannel:p.midi.channel,cc:p.midi.cc,ccLsb:p.midi.ccLsb,
