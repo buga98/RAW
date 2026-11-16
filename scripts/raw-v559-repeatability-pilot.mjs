@@ -6,6 +6,8 @@ import {createRequire} from "node:module";
 import {V551_MIDI_PORT} from "./raw-v551-generate-bettermaker-vst-surface.mjs";
 import {V556_READBACK_PORT} from "./raw-v556-generate-bettermaker-live-readback.mjs";
 import {planSequence,makeSequenceVerifier} from "./raw-v559-sequence-core.mjs";
+import {parseV556Sysex} from "./raw-v556-log-bettermaker.mjs";
+import {makeStableGate} from "./raw-v5593-stability-gate.mjs";
 import {chooseObservedRoundtrip} from "./raw-v559-observed-targets.mjs";
 const require=createRequire(import.meta.url);
 const argv=process.argv.slice(2);
@@ -35,7 +37,12 @@ async function main(){
  let sending=false;
  let result;
  try{
-  input.on("sysex",evt=>v.take(evt));
+  let activeGate=null;
+  input.on("sysex",evt=>{
+   v.take(evt);
+   const m=parseV556Sysex(evt);
+   if(activeGate&&m?.slot===plans[0].hostSlot&&(m.kind==="normalized"||m.kind==="display"))activeGate.observe(Date.now());
+  });
   console.log("V559 LISTENING:",V556_READBACK_PORT);
   console.log("In Cubase focus original Mastering Equalizer on Audio 01 and RESELECT V556 MIDI Remote to trigger host title feedback.");
   console.log("WAITING FOR ORIGINAL HOST TITLE (up to 60 s); no MIDI until title is verified.");
@@ -48,17 +55,22 @@ async function main(){
   for(let i=0;i<plans.length;i++){
    const p=plans[i];
    v.armStep(i);
+   const gate=makeStableGate();gate.arm(Date.now());activeGate=gate;
    sending=true;
    output.send("cc",{channel:p.midi.channel,controller:p.midi.cc,value:p.midi.msb});
    output.send("cc",{channel:p.midi.channel,controller:p.midi.ccLsb,value:p.midi.lsb});
    console.log("V559 SENT step",i+1,"/",plans.length,p.label,"=>",p.display);
    // Keep collecting callbacks for this step; never infer a readback from a MIDI send.
    let got;
-   for(let t=0;t<80;t++){
+   let settled=null;
+   for(let t=0;t<100;t++){
     await sleep(100);
     got=v.inspect();
-    if(got.status==="MATCH"){await sleep(250);got=v.inspect();if(got.status==="MATCH")break}
+    settled=gate.inspect(Date.now(),got.status);
+    if(settled.ready)break;
    }
+   activeGate=null;
+   console.log("V559 STABILITY:",settled);
    const checked=v.closeStep();
    console.log("V559 STEP:",JSON.stringify(checked));
    if(checked.status!=="MATCH"){console.log("V559 STOP: step did not verify; later settings NOT sent");break}
