@@ -62,7 +62,8 @@ async function main(){
   console.log("V561 FINAL:",JSON.stringify(feedback,null,2));
   if(!settled?.ready||feedback.status!=="MATCH")process.exitCode=2;
  }finally{
-  const out=resolve(arg("--out")||"raw-v561-midi14-probe.json");
+  const filename="raw-v561-"+plan.label.toLowerCase().replace(/[^a-z0-9]+/g,"-")+"-"+plan.display.toLowerCase().replace(/[^a-z0-9]+/g,"-")+"-offset-"+plan.offset+".json";
+  const out=resolve(arg("--out")||filename);
   writeFileSync(out,JSON.stringify({version:"V5.61",timestamp:new Date().toISOString(),
    label:plan.label,display:plan.display,position:plan.expectedPosition,
    raw14:plan.raw14,offset:plan.offset,sent,settled,feedback,timeline,
