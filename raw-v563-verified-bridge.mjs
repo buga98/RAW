@@ -29,7 +29,7 @@ export function checkReadback(row,reading){
  if(!reading||reading.title!=="Mastering Equalizer"||reading.label!==row.label||
   !Number.isFinite(reading.normalized)||reading.display!==row.display)return false;
  const position=Math.round(reading.normalized*255);
- return position===row.position&&Math.abs(position/255-reading.normalized)<0.0001;
+ return position===row.position&&Math.abs(position/255-reading.normalized)<0.0001&&\n   Number.isFinite(reading.pAt)&&Number.isFinite(reading.dAt)&&Math.abs(reading.pAt-reading.dAt)<=200;
 }
 export function validateLocalConfig(db,token){
  if(db?.version!=="V5.62"||!Array.isArray(db.entries))throw Error("EXACT_V562_DATABASE_REQUIRED");
@@ -82,10 +82,10 @@ export async function runLab({database,token,port=PORT,makeMidi=null}={}){
   const job=active;
   if(!job||!job.sent||msg.slot!==job.row.hostSlot)return;
   if(msg.kind==="normalized"){
-   job.reading.normalized=msg.normalized;job.reading.seenP=true;job.gate.observe(Date.now());
+   job.reading.normalized=msg.normalized;job.reading.seenP=true;job.reading.pAt=Date.now();job.gate.observe(Date.now());
   }
   if(msg.kind==="display"){
-   job.reading.display=msg.first;job.reading.seenD=true;job.gate.observe(Date.now());
+   job.reading.display=msg.first;job.reading.seenD=true;job.reading.dAt=Date.now();job.gate.observe(Date.now());
   }
  });
  server.on("connection",ws=>{
