@@ -8,7 +8,7 @@
 2. `scripts/raw-v562-import-midi14.mjs`: offline importer. It does **not** send MIDI and never changes V5.57.
 3. `scripts/raw-v561-midi14-precision-probe.mjs`: default report name now includes label, display and offset; existing reports can also pass `--out`.
 4. `raw-v563-verified-bridge.mjs`: token-protected, Windows loopback-only WebSocket server, strict allowlist, fresh title verification for **every command**, MIDI14 send, paired V556 normalized/display readback, stable gate and explicit status (never a fake simulated success).
-5. `raw-v563-mac-control.html`: small first-pass Mac control panel, separate from the production RAW UI. Two prewired targets only: EQ1 L 300 Hz and EQ2 L SHARP. Its `VERIFIED` status means original Cubase VST host readback only. No silent retry, no queued commands, no internet-exposed endpoint.
+5. `raw-v563-developer-panel.js`: developer-only controls integrated directly into RAW **Programerski dio**, mounted only after developer authorization and detached on revoke.\n6. `raw-v563-mac-control.html`: small first-pass Mac control panel, separate from the production RAW UI. Two prewired targets only: EQ1 L 300 Hz and EQ2 L SHARP. Its `VERIFIED` status means original Cubase VST host readback only. No silent retry, no queued commands, no internet-exposed endpoint.
 
 ## Prerequisites
 
@@ -26,7 +26,7 @@ git fetch origin feature/raw-v563-verified-mac-cubase-bridge
 git worktree add --detach C:\remote-audio-workstation-v563-test FETCH_HEAD
 cd C:\remote-audio-workstation-v563-test
 npm ci
-node --test tests/raw-v562-exact-midi14.test.mjs tests/raw-v563-verified-bridge.test.mjs tests/raw-v561-midi14-precision-probe.test.mjs
+node --test tests/raw-v562-exact-midi14.test.mjs tests/raw-v563-verified-bridge.test.mjs tests/raw-v563-bridge-loopback.test.mjs tests/raw-v563-developer-panel.test.mjs tests/raw-v561-midi14-precision-probe.test.mjs
 ```
 
 ## Step A: collect two distinct exact evidence files
@@ -74,9 +74,15 @@ Substitute your existing SSH user and Windows LAN IP (don't invent them). Leave 
 
 The panel must never show `VERIFIED` unless the Windows bridge received post-command matching normalized+display callbacks (within 200ms) and a quiet stable window. Failure/timeout is an explicit non-success.
 
+## Use the integrated RAW interface on Mac
+
+After the SSH tunnel is connected, update the Mac RAW application to this V5.63 branch and launch the usual local test RAW desktop application. Log in, pass the existing developer owner verification and open **Programerski dio**. The new **V5.63 Mac → Cubase Verified Bridge** panel appears inside RAW. Enter the Windows bridge's private token, select 300 Hz or SHARP and use **POSTAVI I PROVJERI ORIGINALNI VST**. Focus the original VST on the Windows Cubase test track only when RAW asks for a fresh title.
+
+The separate `raw-v563-mac-control.html` is a fallback for transport-only debugging. The integrated developer panel does not yet drive the normal production rack knobs and does not bypass existing Firebase developer access checks.
+
 ## Known limitations before production integration
 
-- This is a **standalone lab HTML control panel**, not yet plugged into the normal RAW Electron rack. Its first purpose is to validate the transport and exact command/readback end to end from Mac. Integration into the existing RAW Electron renderer follows once the real pilot passes.
+- The developer-only panel is inside the existing RAW UI, but is not yet connected to the normal production rack knobs. Its first purpose is to validate the transport and exact command/readback end to end from Mac. Integration into the existing RAW Electron renderer follows once the real pilot passes.
 - Each new command requires a **fresh original plugin title callback**; Cubase may not emit it just from focusing a plugin. If no callback appears, bridge does not send. This needs usability automation after the safe pilot.
 - Current secure transport is **SSH tunneling**, not cloud Firebase session leases, wallet/token billing or remote internet access.
 - The test only verifies original Cubase VST host reported control states, **not hardware** or audio processing identity.
