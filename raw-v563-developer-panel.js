@@ -19,7 +19,7 @@
  }
  function stop(){
   const old=ws;ws=null;authorized=false;busy=false;
-  if(old&&old.readyState<=WebSocket.OPEN)old.close();
+  if(old&&old.readyState<=WebSocket.OPEN){try{old.close()}catch{}}
   refresh();
  }
  function attach(host,checkAccess){
