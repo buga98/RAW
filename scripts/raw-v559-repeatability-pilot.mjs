@@ -35,6 +35,7 @@ async function main(){
  const output=new easymidi.Output(V551_MIDI_PORT);
  const v=makeSequenceVerifier(plans);
  let sending=false;
+ let unstable=false;
  let result;
  try{
   let activeGate=null;
@@ -73,10 +74,11 @@ async function main(){
    console.log("V559 STABILITY:",settled);
    const checked=v.closeStep();
    console.log("V559 STEP:",JSON.stringify(checked));
-   if(checked.status!=="MATCH"||!settled?.ready){console.log("V559 STOP: step not stably verified; later settings NOT sent");break}
+   if(checked.status!=="MATCH"||!settled?.ready){unstable=true;console.log("V559 STOP: step not stably verified; later settings NOT sent");break}
    await sleep(300);
   }
   result=v.summary();
+  if(unstable)result={...result,status:"UNSTABLE_OR_MISMATCH"};
   console.log("V559 FINAL:",JSON.stringify(result,null,2));
   if(result.status!=="FULL_MATCH")process.exitCode=2;
  }finally{
