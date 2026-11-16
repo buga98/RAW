@@ -28,7 +28,7 @@ export function buildExactMidi14(capture,calibration,evidence){
     throw Error("MISSING_ORIGINAL_CALLBACK_TIMELINE");
    const key=e.label+"\u0000"+e.display;
    const existing=entries.get(key);
-   if(existing&&existing.raw14!==e.raw14)throw Error("CONFLICTING_EXACT_RAW14_EVIDENCE");
+   if(existing&&existing.raw14!==e.raw14){entries.delete(key);throw Error("CONFLICTING_EXACT_RAW14_EVIDENCE");}
    const row=existing||{label:e.label,display:e.display,hostSlot:p.hostSlot,position:e.position,
     normalizedGrid:p.expectedNormalized,baseRaw:p.midi.raw,raw14:e.raw14,
     midiChannel:p.midi.channel,cc:p.midi.cc,ccLsb:p.midi.ccLsb,
