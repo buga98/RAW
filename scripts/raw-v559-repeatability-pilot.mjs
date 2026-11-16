@@ -36,6 +36,7 @@ async function main(){
  const v=makeSequenceVerifier(plans);
  let sending=false;
  let unstable=false;
+ const stabilityChecks=[];
  let result;
  try{
   let activeGate=null;
@@ -71,19 +72,20 @@ async function main(){
     if(settled.ready)break;
    }
    activeGate=null;
+   stabilityChecks.push(settled);
    console.log("V559 STABILITY:",settled);
    const checked=v.closeStep();
    console.log("V559 STEP:",JSON.stringify(checked));
    if(checked.status!=="MATCH"||!settled?.ready){unstable=true;console.log("V559 STOP: step not stably verified; later settings NOT sent");break}
    await sleep(300);
   }
-  result=v.summary();
+  result={...v.summary(),stabilityChecks};
   if(unstable)result={...result,status:"UNSTABLE_OR_MISMATCH"};
   console.log("V559 FINAL:",JSON.stringify(result,null,2));
   if(result.status!=="FULL_MATCH")process.exitCode=2;
  }finally{
   input.close();output.close();
-  result=result||v.summary();
+  result=result||{...v.summary(),stabilityChecks};
   appendFileSync(reportFile,JSON.stringify({timestamp:new Date().toISOString(),version:"V5.59",label,
    testProjectConfirmed:true,sentAtLeastOne:sending,stepsPlanned:plans.map(p=>({display:p.display,position:p.expectedPosition})),...result})+"\n");
   console.log("V559 REPORT:",reportFile);
