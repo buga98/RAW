@@ -8,6 +8,8 @@ import {createHash,timingSafeEqual} from "node:crypto";
 import {resolve} from "node:path";
 import {fileURLToPath} from "node:url";
 import {lookupExactMidi14} from "./scripts/raw-v562-exact-midi14-core.mjs";
+import {V555_SAFE_LABELS} from "./scripts/raw-v555-bettermaker-calibration-core.mjs";
+import {V551_BINDINGS} from "./scripts/raw-v551-generate-bettermaker-vst-surface.mjs";
 import {parseV556Sysex} from "./scripts/raw-v556-log-bettermaker.mjs";
 import {makeStableGate} from "./scripts/raw-v5593-stability-gate.mjs";
 import {V551_MIDI_PORT} from "./scripts/raw-v551-generate-bettermaker-vst-surface.mjs";
@@ -19,7 +21,11 @@ const safeOrigin=s=>!s||s==="null"||s==="file://"||s.startsWith("file:///");
 export function checkRequest(db,msg){
  if(!msg||msg.type!=="set-exact"||typeof msg.requestId!=="string"||!REQUEST.test(msg.requestId)||
   typeof msg.label!=="string"||typeof msg.display!=="string")throw Error("INVALID_EXACT_REQUEST");
+ if(!V555_SAFE_LABELS.includes(msg.label))throw Error("UNSAFE_VST_CONTROL");
  const row=lookupExactMidi14(db,msg.label,msg.display);
+ const mapping=V551_BINDINGS.find(x=>x.label===msg.label);
+ if(!mapping||mapping.midiChannel!==row.midiChannel||mapping.cc!==row.cc||mapping.ccLsb!==row.ccLsb)
+  throw Error("MIDI14_MAPPING_NOT_VERIFIED");
  if(!Number.isInteger(row.raw14)||row.raw14<0||row.raw14>16383||
   !Number.isInteger(row.midiChannel)||!Number.isInteger(row.cc)||!Number.isInteger(row.ccLsb))
    throw Error("BAD_VERIFIED_MIDI_ENTRY");
@@ -32,7 +38,8 @@ export function checkReadback(row,reading){
  return position===row.position&&Math.abs(position/255-reading.normalized)<0.0001&&\n   Number.isFinite(reading.pAt)&&Number.isFinite(reading.dAt)&&Math.abs(reading.pAt-reading.dAt)<=200;
 }
 export function validateLocalConfig(db,token){
- if(db?.version!=="V5.62"||!Array.isArray(db.entries))throw Error("EXACT_V562_DATABASE_REQUIRED");
+ if(db?.version!=="V5.62"||!Array.isArray(db.entries)||db.entries.length===0||
+    (Array.isArray(db.rejected)&&db.rejected.length>0))throw Error("EXACT_V562_DATABASE_REQUIRED");
  if(typeof token!=="string"||token.length<32||token.length>1024||/\s/.test(token))
   throw Error("RAW_V563_LOCAL_TOKEN_MIN_32_NO_WHITESPACE");
  return true;
