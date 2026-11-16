@@ -14,12 +14,13 @@ test("V563 permits exact verified VST controls and denies unverified values",()=
 });
 test("V563 readback requires exact display, position, title and label",()=>{
  const row=verified.entries[0],good={title:"Mastering Equalizer",label:row.label,
-  normalized:0.8157235980033875,display:"300 Hz"};
+  normalized:0.8157235980033875,display:"300 Hz",pAt:1000,dAt:1040};
  assert.equal(checkReadback(row,good),true);
  assert.equal(checkReadback(row,{...good,display:"298 Hz"}),false);
  assert.equal(checkReadback(row,{...good,label:"EQ1 R frequency"}),false);
  assert.equal(checkReadback(row,{...good,normalized:0.75}),false);
  assert.equal(checkReadback(row,{...good,title:"Other Plugin"}),false);
+ assert.equal(checkReadback(row,{...good,dAt:1400}),false);
 });
 test("V563 requires a strong local secret and exact database",()=>{
  assert.equal(validateLocalConfig(verified,"12345678901234567890123456789012"),true);
