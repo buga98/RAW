@@ -21,7 +21,10 @@ export function makeEqAudit(capture,calibration,reports=[]){
    if(report?.version!=="V5.59"||report.label!==label||report.testProjectConfirmed!==true||
       report.status!=="FULL_MATCH"||report.hardwareVerified!==false||
       report.completed!==report.total||report.matches!==report.total||report.total<3||
-      !Array.isArray(report.steps)||report.steps.length!==report.total)continue;
+      !Array.isArray(report.steps)||report.steps.length!==report.total||
+      !Array.isArray(report.stabilityChecks)||report.stabilityChecks.length!==report.total||
+      !report.stabilityChecks.every(x=>x?.ready===true&&x.status==="MATCH"&&
+        x.quietForMs>=900&&x.elapsedMs>=1400))continue;
    // Only accept the specific positions & exact text seen in this calibration.
    if(!report.steps.every(step=>{
     if(step.status!=="MATCH"||step.samePosition!==true||step.sameDisplay!==true||step.titleValidated!==true)return false;
