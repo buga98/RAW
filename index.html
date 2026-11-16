@@ -336,6 +336,7 @@
   <script src="raw-local-reconnect-v57.js"></script>
   <script src="studio-sim-client.js"></script>
   <script src="studio-gateway-client.js"></script>
+  <script src="raw-v563-developer-panel.js"></script>
   <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/12.12.0/firebase-app.js";
 import {
@@ -423,6 +424,7 @@ function revokeDeveloperLabs(){
   window.RAWStudioGatewayV1?.disconnect?.();
   window.RAWStudioSim?.disconnect?.();
   window.RAWDawBridge?.disconnect?.();
+  window.RAWVerifiedBridgeV563?.detach?.();
   window.RAWAudioV5Lab?.detach?.();
   window.RAWAudioWorkerV54Lab?.detach?.();
   window.RAWDigitalPremasterV59UI?.detach?.();
@@ -435,6 +437,7 @@ function mountDeveloperLabs(){
   if(!developerAllowed()||!pluginHost?.querySelector(".chain-control"))return;
   window.RAWStudioSim?.attach(developerLabHost,pluginHost);
   window.RAWStudioGatewayV1?.attach(developerLabHost,pluginHost);
+  window.RAWVerifiedBridgeV563?.attach?.(developerLabHost,developerAllowed);
   window.RAWChainArchiveV1?.attach(developerLabHost,()=>window.RAWDeveloperRackModels?.());
   if(!developerLabHost.querySelector("#rawDiagnosticsDetails")&&developerUiTemplates.diagnostics){
     const diag=developerUiTemplates.diagnostics.cloneNode(true);
