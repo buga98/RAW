@@ -9,7 +9,7 @@ test("V563 permits exact verified VST controls and denies unverified values",()=
  const m={type:"set-exact",requestId:"request_test_001",label:"EQ1 L frequency",display:"300 Hz"};
  assert.equal(checkRequest(verified,m).raw14,13364);
  assert.throws(()=>checkRequest(verified,{...m,display:"298 Hz"}),/V562_EXACT_VALUE_NOT_VERIFIED/);
- assert.throws(()=>checkRequest(verified,{...m,label:"SNAPSHOT"}),/V562_EXACT_VALUE_NOT_VERIFIED/);
+ assert.throws(()=>checkRequest(verified,{...m,label:"SNAPSHOT"}),/UNSAFE_VST_CONTROL/);
  assert.throws(()=>checkRequest(verified,{...m,requestId:"."}),/INVALID_EXACT_REQUEST/);
 });
 test("V563 readback requires exact display, position, title and label",()=>{
@@ -26,4 +26,5 @@ test("V563 requires a strong local secret and exact database",()=>{
  assert.equal(validateLocalConfig(verified,"12345678901234567890123456789012"),true);
  assert.throws(()=>validateLocalConfig(verified,"unsafe"),/MIN_32/);
  assert.throws(()=>validateLocalConfig({version:"V5.57"}, "x".repeat(32)),/EXACT_V562/);
+ assert.throws(()=>validateLocalConfig({...verified,rejected:[{reason:"BAD"}]}, "x".repeat(32)),/EXACT_V562/);
 });
