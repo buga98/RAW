@@ -1,0 +1,18 @@
+{
+  "version": "V5.55",
+  "notes": "Two operator-observed EQ1 R frequency readbacks on original VST under V5.54. Provisional points only, not a 1:1 calibration. Do not mix readings from another plugin version/session without validation.",
+  "records": [
+    {
+      "label": "EQ1 R frequency",
+      "normalized": 0.1,
+      "actual": 54,
+      "unit": "Hz"
+    },
+    {
+      "label": "EQ1 R frequency",
+      "normalized": 0.85,
+      "actual": 327,
+      "unit": "Hz"
+    }
+  ]
+}
