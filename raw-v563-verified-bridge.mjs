@@ -35,7 +35,8 @@ export function checkReadback(row,reading){
  if(!reading||reading.title!=="Mastering Equalizer"||reading.label!==row.label||
   !Number.isFinite(reading.normalized)||reading.display!==row.display)return false;
  const position=Math.round(reading.normalized*255);
- return position===row.position&&Math.abs(position/255-reading.normalized)<0.0001&&\n   Number.isFinite(reading.pAt)&&Number.isFinite(reading.dAt)&&Math.abs(reading.pAt-reading.dAt)<=200;
+ return position===row.position&&Math.abs(position/255-reading.normalized)<0.0001&&
+   Number.isFinite(reading.pAt)&&Number.isFinite(reading.dAt)&&Math.abs(reading.pAt-reading.dAt)<=200;
 }
 export function validateLocalConfig(db,token){
  if(db?.version!=="V5.62"||!Array.isArray(db.entries)||db.entries.length===0||
