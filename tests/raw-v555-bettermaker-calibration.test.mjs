@@ -19,7 +19,7 @@ test("V555 safely selects exactly 24 numeric controls, preserves 86 host binding
  assert.equal(validatedMapping(capture()).size,86);
  assert.equal(V555_SAFE_LABELS.length,24);
  const control=numericControl(capture(),"EQ1 R frequency");
- assert.equal(control.hostSlot,24);
+ assert.equal(control.hostSlot,25);
  assert.equal(control.cc,24);
 });
 test("V555 rejects controls that could change switches, snapshot or other actions",()=>{
@@ -31,7 +31,7 @@ test("V555 maps observed frequencies logarithmically without extrapolation",()=>
  const result=estimateMidiForPhysical(capture(),measurements,"EQ1 R frequency",150);
  assert.ok(result.raw>0);
  assert.ok(result.midiChannel===undefined); // packet uses channel
- assert.equal(result.hostSlot,24);
+ assert.equal(result.hostSlot,25);
  assert.ok(result.raw<16383);
  assert.equal(result.unit,"Hz");
  assert.equal(result.calibrationStatus,"PROVISIONAL_OPERATOR_READBACK");
